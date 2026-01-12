@@ -1,0 +1,5 @@
+{
+  "name": "ResuMatch AI",
+  "description": "A dynamic resume builder and portfolio generator powered by Gemini. Tailors your professional profile to specific job descriptions instantly.",
+  "requestFramePermissions": []
+}
