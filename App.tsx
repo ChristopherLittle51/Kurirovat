@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Auth from './components/Auth';
 import Layout from './components/Layout';
@@ -8,12 +8,46 @@ import GeneratorPage from './pages/GeneratorPage';
 import ApplicationDetails from './pages/ApplicationDetails';
 import OnboardingPage from './pages/OnboardingPage';
 import PublicPortfolio from './pages/PublicPortfolio';
+import * as SupabaseService from './services/supabaseService';
+import { Loader2 } from 'lucide-react';
 
 // Protected Route Wrapper
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div>Loading...</div>;
+  const [checkingProfile, setCheckingProfile] = useState(true);
+  const [hasProfile, setHasProfile] = useState(false); // Default false until checked
+  const location = useLocation();
+
+  useEffect(() => {
+    const checkProfile = async () => {
+      if (user) {
+        if (location.pathname === '/onboarding') {
+          setCheckingProfile(false);
+          return;
+        }
+
+        const profile = await SupabaseService.getProfile(user.id);
+        if (profile && profile.fullName) {
+          setHasProfile(true);
+        } else {
+          setHasProfile(false);
+        }
+      }
+      setCheckingProfile(false);
+    };
+
+    if (!loading) {
+      checkProfile();
+    }
+  }, [user, loading, location.pathname]);
+
+  if (loading || checkingProfile) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
   if (!user) return <Navigate to="/login" />;
+
+  if (!hasProfile && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" />;
+  }
+
   return <>{children}</>;
 };
 

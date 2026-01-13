@@ -169,9 +169,15 @@ const researchCompany = async (companyName: string): Promise<{ summary: string, 
  * Tailors the resume and generates a cover letter based on the Job Description.
  * Uses Gemini 3 Pro with a split Research -> Generate approach for structure reliability.
  */
+/**
+ * Tailors the resume and generates a cover letter based on the Job Description.
+ * Uses Gemini 3 Pro with a split Research -> Generate approach for structure reliability.
+ */
 export const tailorResume = async (
   baseProfile: UserProfile,
-  jd: JobDescription
+  jd: JobDescription,
+  githubProjects: any[] = [],
+  includeScore: boolean = true
 ): Promise<Partial<TailoredApplication>> => {
 
   // Step 1: Research the company (Grounded)
@@ -180,12 +186,19 @@ export const tailorResume = async (
 
   // Step 2: Generate Content (Structured)
   const prompt = `
-    You are an elite Resume Writer.
+    You are an elite Resume Writer and Career Strategist.
     
     Task: Tailor the candidate's profile to match the Job Description (JD), incorporating the provided company research.
-
+    
+    CRITICAL RULE: Prioritize RELEVANT experience over RECENT experience. 
+    If the candidate has older experience that is more relevant to the target role (e.g., same industry, same role, same tech stack), 
+    it MUST appear first in the 'tailoredExperience' array, even if it is not the most recent job.
+    
     Candidate Profile:
     ${JSON.stringify(baseProfile)}
+
+    Selected GitHub Projects (Highlight these if relevant to technical skills):
+    ${JSON.stringify(githubProjects)}
 
     Target Job Description:
     Company: ${jd.companyName}
@@ -198,9 +211,13 @@ export const tailorResume = async (
     Requirements:
     1. **Summary**: Rewrite as an "Elevator Pitch" aligning with the JD and Company Culture.
     2. **Skills**: Select top 8-10 skills relevant to the JD.
-    3. **Experience**: Rewrite bullets to STAR method, prioritizing JD-relevant achievements.
+    3. **Experience**: 
+       - Select the TOP 5 most relevant roles for this job.
+       - REORDER them to show the most relevant first.
+       - Rewrite bullets for these 5 roles to STAR method (max 4 bullets per role).
+       - Omit less relevant roles from the 'tailoredExperience' array to save space.
     4. **Cover Letter**: 3 paragraphs (Hook + Company alignment, Achievements, Call to Action).
-    5. **Match Score**: 0-100 semantic match.
+    5. **Match Score**: ${includeScore ? '0-100 semantic match.' : 'Set to 0 (user opted out).'}
     6. **Keywords**: 5 critical hard keywords from JD.
   `;
 
@@ -236,22 +253,36 @@ export const tailorResume = async (
       }
     });
 
-    const result = JSON.parse(response.text || "{}");
+    let result: any;
+    try {
+      result = JSON.parse(response.text || "{}");
+    } catch (parseError) {
+      console.error("JSON Parse Error. Raw text:", response.text);
+      throw new Error("AI response was incomplete or malformed. Please try again or reduce the resume size.");
+    }
 
-    // Merge the tailored parts back into a full Profile object structure
-    const newExperience = baseProfile.experience.map(exp => {
-      const tailoredExp = result.tailoredExperience?.find((te: any) => te.id === exp.id);
-      if (tailoredExp && Array.isArray(tailoredExp.description)) {
-        return { ...exp, description: tailoredExp.description };
-      }
-      return exp;
-    });
+    // Reconstruct experience array based on the AI's reordered list
+    // The AI returns { id, description[] }. We need to find the full original object, apply new desc, and preserve order.
+    let reorderedExperience: any[] = [];
+
+    if (result.tailoredExperience && Array.isArray(result.tailoredExperience)) {
+      reorderedExperience = result.tailoredExperience.map((tailoredExp: any) => {
+        const originalExp = baseProfile.experience.find(exp => exp.id === tailoredExp.id);
+        if (originalExp) {
+          return { ...originalExp, description: tailoredExp.description };
+        }
+        return null;
+      }).filter(Boolean); // Remove any nulls if ID wasn't found
+    } else {
+      // Fallback if AI fails to return array
+      reorderedExperience = baseProfile.experience;
+    }
 
     const tailoredProfile: UserProfile = {
       ...baseProfile,
       summary: result.tailoredSummary || baseProfile.summary,
       skills: Array.isArray(result.tailoredSkills) ? result.tailoredSkills : baseProfile.skills,
-      experience: newExperience,
+      experience: reorderedExperience,
     };
 
     return {
@@ -259,7 +290,10 @@ export const tailorResume = async (
       coverLetter: result.coverLetter || "Cover letter generation failed.",
       matchScore: result.matchScore || 0,
       keyKeywords: result.keyKeywords || [],
-      searchSources: research.sources
+      searchSources: research.sources,
+      // Pass these through/store them
+      githubProjects: githubProjects,
+      showMatchScore: includeScore
     };
 
   } catch (error) {

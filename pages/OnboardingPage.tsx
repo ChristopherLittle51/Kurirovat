@@ -8,6 +8,20 @@ import { useNavigate } from 'react-router-dom';
 const OnboardingPage: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const [initialData, setInitialData] = React.useState<UserProfile | null>(null);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        const loadProfile = async () => {
+            if (!user) return;
+            const profile = await SupabaseService.getProfile(user.id);
+            if (profile && profile.fullName) {
+                setInitialData(profile);
+            }
+            setLoading(false);
+        };
+        loadProfile();
+    }, [user]);
 
     const handleComplete = async (profile: UserProfile) => {
         if (!user) return;
@@ -19,6 +33,8 @@ const OnboardingPage: React.FC = () => {
         }
     };
 
+    if (loading) return <div>Loading...</div>; // Simplification, maybe improved UI later
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <div className="p-4 bg-white shadow-sm border-b">
@@ -27,7 +43,7 @@ const OnboardingPage: React.FC = () => {
                     <span className="font-bold text-xl">ResuMatch AI</span>
                 </div>
             </div>
-            <Onboarding onComplete={handleComplete} />
+            <Onboarding onComplete={handleComplete} initialData={initialData} />
         </div>
     );
 };

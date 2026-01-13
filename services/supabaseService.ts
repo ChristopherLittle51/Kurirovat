@@ -76,12 +76,15 @@ export const getApplications = async (userId: string): Promise<TailoredApplicati
         matchScore: app.match_score,
         keyKeywords: app.key_keywords,
         searchSources: app.search_sources,
+        status: app.status,
+        slug: app.slug,
+        githubProjects: app.github_projects,
+        showMatchScore: app.show_match_score,
     }));
 };
 
 export const saveApplication = async (userId: string, application: TailoredApplication): Promise<void> => {
-    // Generate a slug if not present (simple version)
-    const slug = `${application.jobDescription.companyName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`;
+    // Slug is now handled by DB trigger if not present
 
     const { error } = await supabase
         .from('applications')
@@ -95,13 +98,40 @@ export const saveApplication = async (userId: string, application: TailoredAppli
             match_score: application.matchScore,
             key_keywords: application.keyKeywords,
             search_sources: application.searchSources,
-            slug: slug
+            status: application.status || 'Pending',
+            github_projects: application.githubProjects,
+            show_match_score: application.showMatchScore
         });
 
     if (error) {
         console.error('Error saving application:', error);
         throw error;
     }
+};
+
+export const updateApplication = async (appId: string, updates: Partial<TailoredApplication>): Promise<void> => {
+    const updatePayload: any = {};
+
+    if (updates.resume) updatePayload.resume_data = updates.resume;
+    if (updates.coverLetter) updatePayload.cover_letter = updates.coverLetter;
+    if (updates.status) updatePayload.status = updates.status;
+    // Add other fields as necessary, but these are the main editable ones
+
+    if (Object.keys(updatePayload).length === 0) return;
+
+    const { error } = await supabase
+        .from('applications')
+        .update(updatePayload)
+        .eq('id', appId);
+
+    if (error) {
+        console.error('Error updating application:', error);
+        throw error;
+    }
+};
+
+export const updateApplicationStatus = async (appId: string, status: string): Promise<void> => {
+    return updateApplication(appId, { status: status as any });
 };
 
 export const getApplicationBySlug = async (slug: string): Promise<TailoredApplication | null> => {
@@ -129,6 +159,10 @@ export const getApplicationBySlug = async (slug: string): Promise<TailoredApplic
         matchScore: data.match_score,
         keyKeywords: data.key_keywords,
         searchSources: data.search_sources,
+        status: data.status,
+        slug: data.slug,
+        githubProjects: data.github_projects,
+        showMatchScore: data.show_match_score,
     };
 }
 

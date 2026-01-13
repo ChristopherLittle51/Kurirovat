@@ -14,6 +14,15 @@ export interface Education {
   year: string;
 }
 
+export interface GithubProject {
+  id: number;
+  name: string;
+  description: string | null;
+  html_url: string;
+  language: string | null;
+  stargazers_count: number;
+}
+
 export interface SocialLink {
   platform: string;
   url: string;
@@ -29,6 +38,7 @@ export interface UserProfile {
   experience: Experience[];
   education: Education[];
   links: SocialLink[];
+  githubUsername?: string;
 }
 
 export interface JobDescription {
@@ -42,6 +52,8 @@ export interface SearchSource {
   uri: string;
 }
 
+export type ApplicationStatus = 'Pending' | 'Sent' | 'Replied' | 'Interview Scheduled' | 'Rejected';
+
 export interface TailoredApplication {
   id: string;
   createdAt: number;
@@ -51,9 +63,13 @@ export interface TailoredApplication {
   matchScore: number; // 0-100
   keyKeywords: string[];
   searchSources?: SearchSource[];
+  status?: ApplicationStatus;
+  slug?: string;
+  githubProjects?: GithubProject[];
+  showMatchScore?: boolean;
 }
 
-export type ViewState = 
+export type ViewState =
   | 'ONBOARDING'
   | 'DASHBOARD'
   | 'NEW_APPLICATION'
