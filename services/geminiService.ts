@@ -7,15 +7,30 @@ import { UserProfile, JobDescription, TailoredApplication } from '../types';
  * This ensures the session token is passed correctly to avoid 401 errors.
  */
 const callGeminiFunction = async (action: string, payload: any) => {
-  const { data: { session } } = await supabase.auth.getSession();
+  // Refresh session to ensure the token is valid
+  const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+
+  if (sessionError) {
+    console.warn("[GeminiService] Failed to refresh session:", sessionError);
+  }
 
   // Explicitly attach the session token if available
   const headers = session?.access_token
     ? { Authorization: `Bearer ${session.access_token}` }
     : undefined;
 
+  console.log(`[GeminiService] Invoking ${action}. Session exists: ${!!session}, Token length: ${session?.access_token?.length || 0}`);
+
+  if (!session) {
+    console.warn("[GeminiService] No active session found. Request will likely fail with 401.");
+  }
+
   const { data, error } = await supabase.functions.invoke('gemini-api', {
-    body: { action, payload },
+    body: {
+      action,
+      payload,
+      access_token: session?.access_token // Fallback: Send token in body
+    },
     headers
   });
 

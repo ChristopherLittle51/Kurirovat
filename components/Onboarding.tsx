@@ -185,7 +185,43 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
       )}
 
       {step === 1 && (
-        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Re-upload Section */}
+          <div className="bg-orange-50 p-6 rounded-xl border border-orange-200 shadow-sm">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-orange-100 rounded-lg text-orange-600">
+                <UploadCloud size={24} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900">Update from Resume</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Upload a new PDF resume to re-parse and update your profile automatically.
+                </p>
+                <div className="mt-3">
+                  <button
+                    onClick={() => {
+                      if (window.confirm("WARNING: This will completely overwrite your current profile data (Experience, Education, Skills) with the new resume. This action cannot be undone.\n\nAre you sure you want to proceed?")) {
+                        document.getElementById('reupload-resume')?.click();
+                      }
+                    }}
+                    className="text-sm font-medium bg-white border border-orange-300 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-100 hover:border-orange-400 transition flex items-center gap-2"
+                    disabled={isUploading}
+                  >
+                    {isUploading ? <Loader2 className="animate-spin w-4 h-4" /> : <UploadCloud className="w-4 h-4" />}
+                    {isUploading ? "Scanning..." : "Upload New Resume"}
+                  </button>
+                  <input
+                    id="reupload-resume"
+                    type="file"
+                    accept=".pdf"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-blue-50 p-4 rounded-lg flex items-start gap-3 border border-blue-100">
             <FileText className="text-blue-600 mt-1 shrink-0" size={20} />
             <div>
