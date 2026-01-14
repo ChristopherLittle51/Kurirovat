@@ -2,12 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { TailoredApplication, ApplicationStatus, UserProfile } from '../types';
 import * as SupabaseService from '../services/supabaseService';
-import { condenseResume, condenseCoverLetter, tailorResume } from '../services/geminiService';
+import { tailorResume } from '../services/geminiService';
 import { useAuth } from '../contexts/AuthContext';
 import ResumeTemplate from '../components/ResumeTemplate';
 import PortfolioPreview from '../components/PortfolioPreview';
 import CoverLetterTemplate from '../components/CoverLetterTemplate';
-import { FileText, Globe, Printer, ChevronLeft, Loader2, Save, Mail, Sparkles, RefreshCw } from 'lucide-react';
+import { FileText, Globe, Printer, ChevronLeft, Loader2, Save, Mail, RefreshCw } from 'lucide-react';
 
 const STATUS_COLORS: Record<ApplicationStatus, string> = {
     'Pending': 'bg-gray-100 text-gray-800',
@@ -25,7 +25,6 @@ const ApplicationDetails: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [isCondensing, setIsCondensing] = useState(false);
     const [isRegenerating, setIsRegenerating] = useState(false);
     const [debugResponse, setDebugResponse] = useState<string | null>(null);
 
@@ -101,32 +100,7 @@ const ApplicationDetails: React.FC = () => {
         setHasUnsavedChanges(true);
     }, [application]);
 
-    const handleCondense = async () => {
-        if (!application) return;
-        setIsCondensing(true);
-        try {
-            if (view === 'RESUME') {
-                const result = await condenseResume(application.resume);
-                setApplication(prev => prev ? ({ ...prev, resume: result.profile }) : null);
-                setDebugResponse(result.rawResponse);
-                setHasUnsavedChanges(true);
-            } else if (view === 'COVER_LETTER') {
-                const result = await condenseCoverLetter(
-                    application.coverLetter,
-                    application.resume.fullName,
-                    application.jobDescription.companyName
-                );
-                setApplication(prev => prev ? ({ ...prev, coverLetter: result.content }) : null);
-                setDebugResponse(result.rawResponse);
-                setHasUnsavedChanges(true);
-            }
-        } catch (error) {
-            console.error('Condense error:', error);
-            alert('Failed to condense. Please try again.');
-        } finally {
-            setIsCondensing(false);
-        }
-    };
+
 
     const handleRegenerate = async () => {
         if (!application || !user) return;
@@ -144,7 +118,8 @@ const ApplicationDetails: React.FC = () => {
                 baseProfile,
                 application.jobDescription,
                 application.githubProjects || [],
-                application.showMatchScore ?? true
+                application.showMatchScore ?? true,
+                1 // Target 1 page
             );
             const { application: regenerated, rawResponse } = result;
             setDebugResponse(rawResponse);
@@ -219,21 +194,12 @@ const ApplicationDetails: React.FC = () => {
 
                     {/* Action Buttons */}
                     <div className="flex bg-white rounded-lg shadow-sm w-full lg:w-auto">
-                        {(view === 'RESUME' || view === 'COVER_LETTER') && (
-                            <button
-                                onClick={handleCondense}
-                                disabled={isCondensing || isRegenerating}
-                                className="flex-1 lg:flex-none bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded-l flex items-center justify-center gap-2 hover:from-purple-600 hover:to-indigo-600 transition disabled:opacity-50"
-                            >
-                                {isCondensing ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
-                                Condense
-                            </button>
-                        )}
+
                         {(view === 'RESUME' || view === 'COVER_LETTER') && (
                             <button
                                 onClick={handleRegenerate}
-                                disabled={isRegenerating || isCondensing}
-                                className="flex-1 lg:flex-none bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 flex items-center justify-center gap-2 hover:from-amber-600 hover:to-orange-600 transition disabled:opacity-50"
+                                disabled={isRegenerating}
+                                className="flex-1 lg:flex-none bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-l flex items-center justify-center gap-2 hover:from-amber-600 hover:to-orange-600 transition disabled:opacity-50"
                             >
                                 {isRegenerating ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}
                                 Regenerate

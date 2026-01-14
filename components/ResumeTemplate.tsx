@@ -46,7 +46,19 @@ const ResumeTemplate: React.FC<Props> = ({ data, slug, companyName, onUpdate }) 
   const isEditable = !!onUpdate;
 
   return (
-    <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white p-8 md:p-12 shadow-2xl print:shadow-none print:p-0 text-gray-900 leading-relaxed" id="resume-preview">
+    <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white p-8 md:p-12 shadow-2xl print:shadow-none text-gray-900 leading-relaxed relative" id="resume-preview">
+      {/* Page Break Indicators (Visual Only) */}
+      <div className="absolute top-[297mm] left-0 right-0 border-b border-red-400 border-dashed pointer-events-none print:hidden z-10 opacity-60">
+        <span className="absolute right-[-140px] top-[-10px] w-[120px] text-right text-red-500 text-xs font-bold uppercase tracking-wider">
+          Page 1 End &darr;
+        </span>
+      </div>
+      <div className="absolute top-[594mm] left-0 right-0 border-b border-red-400 border-dashed pointer-events-none print:hidden z-10 opacity-60">
+        <span className="absolute right-[-140px] top-[-10px] w-[120px] text-right text-red-500 text-xs font-bold uppercase tracking-wider">
+          Page 2 End &darr;
+        </span>
+      </div>
+
       {/* Header */}
       <header className="border-b-2 border-gray-800 pb-6 mb-6">
         <h1 className="text-4xl font-serif font-bold uppercase tracking-wider mb-2">

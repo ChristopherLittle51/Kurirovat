@@ -35,7 +35,8 @@ export const tailorResume = async (
   baseProfile: UserProfile,
   jd: JobDescription,
   githubProjects: any[] = [],
-  includeScore: boolean = true
+  includeScore: boolean = true,
+  pageCount: number = 1
 ): Promise<{ application: Partial<TailoredApplication>, rawResponse: string }> => {
   try {
     const { data, error } = await supabase.functions.invoke('gemini-api', {
@@ -45,7 +46,8 @@ export const tailorResume = async (
           baseProfile,
           jd,
           githubProjects,
-          includeScore
+          includeScore,
+          targetPageCount: pageCount
         }
       }
     });

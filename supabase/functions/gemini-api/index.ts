@@ -251,9 +251,10 @@ async function handleTailorResume(ai: any, payload: {
     baseProfile: UserProfile,
     jd: JobDescription,
     githubProjects: any[],
-    includeScore: boolean
+    includeScore: boolean,
+    targetPageCount?: number
 }) {
-    const { baseProfile, jd, githubProjects = [], includeScore = true } = payload;
+    const { baseProfile, jd, githubProjects = [], includeScore = true, targetPageCount = 1 } = payload;
 
     console.log(`Starting research for ${jd.companyName}...`);
     const research = await researchCompany(ai, jd.companyName);
@@ -282,16 +283,17 @@ async function handleTailorResume(ai: any, payload: {
     ${research.summary}
 
     Requirements:
-    1. **Summary**: Rewrite as an "Elevator Pitch" aligning with the JD and Company Culture.
-    2. **Skills**: Select top 8-10 skills relevant to the JD.
+    1. **Summary**: Rewrite as an "Elevator Pitch" aligning with the JD and Company Culture (Max 3 lines).
+    2. **Skills**: Select top 6-8 skills relevant to the JD.
     3. **Experience**: 
-       - Select the TOP 5 most relevant roles for this job.
+       - Select the TOP ${targetPageCount === 1 ? '3-4' : '5'} most relevant roles for this job.
        - REORDER them to show the most relevant first.
-       - Rewrite bullets for these 5 roles to STAR method (max 4 bullets per role).
-       - Omit less relevant roles from the 'tailoredExperience' array to save space.
+       - Rewrite bullets for these roles to STAR method (max ${targetPageCount === 1 ? '3' : '4'} bullets per role).
+       - Omit less relevant roles to strictly fit within ${targetPageCount} page(s).
     4. **Cover Letter**: 3 paragraphs (Hook + Company alignment, Achievements, Call to Action), Do NOT include any greeting(Dear...) or sign - off(Sincerely...) - those are added separately.
     5. **Match Score**: ${includeScore ? '0-100 semantic match.' : 'Set to 0 (user opted out).'}
     6. **Keywords**: 5 critical hard keywords from JD.
+    7. **Length Constraint**: STRICTLY ensure the total content fits on ${targetPageCount} page(s). Be concise.
   `;
 
     try {
