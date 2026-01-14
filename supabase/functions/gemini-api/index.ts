@@ -1,6 +1,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GoogleGenAI, Type } from "npm:@google/genai";
+import pdf from "npm:pdf-parse@1.1.1";
+import { Buffer } from "node:buffer";
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -90,8 +92,27 @@ serve(async (req) => {
  */
 
 async function handleParseResume(ai: any, payload: { base64Pdf: string }) {
+    console.log("Extracting text from PDF...");
+    let pdfText = "";
+    try {
+        const pdfBuffer = Buffer.from(payload.base64Pdf, "base64");
+        const data = await pdf(pdfBuffer);
+        pdfText = data.text;
+    } catch (e) {
+        console.warn("PDF extraction failed, falling back to raw PDF analysis", e);
+        // Fallback or re-throw? 
+        // If extraction fails, we can't really do the text-only optimization. 
+        // We could try sending the image, but the user explicitly wants to avoid that.
+        // Let's throw for now as per the optimization goal, or handling it gracefully?
+        // Let's rethrow to be safe or improve error handling.
+        throw new Error("Failed to extract text from PDF: " + (e instanceof Error ? e.message : String(e)));
+    }
+
     const prompt = `
-    Analyze the attached resume PDF. Extract the data into a structured JSON format matching the schema.
+    Analyze the following resume text. Extract the data into a structured JSON format matching the schema.
+    
+    RESUME TEXT:
+    ${pdfText}
     
     Rules:
     1. Extract the full name, email, phone, and location.
@@ -102,23 +123,15 @@ async function handleParseResume(ai: any, payload: { base64Pdf: string }) {
     5. Extract education history.
     6. Extract social links (LinkedIn, Portfolio, etc) if present.
     7. If a field is not found, return an empty string or empty array as appropriate.
-    8. Do not hallucinate data. Only use what is visible in the document.
+    8. Do not hallucinate data. Only use what is provided in the text.
   `;
 
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: {
-                parts: [
-                    {
-                        inlineData: {
-                            mimeType: "application/pdf",
-                            data: payload.base64Pdf
-                        }
-                    },
-                    { text: prompt }
-                ]
-            },
+            contents: [
+                { text: prompt }
+            ],
             config: {
                 thinkingConfig: { thinkingBudget: 32768 },
                 responseMimeType: "application/json",

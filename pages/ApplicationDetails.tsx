@@ -293,12 +293,12 @@ const ApplicationDetails: React.FC = () => {
                             <div className="flex-1 bg-white ml-4 rounded px-3 py-1 text-xs text-gray-500 text-center font-mono flex items-center justify-between">
                                 <div className="w-4"></div> {/* Spacer */}
                                 <a
-                                    href={`${window.location.origin}/${application.slug || application.id}`}
+                                    href={`${window.location.origin}/p/${application.slug || application.id}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="hover:underline text-blue-600 flex items-center gap-1 truncate max-w-[200px] sm:max-w-none"
                                 >
-                                    <span className="truncate">{window.location.host}/{application.slug || '...'}</span> <Globe size={12} className="shrink-0" />
+                                    <span className="truncate">{window.location.host}/p/{application.slug || '...'}</span> <Globe size={12} className="shrink-0" />
                                 </a>
                                 <div className="flex gap-2"></div>
                             </div>
