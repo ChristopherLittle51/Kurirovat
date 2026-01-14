@@ -3,27 +3,47 @@ import { supabase } from './supabaseClient';
 import { UserProfile, JobDescription, TailoredApplication } from '../types';
 
 /**
+ * Helper to invoke the 'gemini-api' Edge Function with explicit Auth headers.
+ * This ensures the session token is passed correctly to avoid 401 errors.
+ */
+const callGeminiFunction = async (action: string, payload: any) => {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  // Explicitly attach the session token if available
+  const headers = session?.access_token
+    ? { Authorization: `Bearer ${session.access_token}` }
+    : undefined;
+
+  const { data, error } = await supabase.functions.invoke('gemini-api', {
+    body: { action, payload },
+    headers
+  });
+
+  if (error) {
+    // Enhanced error logging
+    console.error(`Edge Function Error (${action}):`, error);
+    if (error instanceof Error) {
+      console.error("Error Details:", error.message, error.stack);
+    }
+    // Check if it's a 401 specifically
+    if (typeof error === 'object' && error !== null && 'status' in error && (error as any).status === 401) {
+      throw new Error(`Authentication failed (401). Please try logging out and back in.`);
+    }
+    throw new Error(`Failed to execute ${action} via backend: ${error.message || 'Unknown error'}`);
+  }
+
+  return data;
+};
+
+/**
  * Extracts structured profile data from a PDF Resume using the 'gemini-api' Edge Function.
  */
 export const parseResumeFromPdf = async (base64Pdf: string): Promise<UserProfile> => {
   try {
-    const { data, error } = await supabase.functions.invoke('gemini-api', {
-      body: {
-        action: 'parseResume',
-        payload: { base64Pdf }
-      }
-    });
-
-    if (error) {
-      console.error("Edge Function Error (parseResume):", error);
-      throw new Error("Failed to parse PDF via backend.");
-    }
-
-    return data as UserProfile;
-
-  } catch (error) {
+    return await callGeminiFunction('parseResume', { base64Pdf });
+  } catch (error: any) {
     console.error("Gemini PDF Parse Error:", error);
-    throw new Error("Failed to parse PDF. Ensure the file is a readable PDF.");
+    throw new Error(error.message || "Failed to parse PDF. Ensure the file is a readable PDF.");
   }
 };
 
@@ -39,29 +59,16 @@ export const tailorResume = async (
   pageCount: number = 1
 ): Promise<{ application: Partial<TailoredApplication>, rawResponse: string }> => {
   try {
-    const { data, error } = await supabase.functions.invoke('gemini-api', {
-      body: {
-        action: 'tailorResume',
-        payload: {
-          baseProfile,
-          jd,
-          githubProjects,
-          includeScore,
-          targetPageCount: pageCount
-        }
-      }
+    return await callGeminiFunction('tailorResume', {
+      baseProfile,
+      jd,
+      githubProjects,
+      includeScore,
+      targetPageCount: pageCount
     });
-
-    if (error) {
-      console.error("Edge Function Error (tailorResume):", error);
-      throw new Error("Failed to generate tailored resume via backend.");
-    }
-
-    return data;
-
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini API Error:", error);
-    throw new Error("Failed to generate tailored resume. Please check your connection.");
+    throw new Error(error.message || "Failed to generate tailored resume. Please check your connection.");
   }
 };
 
@@ -71,23 +78,10 @@ export const tailorResume = async (
  */
 export const condenseResume = async (profile: UserProfile): Promise<{ profile: UserProfile, rawResponse: string }> => {
   try {
-    const { data, error } = await supabase.functions.invoke('gemini-api', {
-      body: {
-        action: 'condenseResume',
-        payload: { profile }
-      }
-    });
-
-    if (error) {
-      console.error("Edge Function Error (condenseResume):", error);
-      throw new Error("Failed to condense resume via backend.");
-    }
-
-    return data;
-
-  } catch (error) {
+    return await callGeminiFunction('condenseResume', { profile });
+  } catch (error: any) {
     console.error("Condense Resume Error:", error);
-    throw new Error("Failed to condense resume. Please try again.");
+    throw new Error(error.message || "Failed to condense resume. Please try again.");
   }
 };
 
@@ -101,22 +95,13 @@ export const condenseCoverLetter = async (
   companyName: string
 ): Promise<{ content: string, rawResponse: string }> => {
   try {
-    const { data, error } = await supabase.functions.invoke('gemini-api', {
-      body: {
-        action: 'condenseCoverLetter',
-        payload: { content, candidateName, companyName }
-      }
+    return await callGeminiFunction('condenseCoverLetter', {
+      content,
+      candidateName,
+      companyName
     });
-
-    if (error) {
-      console.error("Edge Function Error (condenseCoverLetter):", error);
-      throw new Error("Failed to condense cover letter via backend.");
-    }
-
-    return data;
-
-  } catch (error) {
+  } catch (error: any) {
     console.error("Condense Cover Letter Error:", error);
-    throw new Error("Failed to condense cover letter. Please try again.");
+    throw new Error(error.message || "Failed to condense cover letter. Please try again.");
   }
 };
