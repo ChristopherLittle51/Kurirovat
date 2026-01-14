@@ -7,7 +7,9 @@ import { useAuth } from '../contexts/AuthContext';
 import ResumeTemplate from '../components/ResumeTemplate';
 import PortfolioPreview from '../components/PortfolioPreview';
 import CoverLetterTemplate from '../components/CoverLetterTemplate';
-import { FileText, Globe, Printer, ChevronLeft, Loader2, Save, Mail, RefreshCw } from 'lucide-react';
+import ResumePDF from '../components/ResumePDF';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { FileText, Globe, Download, ChevronLeft, Loader2, Save, Mail, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 const STATUS_COLORS: Record<ApplicationStatus, string> = {
     'Pending': 'bg-gray-100 text-gray-800',
@@ -45,6 +47,17 @@ const ApplicationDetails: React.FC = () => {
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [hasUnsavedChanges]);
+
+    // Auto-save logic
+    useEffect(() => {
+        if (!hasUnsavedChanges || isSaving || !application) return;
+
+        const timeoutId = setTimeout(() => {
+            handleSaveChanges();
+        }, 2000);
+
+        return () => clearTimeout(timeoutId);
+    }, [application, hasUnsavedChanges]); // Dependencies allow debounce on application change
 
     const loadApplication = async () => {
         if (!user) return;
@@ -141,9 +154,8 @@ const ApplicationDetails: React.FC = () => {
         }
     };
 
-    const handlePrint = () => {
-        window.print();
-    };
+    // handlePrint removed in favor of PDFDownloadLink
+
 
     if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
     if (!application) return <div className="p-8 text-center">Application not found</div>;
@@ -213,18 +225,39 @@ const ApplicationDetails: React.FC = () => {
                                 ${view === 'PORTFOLIO' ? 'rounded-l' : ''}
                                 ${hasUnsavedChanges
                                     ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'}
+                                    : 'bg-gray-100 text-gray-500'}
                             `}
                         >
-                            {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                            Save
+                            {isSaving ? <Loader2 className="animate-spin" size={16} /> : hasUnsavedChanges ? <Save size={16} /> : <CheckCircle2 size={16} />}
+                            {isSaving ? 'Saving...' : hasUnsavedChanges ? 'Save' : 'Saved'}
                         </button>
-                        <button
-                            onClick={handlePrint}
-                            className="flex-1 lg:flex-none bg-gray-900 text-white px-4 py-2 rounded-r flex items-center justify-center gap-2 hover:bg-gray-700 border-l border-gray-700"
-                        >
-                            <Printer size={16} /> Print
-                        </button>
+
+                        {view === 'RESUME' && application && (
+                            <PDFDownloadLink
+                                document={<ResumePDF data={application.resume} slug={application.slug} />}
+                                fileName={`${application.resume.fullName.replace(/\s+/g, '_')}_Resume.pdf`}
+                                className="flex-1 lg:flex-none bg-gray-900 text-white px-4 py-2 rounded-r flex items-center justify-center gap-2 hover:bg-gray-700 border-l border-gray-700 decoration-0"
+                            >
+                                {/* @ts-ignore - loading comes from inside the render prop but TS might complain about children content */}
+                                {({ loading: pdfLoading }) => (
+                                    <>
+                                        {pdfLoading ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
+                                        {pdfLoading ? 'Preparing...' : 'Download PDF'}
+                                    </>
+                                )}
+                            </PDFDownloadLink>
+                        )}
+                        {view !== 'RESUME' && (
+                            <button
+                                onClick={() => window.print()}
+                                className="flex-1 lg:flex-none bg-gray-900 text-white px-4 py-2 rounded-r flex items-center justify-center gap-2 hover:bg-gray-700 border-l border-gray-700"
+                            >
+                                <div className="flex gap-2 items-center">
+                                    <Download size={16} />
+                                    <span>Print</span>
+                                </div>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

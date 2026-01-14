@@ -43,6 +43,45 @@ const ResumeTemplate: React.FC<Props> = ({ data, slug, companyName, onUpdate }) 
     handleUpdate('experience', newExp);
   };
 
+
+
+  const handleOtherExperienceUpdate = (id: string, field: keyof Experience, value: any) => {
+    const newExp = (localData.otherExperience || []).map(exp =>
+      exp.id === id ? { ...exp, [field]: value } : exp
+    );
+    handleUpdate('otherExperience', newExp);
+  };
+
+  const handleOtherExperienceDescUpdate = (id: string, index: number, value: string) => {
+    const newExp = (localData.otherExperience || []).map(exp => {
+      if (exp.id === id) {
+        const newDesc = [...(exp.description || [])];
+        newDesc[index] = value;
+        return { ...exp, description: newDesc };
+      }
+      return exp;
+    });
+    handleUpdate('otherExperience', newExp);
+  };
+
+  const handleAddExperience = (type: 'experience' | 'otherExperience') => {
+    const newItem: Experience = {
+      id: crypto.randomUUID(),
+      role: 'Role Title',
+      company: 'Company Name',
+      startDate: 'YYYY',
+      endDate: 'Present',
+      description: ['Description bullet point']
+    };
+    const currentList = localData[type] || [];
+    handleUpdate(type, [...currentList, newItem]);
+  };
+
+  const handleRemoveExperience = (type: 'experience' | 'otherExperience', id: string) => {
+    const currentList = localData[type] || [];
+    handleUpdate(type, currentList.filter(item => item.id !== id));
+  };
+
   const isEditable = !!onUpdate;
 
   return (
@@ -60,49 +99,59 @@ const ResumeTemplate: React.FC<Props> = ({ data, slug, companyName, onUpdate }) 
       </div>
 
       {/* Header */}
-      <header className="border-b-2 border-gray-800 pb-6 mb-6">
-        <h1 className="text-4xl font-serif font-bold uppercase tracking-wider mb-2">
+      <header className="border-b-[1.5px] border-gray-800 pb-4 mb-4">
+        <h1 className="text-3xl font-serif font-bold uppercase tracking-wider mb-2">
           {isEditable ?
             <InlineEdit value={localData.fullName} onChange={(v) => handleUpdate('fullName', v)} /> :
             localData.fullName}
         </h1>
-        <div className="flex flex-wrap gap-4 text-sm text-gray-600 mt-3">
-          {portfolioUrl && (
-            <div className="flex items-center gap-1">
-              <Globe size={14} />
-              <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="hover:underline font-medium text-blue-600">
-                Online Portfolio
-              </a>
-            </div>
-          )}
-          {localData.email && (
-            <div className="flex items-center gap-1">
-              <Mail size={14} />
-              <span>
-                {isEditable ? <InlineEdit value={localData.email} onChange={(v) => handleUpdate('email', v)} /> : localData.email}
-              </span>
-            </div>
-          )}
-          {localData.phone && (
-            <div className="flex items-center gap-1">
-              <Phone size={14} />
-              <span>
-                {isEditable ? <InlineEdit value={localData.phone} onChange={(v) => handleUpdate('phone', v)} /> : localData.phone}
-              </span>
-            </div>
-          )}
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-600 mt-2 items-center">
           {localData.location && (
             <div className="flex items-center gap-1">
-              <MapPin size={14} />
+              {/* <MapPin size={14} /> */}
               <span>
                 {isEditable ? <InlineEdit value={localData.location} onChange={(v) => handleUpdate('location', v)} /> : localData.location}
               </span>
             </div>
           )}
+
+          {localData.email && (
+            <div className="flex items-center gap-1">
+              {localData.location && <span className="text-gray-400">•</span>}
+              {/* <Mail size={14} /> */}
+              <span>
+                {isEditable ? <InlineEdit value={localData.email} onChange={(v) => handleUpdate('email', v)} /> : localData.email}
+              </span>
+            </div>
+          )}
+
+          {localData.phone && (
+            <div className="flex items-center gap-1">
+              {(localData.location || localData.email) && <span className="text-gray-400">•</span>}
+              {/* <Phone size={14} /> */}
+              <span>
+                {isEditable ? <InlineEdit value={localData.phone} onChange={(v) => handleUpdate('phone', v)} /> : localData.phone}
+              </span>
+            </div>
+          )}
+
+          {portfolioUrl && (
+            <div className="flex items-center gap-1">
+              {(localData.location || localData.email || localData.phone) && <span className="text-gray-400">•</span>}
+              {/* <Globe size={14} /> */}
+              <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="hover:underline font-medium text-blue-600">
+                {portfolioUrl.replace(/^https?:\/\//, '')}
+              </a>
+            </div>
+          )}
+
           {localData.links.map((link, idx) => (
             <div key={idx} className="flex items-center gap-1">
-              <Globe size={14} />
-              <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:underline">{link.platform}</a>
+              <span className="text-gray-400">•</span>
+              {/* <Globe size={14} /> */}
+              <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-600">
+                {link.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+              </a>
             </div>
           ))}
         </div>
@@ -177,6 +226,75 @@ const ResumeTemplate: React.FC<Props> = ({ data, slug, companyName, onUpdate }) 
                 </ul>
               </div>
             ))}
+            {isEditable && (
+              <button
+                onClick={() => handleAddExperience('experience')}
+                className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-2 rounded-md transition-colors print:hidden w-full justify-center border border-dashed border-blue-300 hover:border-blue-500"
+              >
+                <Plus size={16} /> Add Professional Experience
+              </button>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Other Experience */}
+      {(isEditable || (localData.otherExperience && localData.otherExperience.length > 0)) && (
+        <section className="mb-4">
+          <h2 className="text-sm font-bold uppercase tracking-widest border-b border-gray-300 mb-2 pb-1">Other Experience</h2>
+          <div className="space-y-3">
+            {(localData.otherExperience || []).map((exp) => (
+              <div key={exp.id} className="relative group">
+                {isEditable && (
+                  <button
+                    onClick={() => handleRemoveExperience('otherExperience', exp.id!)}
+                    className="absolute -right-2 -top-2 p-1.5 bg-white text-red-500 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity border border-gray-100 hover:bg-red-50 z-10 print:hidden"
+                    title="Remove item"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+                <div className="flex flex-col md:flex-row md:justify-between md:items-baseline mb-0.5">
+                  <h3 className="font-bold text-base">
+                    {isEditable ? <InlineEdit value={exp.role} onChange={(v) => handleOtherExperienceUpdate(exp.id!, 'role', v)} className="font-bold" /> : exp.role}
+                  </h3>
+                  <div className="text-sm text-gray-600 font-medium whitespace-nowrap flex gap-1">
+                    {isEditable ? (
+                      <>
+                        <InlineEdit value={exp.startDate} onChange={(v) => handleOtherExperienceUpdate(exp.id!, 'startDate', v)} />
+                        <span>–</span>
+                        <InlineEdit value={exp.endDate} onChange={(v) => handleOtherExperienceUpdate(exp.id!, 'endDate', v)} />
+                      </>
+                    ) : (
+                      <>{exp.startDate} – {exp.endDate}</>
+                    )}
+                  </div>
+                </div>
+                <div className="text-sm font-semibold text-gray-700 mb-1">
+                  {isEditable ? <InlineEdit value={exp.company} onChange={(v) => handleOtherExperienceUpdate(exp.id!, 'company', v)} /> : exp.company}
+                </div>
+                {/* Optional description for other experience, usually kept brief or omitted */}
+                {exp.description && exp.description.length > 0 && (
+                  <ul className="list-disc list-outside ml-4 space-y-0.5 text-sm text-gray-700">
+                    {(exp.description || []).map((point, idx) => (
+                      <li key={idx} className="pl-1">
+                        {isEditable ?
+                          <InlineEdit value={point} onChange={(v) => handleOtherExperienceDescUpdate(exp.id!, idx, v)} multiline /> :
+                          point}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+            {isEditable && (
+              <button
+                onClick={() => handleAddExperience('otherExperience')}
+                className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-2 rounded-md transition-colors print:hidden w-full justify-center border border-dashed border-blue-300 hover:border-blue-500"
+              >
+                <Plus size={16} /> Add Other Experience
+              </button>
+            )}
           </div>
         </section>
       )}

@@ -39,6 +39,7 @@ export interface UserProfile {
   education: Education[];
   links: SocialLink[];
   githubUsername?: string;
+  otherExperience?: Experience[];
 }
 
 export interface JobDescription {
