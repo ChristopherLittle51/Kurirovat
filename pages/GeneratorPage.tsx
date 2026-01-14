@@ -42,18 +42,19 @@ const GeneratorPage: React.FC = () => {
             }
 
             const result = await GeminiService.tailorResume(profile, jd, projects, showScore);
+            const { application } = result;
 
             const newApp: TailoredApplication = {
                 id: '', // Handled by DB
                 createdAt: Date.now(),
                 jobDescription: jd,
-                resume: result.resume!,
-                coverLetter: result.coverLetter || '',
-                matchScore: result.matchScore || 0,
-                keyKeywords: result.keyKeywords || [],
-                searchSources: result.searchSources || [],
-                githubProjects: result.githubProjects,
-                showMatchScore: result.showMatchScore
+                resume: application.resume!,
+                coverLetter: application.coverLetter || '',
+                matchScore: application.matchScore || 0,
+                keyKeywords: application.keyKeywords || [],
+                searchSources: application.searchSources || [],
+                githubProjects: application.githubProjects,
+                showMatchScore: application.showMatchScore
             };
 
             await SupabaseService.saveApplication(user.id, newApp);

@@ -25,6 +25,7 @@ export const getProfile = async (userId: string): Promise<UserProfile | null> =>
         experience: data.experience || [],
         education: data.education || [],
         links: data.links || [], // Assuming links is SocialLink[] stored as JSONB
+        githubUsername: data.github_username,
     };
 };
 
@@ -42,6 +43,7 @@ export const saveProfile = async (userId: string, profile: UserProfile): Promise
             experience: profile.experience,
             education: profile.education,
             links: profile.links,
+            github_username: profile.githubUsername,
             updated_at: new Date().toISOString(),
         });
 

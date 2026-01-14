@@ -2,11 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { TailoredApplication, ApplicationStatus, UserProfile } from '../types';
 import * as SupabaseService from '../services/supabaseService';
+import { condenseResume, condenseCoverLetter, tailorResume } from '../services/geminiService';
 import { useAuth } from '../contexts/AuthContext';
 import ResumeTemplate from '../components/ResumeTemplate';
 import PortfolioPreview from '../components/PortfolioPreview';
 import CoverLetterTemplate from '../components/CoverLetterTemplate';
-import { FileText, Globe, Printer, ChevronLeft, Loader2, Save, Mail } from 'lucide-react';
+import { FileText, Globe, Printer, ChevronLeft, Loader2, Save, Mail, Sparkles, RefreshCw } from 'lucide-react';
 
 const STATUS_COLORS: Record<ApplicationStatus, string> = {
     'Pending': 'bg-gray-100 text-gray-800',
@@ -24,6 +25,9 @@ const ApplicationDetails: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isCondensing, setIsCondensing] = useState(false);
+    const [isRegenerating, setIsRegenerating] = useState(false);
+    const [debugResponse, setDebugResponse] = useState<string | null>(null);
 
     useEffect(() => {
         if (user && id) {
@@ -97,6 +101,71 @@ const ApplicationDetails: React.FC = () => {
         setHasUnsavedChanges(true);
     }, [application]);
 
+    const handleCondense = async () => {
+        if (!application) return;
+        setIsCondensing(true);
+        try {
+            if (view === 'RESUME') {
+                const result = await condenseResume(application.resume);
+                setApplication(prev => prev ? ({ ...prev, resume: result.profile }) : null);
+                setDebugResponse(result.rawResponse);
+                setHasUnsavedChanges(true);
+            } else if (view === 'COVER_LETTER') {
+                const result = await condenseCoverLetter(
+                    application.coverLetter,
+                    application.resume.fullName,
+                    application.jobDescription.companyName
+                );
+                setApplication(prev => prev ? ({ ...prev, coverLetter: result.content }) : null);
+                setDebugResponse(result.rawResponse);
+                setHasUnsavedChanges(true);
+            }
+        } catch (error) {
+            console.error('Condense error:', error);
+            alert('Failed to condense. Please try again.');
+        } finally {
+            setIsCondensing(false);
+        }
+    };
+
+    const handleRegenerate = async () => {
+        if (!application || !user) return;
+        setIsRegenerating(true);
+        try {
+            // Get the base profile to regenerate from
+            const baseProfile = await SupabaseService.getProfile(user.id);
+            if (!baseProfile) {
+                throw new Error('Could not load base profile');
+            }
+
+            // Regenerate the tailored content
+            // Regenerate the tailored content
+            const result = await tailorResume(
+                baseProfile,
+                application.jobDescription,
+                application.githubProjects || [],
+                application.showMatchScore ?? true
+            );
+            const { application: regenerated, rawResponse } = result;
+            setDebugResponse(rawResponse);
+
+            // Update the application with regenerated content
+            setApplication(prev => prev ? ({
+                ...prev,
+                resume: regenerated.resume || prev.resume,
+                coverLetter: regenerated.coverLetter || prev.coverLetter,
+                matchScore: regenerated.matchScore ?? prev.matchScore,
+                keyKeywords: regenerated.keyKeywords || prev.keyKeywords,
+            }) : null);
+            setHasUnsavedChanges(true);
+        } catch (error) {
+            console.error('Regenerate error:', error);
+            alert('Failed to regenerate. Please try again.');
+        } finally {
+            setIsRegenerating(false);
+        }
+    };
+
     const handlePrint = () => {
         window.print();
     };
@@ -150,11 +219,32 @@ const ApplicationDetails: React.FC = () => {
 
                     {/* Action Buttons */}
                     <div className="flex bg-white rounded-lg shadow-sm w-full lg:w-auto">
+                        {(view === 'RESUME' || view === 'COVER_LETTER') && (
+                            <button
+                                onClick={handleCondense}
+                                disabled={isCondensing || isRegenerating}
+                                className="flex-1 lg:flex-none bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded-l flex items-center justify-center gap-2 hover:from-purple-600 hover:to-indigo-600 transition disabled:opacity-50"
+                            >
+                                {isCondensing ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
+                                Condense
+                            </button>
+                        )}
+                        {(view === 'RESUME' || view === 'COVER_LETTER') && (
+                            <button
+                                onClick={handleRegenerate}
+                                disabled={isRegenerating || isCondensing}
+                                className="flex-1 lg:flex-none bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 flex items-center justify-center gap-2 hover:from-amber-600 hover:to-orange-600 transition disabled:opacity-50"
+                            >
+                                {isRegenerating ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}
+                                Regenerate
+                            </button>
+                        )}
                         <button
                             onClick={handleSaveChanges}
                             disabled={!hasUnsavedChanges || isSaving}
                             className={`
-                                flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-l text-sm font-medium transition
+                                flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium transition
+                                ${view === 'PORTFOLIO' ? 'rounded-l' : ''}
                                 ${hasUnsavedChanges
                                     ? 'bg-blue-600 text-white hover:bg-blue-700'
                                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'}
@@ -220,7 +310,33 @@ const ApplicationDetails: React.FC = () => {
                     </div>
                 )}
             </div>
-        </div>
+
+
+            {/* Debug View */}
+            {/* {
+                debugResponse && (
+                    <div className="mt-8 p-4 bg-gray-900 rounded-lg shadow-lg overflow-hidden">
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-white font-mono text-sm font-bold flex items-center gap-2">
+                                <Sparkles size={14} className="text-yellow-400" />
+                                Gemini Raw Response
+                            </h3>
+                            <button
+                                onClick={() => setDebugResponse(null)}
+                                className="text-gray-400 hover:text-white text-xs hover:underline"
+                            >
+                                Close
+                            </button>
+                        </div>
+                        <div className="bg-black rounded p-4 overflow-x-auto">
+                            <pre className="text-green-400 font-mono text-xs whitespace-pre-wrap break-all">
+                                {debugResponse}
+                            </pre>
+                        </div>
+                    </div>
+                )
+            } */}
+        </div >
     );
 };
 

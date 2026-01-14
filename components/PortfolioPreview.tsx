@@ -82,15 +82,15 @@ const PortfolioPreview: React.FC<Props> = ({ application, onUpdate }) => {
                     rel="noopener noreferrer"
                     className="block p-5 rounded-lg border border-gray-100 hover:border-blue-300 hover:bg-blue-50 transition-colors group"
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-bold text-gray-800 group-hover:text-blue-600 transition-colors">{project.name}</h3>
+                    <div className="flex justify-between items-start mb-2 gap-2">
+                      <h3 className="font-bold text-gray-800 group-hover:text-blue-600 transition-colors break-words">{project.name}</h3>
                       {project.language && (
-                        <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                        <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-1 rounded-full shrink-0">
                           {project.language}
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 line-clamp-3 mb-3 h-140">
+                    <p className="text-sm text-gray-600 line-clamp-3 mb-3 min-h-[3rem]">
                       {project.description || "No description provided."}
                     </p>
                     <div className="flex items-center text-xs text-gray-500 gap-1 pb-1">
@@ -160,7 +160,7 @@ const PortfolioPreview: React.FC<Props> = ({ application, onUpdate }) => {
                 </div>
               </div>
               <p className="text-xs text-gray-400 mt-4 px-4 leading-relaxed">
-                AI-estimated match based on job description analysis.
+                Estimated match based on job description analysis.
               </p>
             </div>
           )}
@@ -179,7 +179,7 @@ const PortfolioPreview: React.FC<Props> = ({ application, onUpdate }) => {
           </div>
 
           {/* Research Sources */}
-          {searchSources && searchSources.length > 0 && (
+          {/* {searchSources && searchSources.length > 0 && (
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 transition-all hover:shadow-md">
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Search size={14} /> Market Research
@@ -202,7 +202,7 @@ const PortfolioPreview: React.FC<Props> = ({ application, onUpdate }) => {
                 ))}
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Contact */}
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-6 rounded-xl shadow-lg text-white">
