@@ -29,6 +29,7 @@ export const getProfile = async (userId: string): Promise<UserProfile | null> =>
         otherExperience: data.other_experience || [],
         portfolioTemplate: data.portfolio_template,
         portfolioTheme: data.portfolio_theme,
+        profilePhotoUrl: data.profile_photo_url,
     };
 };
 
@@ -50,6 +51,7 @@ export const saveProfile = async (userId: string, profile: UserProfile): Promise
             other_experience: profile.otherExperience,
             portfolio_template: profile.portfolioTemplate,
             portfolio_theme: profile.portfolioTheme,
+            profile_photo_url: profile.profilePhotoUrl,
             updated_at: new Date().toISOString(),
         });
 
@@ -111,6 +113,7 @@ export const saveApplication = async (userId: string, application: TailoredAppli
             status: application.status || 'Pending',
             github_projects: application.githubProjects,
             show_match_score: application.showMatchScore,
+            profile_photo_url: application.profilePhotoUrl,
             template: application.template,
             portfolio_theme: application.portfolioTheme
         });
@@ -129,6 +132,7 @@ export const updateApplication = async (appId: string, updates: Partial<Tailored
     if (updates.status) updatePayload.status = updates.status;
     if (updates.template) updatePayload.template = updates.template;
     if (updates.portfolioTheme) updatePayload.portfolio_theme = updates.portfolioTheme;
+    if (updates.profilePhotoUrl) updatePayload.profile_photo_url = updates.profilePhotoUrl;
     // Add other fields as necessary, but these are the main editable ones
 
     if (Object.keys(updatePayload).length === 0) return;
@@ -179,6 +183,7 @@ export const getApplicationBySlug = async (slug: string): Promise<TailoredApplic
         showMatchScore: data.show_match_score,
         template: data.template,
         portfolioTheme: data.portfolio_theme,
+        profilePhotoUrl: data.profile_photo_url,
     };
 }
 

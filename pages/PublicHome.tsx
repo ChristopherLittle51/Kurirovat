@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { UserProfile } from '../types';
 import { supabase } from '../services/supabaseClient';
-import { TemplateId } from '../components/templates';
-import ModernMinimal from '../components/templates/ModernMinimal';
-import ProfessionalClassic from '../components/templates/ProfessionalClassic';
-import CreativeBold from '../components/templates/CreativeBold';
-import TechFocused from '../components/templates/TechFocused';
 import Navbar from '../components/Navbar';
 import { Loader2, User } from 'lucide-react';
-import PortfolioShell from '../components/portfolio/PortfolioShell';
+import { WEB_THEMES, WebThemeId } from '../components/portfolio/web-themes';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import {
+    ModernMinimalPDF,
+    ProfessionalClassicPDF,
+    CreativeBoldPDF,
+    TechFocusedPDF,
+    TemplateId
+} from '../components/templates';
 
 /**
- * Public Home Page - Shows the user's portfolio using their selected template.
+ * Public Home Page - Shows the user's portfolio using their selected theme.
  * This is the public-facing page at the root URL.
  */
 const PublicHome: React.FC = () => {
@@ -56,7 +59,9 @@ const PublicHome: React.FC = () => {
                 links: data.links || [],
                 githubUsername: data.github_username,
                 otherExperience: data.other_experience || [],
-                portfolioTemplate: data.portfolio_template || 'modern-minimal',
+                portfolioTemplate: data.portfolio_template,
+                portfolioTheme: data.portfolio_theme || 'modern-minimal',
+                profilePhotoUrl: data.profile_photo_url,
             };
 
             setProfile(userProfile);
@@ -68,25 +73,50 @@ const PublicHome: React.FC = () => {
         }
     };
 
-    // Render the selected template
-    const renderTemplate = () => {
+    // Helper to get PDF component
+    const getPDFDocument = () => {
         if (!profile) return null;
-
         const templateId = (profile.portfolioTemplate || 'modern-minimal') as TemplateId;
         const props = { data: profile };
 
         switch (templateId) {
-            case 'modern-minimal':
-                return <ModernMinimal {...props} />;
-            case 'professional-classic':
-                return <ProfessionalClassic {...props} />;
-            case 'creative-bold':
-                return <CreativeBold {...props} />;
-            case 'tech-focused':
-                return <TechFocused {...props} />;
-            default:
-                return <ModernMinimal {...props} />;
+            case 'modern-minimal': return <ModernMinimalPDF {...props} />;
+            case 'professional-classic': return <ProfessionalClassicPDF {...props} />;
+            case 'creative-bold': return <CreativeBoldPDF {...props} />;
+            case 'tech-focused': return <TechFocusedPDF {...props} />;
+            default: return <ModernMinimalPDF {...props} />;
         }
+    };
+
+    // Render the selected theme
+    const renderTheme = () => {
+        if (!profile) return null;
+
+        const themeId = (profile.portfolioTheme || 'modern-minimal') as WebThemeId;
+        const ThemeComponent = WEB_THEMES[themeId] || WEB_THEMES['modern-minimal'];
+
+        return (
+            <div className="relative">
+                {/* PDF Download Portal - invisible link triggered by theme */}
+                <div className="hidden">
+                    <PDFDownloadLink
+                        id="resume-download-link"
+                        document={getPDFDocument()!}
+                        fileName={`${profile.fullName.replace(/\s+/g, '_')}_Resume.pdf`}
+                    >
+                        {({ loading }) => loading ? '...' : 'Download'}
+                    </PDFDownloadLink>
+                </div>
+
+                <ThemeComponent
+                    data={profile}
+                    onDownloadResume={() => {
+                        const link = document.getElementById('resume-download-link');
+                        if (link) link.click();
+                    }}
+                />
+            </div>
+        );
     };
 
     if (loading) {
@@ -122,10 +152,7 @@ const PublicHome: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
-            <Navbar variant="public" />
-            <PortfolioShell data={profile}>
-                {renderTemplate()}
-            </PortfolioShell>
+            {renderTheme()}
         </div>
     );
 };

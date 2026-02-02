@@ -42,6 +42,7 @@ export interface UserProfile {
   otherExperience?: Experience[];
   portfolioTemplate?: string; // Template ID for Resume/PDF rendering
   portfolioTheme?: string;    // Theme ID for public-facing portfolio website
+  profilePhotoUrl?: string;   // URL to profile photo in Supabase Storage
 }
 
 export interface JobDescription {
@@ -72,6 +73,7 @@ export interface TailoredApplication {
   showMatchScore?: boolean;
   template?: string; // Template ID for resume rendering
   portfolioTheme?: string; // Theme ID for portfolio rendering
+  profilePhotoUrl?: string; // URL to profile photo
 }
 
 export type ViewState =

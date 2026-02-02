@@ -1,6 +1,7 @@
 import React from 'react';
 import { UserProfile, SocialLink } from '../../types';
 import { Github, Linkedin, Mail, MapPin, Phone, ExternalLink } from 'lucide-react';
+import { ensureAbsoluteUrl } from '../../services/urlUtils';
 
 interface PortfolioShellProps {
     data: UserProfile;
@@ -58,7 +59,7 @@ const PortfolioShell: React.FC<PortfolioShellProps> = ({ data, children }) => {
                                     return (
                                         <a
                                             key={idx}
-                                            href={link.url}
+                                            href={ensureAbsoluteUrl(link.url)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="p-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl hover:scale-110 active:scale-95 transition"

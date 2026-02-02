@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, Experience, Education } from '../types';
 import { Plus, Trash2, ChevronRight, Check, UploadCloud, Loader2, FileText, Save } from 'lucide-react';
 import { parseResumeFromPdf } from '../services/geminiService';
+import PhotoUpload from './PhotoUpload';
 
 interface Props {
   onComplete: (profile: UserProfile) => void;
@@ -229,6 +230,14 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
               <p className="text-sm text-blue-700 dark:text-blue-400 transition-colors">Ensure your contact info is up to date.</p>
             </div>
           </div>
+
+          <div className="flex flex-col items-center mb-6">
+            <PhotoUpload
+              initialUrl={profile.profilePhotoUrl}
+              onUploadComplete={(url) => setProfile({ ...profile, profilePhotoUrl: url })}
+            />
+          </div>
+
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white transition-colors">Contact Details</h2>
           <input className="w-full border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="Full Name" value={profile.fullName} onChange={e => setProfile({ ...profile, fullName: e.target.value })} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

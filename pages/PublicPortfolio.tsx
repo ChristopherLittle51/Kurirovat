@@ -5,8 +5,9 @@ import * as SupabaseService from '../services/supabaseService';
 import PortfolioPreview from '../components/PortfolioPreview';
 import Navbar from '../components/Navbar';
 import { Loader2 } from 'lucide-react';
-import { TemplateId } from '../components/templates';
-import PortfolioShell from '../components/portfolio/PortfolioShell';
+import { TemplateId, ModernMinimalPDF, ProfessionalClassicPDF, CreativeBoldPDF, TechFocusedPDF } from '../components/templates';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { WebThemeId } from '../components/portfolio/web-themes';
 
 const PublicPortfolio: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -50,18 +51,48 @@ const PublicPortfolio: React.FC = () => {
         );
     }
 
-    // Use the application's saved template, or default to modern-minimal
+    // Helper to get PDF component
+    const getPDFDocument = () => {
+        if (!application) return null;
+        const templateId = (application.template as TemplateId) || 'modern-minimal';
+        const props = { data: application.resume };
+
+        switch (templateId) {
+            case 'modern-minimal': return <ModernMinimalPDF {...props} />;
+            case 'professional-classic': return <ProfessionalClassicPDF {...props} />;
+            case 'creative-bold': return <CreativeBoldPDF {...props} />;
+            case 'tech-focused': return <TechFocusedPDF {...props} />;
+            default: return <ModernMinimalPDF {...props} />;
+        }
+    };
+
+    // Use the application's saved template/theme, or default to modern-minimal
     const template = (application.template as TemplateId) || 'modern-minimal';
+    const theme = (application.portfolioTheme as WebThemeId) || 'modern-minimal';
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
-            <Navbar variant="public" />
-            <PortfolioShell data={application.resume}>
-                <PortfolioPreview
-                    application={application}
-                    template={template}
-                />
-            </PortfolioShell>
+
+            <div className="hidden">
+                <PDFDownloadLink
+                    id="resume-download-link"
+                    document={getPDFDocument()!}
+                    fileName={`${application.resume.fullName.replace(/\s+/g, '_')}_Resume.pdf`}
+                >
+                    {({ loading }) => loading ? '...' : 'Download'}
+                </PDFDownloadLink>
+            </div>
+
+            <PortfolioPreview
+                application={application}
+                template={template}
+                theme={theme}
+                type="web"
+                onDownloadResume={() => {
+                    const link = document.getElementById('resume-download-link');
+                    if (link) link.click();
+                }}
+            />
         </div>
     );
 };

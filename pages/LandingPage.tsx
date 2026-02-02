@@ -19,6 +19,15 @@ import {
 } from 'lucide-react';
 import { TEMPLATES, TemplateId, ModernMinimal, ProfessionalClassic, CreativeBold, TechFocused } from '../components/templates';
 import TemplateSwitcher from '../components/TemplateSwitcher';
+import PortfolioPreview from '../components/PortfolioPreview';
+import { WEB_THEMES, WebThemeId } from '../components/portfolio/web-themes';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import {
+    ModernMinimalPDF,
+    ProfessionalClassicPDF,
+    CreativeBoldPDF,
+    TechFocusedPDF
+} from '../components/templates';
 
 /**
  * Admin Home Page - User's "home base" for their portfolio.
@@ -326,11 +335,59 @@ const LandingPage: React.FC = () => {
         app.status === 'Interview Scheduled'
     ).length;
 
+    // Helper to get PDF component (for web download)
+    const getPDFDocumentForWeb = () => {
+        if (!profile) return null;
+        const props = { data: profile };
+        switch (selectedTemplate) {
+            case 'modern-minimal': return <ModernMinimalPDF {...props} />;
+            case 'professional-classic': return <ProfessionalClassicPDF {...props} />;
+            case 'creative-bold': return <CreativeBoldPDF {...props} />;
+            case 'tech-focused': return <TechFocusedPDF {...props} />;
+            default: return <ModernMinimalPDF {...props} />;
+        }
+    };
+
     // Render selected template for preview/editing
     const renderTemplate = (isEditable: boolean = false) => {
         if (!profile) return null;
-        const baseProps = { data: profile };
-        const editProps = isEditable ? {
+
+        if (!isEditable) {
+            return (
+                <div className="relative">
+                    <div className="hidden">
+                        <PDFDownloadLink
+                            id="admin-preview-download"
+                            document={getPDFDocumentForWeb()!}
+                            fileName={`${profile.fullName.replace(/\s+/g, '_')}_Resume.pdf`}
+                        >
+                            {({ loading }) => loading ? '...' : 'Download'}
+                        </PDFDownloadLink>
+                    </div>
+                    <PortfolioPreview
+                        application={{
+                            resume: profile,
+                            profilePhotoUrl: profile.profilePhotoUrl,
+                            id: 'preview',
+                            createdAt: Date.now(),
+                            jobDescription: { companyName: '', roleTitle: '' },
+                            coverLetter: '',
+                            matchScore: 0,
+                            keyKeywords: []
+                        } as any}
+                        theme={selectedTheme as any}
+                        type="web"
+                        onDownloadResume={() => {
+                            const link = document.getElementById('admin-preview-download');
+                            if (link) link.click();
+                        }}
+                    />
+                </div>
+            );
+        }
+
+        const combinedProps = {
+            data: profile,
             editable: true,
             onUpdate: handleFieldUpdate,
             onExperienceUpdate: handleExperienceUpdate,
@@ -344,13 +401,9 @@ const LandingPage: React.FC = () => {
             onBulletUpdate: handleBulletUpdate,
             onAddBullet: handleAddBullet,
             onRemoveBullet: handleRemoveBullet
-        } : {};
+        };
 
-        const combinedProps = { ...baseProps, ...(isEditable ? editProps : {}) };
-
-        const templateToUse = isEditable ? selectedTemplate : selectedTheme;
-
-        switch (templateToUse) {
+        switch (selectedTemplate) {
             case 'modern-minimal': return <ModernMinimal {...combinedProps} />;
             case 'professional-classic': return <ProfessionalClassic {...combinedProps} />;
             case 'creative-bold': return <CreativeBold {...combinedProps} />;
