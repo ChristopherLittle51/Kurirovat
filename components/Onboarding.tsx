@@ -132,18 +132,18 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
   const renderStepIndicator = () => (
     <div className="flex gap-2 mt-4">
       {[1, 2, 3, 4].map(s => (
-        <div key={s} className={`h-2 flex-1 rounded-full ${s <= step ? 'bg-blue-600' : 'bg-gray-200'}`} />
+        <div key={s} className={`h-2 flex-1 rounded-full transition-all ${s <= step ? 'bg-blue-600 shadow-sm shadow-blue-500/20' : 'bg-gray-200 dark:bg-gray-800'}`} />
       ))}
     </div>
   );
 
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4">
+    <div className="max-w-2xl mx-auto py-12 px-4 transition-colors">
       <div className="mb-8 text-center md:text-left">
-        <h1 className="text-3xl font-bold text-gray-900">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white transition-colors">
           {initialData ? "Edit Profile" : (step === 0 ? "Upload Your Resume" : "Review & Edit Profile")}
         </h1>
-        <p className="text-gray-600 mt-2">
+        <p className="text-gray-600 dark:text-gray-400 mt-2 transition-colors">
           {step === 0 && !initialData
             ? "Upload your current PDF resume. Gemini will extract your details automatically."
             : "Review and update your profile details."}
@@ -152,7 +152,7 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
       </div>
 
       {step === 0 && (
-        <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-500 transition-colors cursor-pointer relative">
+        <div className="bg-white dark:bg-gray-900 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer relative shadow-sm">
           <input
             type="file"
             accept=".pdf"
@@ -162,20 +162,20 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
           />
           {isUploading ? (
             <div className="flex flex-col items-center animate-pulse">
-              <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
-              <p className="text-lg font-medium text-gray-700">Analyzing PDF with Gemini...</p>
-              <p className="text-sm text-gray-500">This may take a few seconds.</p>
+              <Loader2 className="w-12 h-12 text-blue-600 dark:text-blue-400 animate-spin mb-4" />
+              <p className="text-lg font-medium text-gray-700 dark:text-gray-200">Analyzing PDF with Gemini...</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">This may take a few seconds.</p>
             </div>
           ) : (
             <>
-              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-blue-600">
+              <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4 text-blue-600 dark:text-blue-400">
                 <UploadCloud size={32} />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Click to Upload Resume</h3>
-              <p className="text-gray-500 max-w-xs mx-auto mb-6">Supported Format: PDF. We use AI to parse your text, so standard formatting works best.</p>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Click to Upload Resume</h3>
+              <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto mb-6">Supported Format: PDF. We use AI to parse your text, so standard formatting works best.</p>
               <button
                 onClick={() => setStep(1)}
-                className="text-sm text-gray-400 hover:text-gray-600 underline z-10 relative"
+                className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 underline z-10 relative transition-colors"
               >
                 Skip upload and start manually
               </button>
@@ -187,14 +187,14 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
       {step === 1 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Re-upload Section */}
-          <div className="bg-orange-50 p-6 rounded-xl border border-orange-200 shadow-sm">
+          <div className="bg-orange-50 dark:bg-orange-950/20 p-6 rounded-xl border border-orange-200 dark:border-orange-900/40 shadow-sm transition-colors">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-orange-100 rounded-lg text-orange-600">
+              <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-600 dark:text-orange-400 transition-colors">
                 <UploadCloud size={24} />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900">Update from Resume</h3>
-                <p className="text-sm text-gray-600 mt-1">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white transition-colors">Update from Resume</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 transition-colors">
                   Upload a new PDF resume to re-parse and update your profile automatically.
                 </p>
                 <div className="mt-3">
@@ -204,7 +204,7 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
                         document.getElementById('reupload-resume')?.click();
                       }
                     }}
-                    className="text-sm font-medium bg-white border border-orange-300 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-100 hover:border-orange-400 transition flex items-center gap-2"
+                    className="text-sm font-medium bg-white dark:bg-gray-800 border border-orange-300 dark:border-orange-900/50 text-orange-700 dark:text-orange-300 px-4 py-2 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 hover:border-orange-400 dark:hover:border-orange-800 transition flex items-center gap-2"
                     disabled={isUploading}
                   >
                     {isUploading ? <Loader2 className="animate-spin w-4 h-4" /> : <UploadCloud className="w-4 h-4" />}
@@ -222,41 +222,41 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
             </div>
           </div>
 
-          <div className="bg-blue-50 p-4 rounded-lg flex items-start gap-3 border border-blue-100">
-            <FileText className="text-blue-600 mt-1 shrink-0" size={20} />
+          <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg flex items-start gap-3 border border-blue-100 dark:border-blue-900/40 transition-colors">
+            <FileText className="text-blue-600 dark:text-blue-400 mt-1 shrink-0 transition-colors" size={20} />
             <div>
-              <h4 className="font-semibold text-blue-900">Contact Details</h4>
-              <p className="text-sm text-blue-700">Ensure your contact info is up to date.</p>
+              <h4 className="font-semibold text-blue-900 dark:text-blue-200 transition-colors">Contact Details</h4>
+              <p className="text-sm text-blue-700 dark:text-blue-400 transition-colors">Ensure your contact info is up to date.</p>
             </div>
           </div>
-          <h2 className="text-xl font-semibold">Contact Details</h2>
-          <input className="w-full border p-3 rounded" placeholder="Full Name" value={profile.fullName} onChange={e => setProfile({ ...profile, fullName: e.target.value })} />
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white transition-colors">Contact Details</h2>
+          <input className="w-full border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="Full Name" value={profile.fullName} onChange={e => setProfile({ ...profile, fullName: e.target.value })} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <input className="border p-3 rounded" placeholder="Email" value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} />
-            <input className="border p-3 rounded" placeholder="Phone" value={profile.phone} onChange={e => setProfile({ ...profile, phone: e.target.value })} />
+            <input className="border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="Email" value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} />
+            <input className="border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="Phone" value={profile.phone} onChange={e => setProfile({ ...profile, phone: e.target.value })} />
           </div>
-          <input className="w-full border p-3 rounded" placeholder="GitHub Username (e.g. 'octocat')" value={profile.githubUsername || ''} onChange={e => setProfile({ ...profile, githubUsername: e.target.value })} />
-          <input className="w-full border p-3 rounded" placeholder="City, State" value={profile.location} onChange={e => setProfile({ ...profile, location: e.target.value })} />
-          <textarea className="w-full border p-3 rounded h-32" placeholder="Professional Summary (General)" value={profile.summary} onChange={e => setProfile({ ...profile, summary: e.target.value })} />
+          <input className="w-full border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="GitHub Username (e.g. 'octocat')" value={profile.githubUsername || ''} onChange={e => setProfile({ ...profile, githubUsername: e.target.value })} />
+          <input className="w-full border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="City, State" value={profile.location} onChange={e => setProfile({ ...profile, location: e.target.value })} />
+          <textarea className="w-full border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 h-32 transition-colors" placeholder="Professional Summary (General)" value={profile.summary} onChange={e => setProfile({ ...profile, summary: e.target.value })} />
 
           <div className="space-y-2">
-            <h3 className="font-semibold text-gray-700">Social Links</h3>
+            <h3 className="font-semibold text-gray-700 dark:text-gray-300 transition-colors">Social Links</h3>
             {profile.links.map((link, idx) => (
               <div key={idx} className="flex gap-2">
-                <input className="flex-1 border p-2 rounded" value={link.platform} onChange={(e) => {
+                <input className="flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors" value={link.platform} onChange={(e) => {
                   const newLinks = [...profile.links];
                   newLinks[idx].platform = e.target.value;
                   setProfile({ ...profile, links: newLinks });
                 }} placeholder="Platform (e.g. LinkedIn)" />
-                <input className="flex-[2] border p-2 rounded" value={link.url} onChange={(e) => {
+                <input className="flex-[2] border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors" value={link.url} onChange={(e) => {
                   const newLinks = [...profile.links];
                   newLinks[idx].url = e.target.value;
                   setProfile({ ...profile, links: newLinks });
                 }} placeholder="URL" />
-                <button onClick={() => setProfile({ ...profile, links: profile.links.filter((_, i) => i !== idx) })} className="text-red-500"><Trash2 size={16} /></button>
+                <button onClick={() => setProfile({ ...profile, links: profile.links.filter((_, i) => i !== idx) })} className="text-red-500 hover:text-red-600 transition-colors"><Trash2 size={16} /></button>
               </div>
             ))}
-            <button onClick={() => setProfile({ ...profile, links: [...profile.links, { platform: '', url: '' }] })} className="text-sm text-blue-600 font-medium">+ Add Link</button>
+            <button onClick={() => setProfile({ ...profile, links: [...profile.links, { platform: '', url: '' }] })} className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline transition-colors">+ Add Link</button>
           </div>
 
           <div className="flex justify-end pt-4">
@@ -267,34 +267,34 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
 
       {step === 2 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <h2 className="text-xl font-semibold">Experience</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white transition-colors">Experience</h2>
           {profile.experience.map((exp, idx) => (
-            <div key={exp.id} className="border p-4 rounded-lg bg-gray-50 relative">
+            <div key={exp.id} className="border dark:border-gray-700 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50 relative shadow-sm transition-colors">
               <button onClick={() => {
                 const newExp = profile.experience.filter((_, i) => i !== idx);
                 setProfile({ ...profile, experience: newExp });
-              }} className="absolute top-2 right-2 text-red-500"><Trash2 size={16} /></button>
+              }} className="absolute top-2 right-2 text-red-500 hover:text-red-600 transition-colors"><Trash2 size={16} /></button>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
-                <input className="border p-2 rounded" placeholder="Company" value={exp.company} onChange={e => updateExperience(idx, 'company', e.target.value)} />
-                <input className="border p-2 rounded" placeholder="Role" value={exp.role} onChange={e => updateExperience(idx, 'role', e.target.value)} />
-                <input className="border p-2 rounded" placeholder="Start Date" value={exp.startDate} onChange={e => updateExperience(idx, 'startDate', e.target.value)} />
-                <input className="border p-2 rounded" placeholder="End Date" value={exp.endDate} onChange={e => updateExperience(idx, 'endDate', e.target.value)} />
+                <input className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors" placeholder="Company" value={exp.company} onChange={e => updateExperience(idx, 'company', e.target.value)} />
+                <input className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors" placeholder="Role" value={exp.role} onChange={e => updateExperience(idx, 'role', e.target.value)} />
+                <input className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors" placeholder="Start Date" value={exp.startDate} onChange={e => updateExperience(idx, 'startDate', e.target.value)} />
+                <input className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors" placeholder="End Date" value={exp.endDate} onChange={e => updateExperience(idx, 'endDate', e.target.value)} />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Achievements (Bullet Points)</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Achievements (Bullet Points)</label>
                 {exp.description.map((bullet, bIdx) => (
                   <div key={bIdx} className="flex gap-2">
-                    <input className="flex-1 border p-2 rounded text-sm" value={bullet} onChange={(e) => updateExperienceBullet(idx, bIdx, e.target.value)} placeholder="• Led a team of..." />
-                    <button onClick={() => removeBullet(idx, bIdx)} className="text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
+                    <input className="flex-1 border dark:border-gray-700 p-2 rounded text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors" value={bullet} onChange={(e) => updateExperienceBullet(idx, bIdx, e.target.value)} placeholder="• Led a team of..." />
+                    <button onClick={() => removeBullet(idx, bIdx)} className="text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
                   </div>
                 ))}
-                <button onClick={() => addBullet(idx)} className="text-blue-600 text-sm font-medium hover:underline">+ Add Bullet</button>
+                <button onClick={() => addBullet(idx)} className="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline transition-colors">+ Add Bullet</button>
               </div>
             </div>
           ))}
-          <button onClick={addExperience} className="w-full border-2 border-dashed border-gray-300 p-3 rounded-lg text-gray-500 hover:border-blue-500 hover:text-blue-500 flex justify-center items-center gap-2">
+          <button onClick={addExperience} className="w-full border-2 border-dashed border-gray-300 dark:border-gray-700 p-3 rounded-lg text-gray-500 dark:text-gray-400 hover:border-blue-500 dark:hover:border-blue-400 hover:text-blue-500 dark:hover:text-blue-400 flex justify-center items-center gap-2 transition-colors">
             <Plus size={18} /> Add Position
           </button>
           <div className="flex justify-between">
@@ -306,21 +306,21 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
 
       {step === 3 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <h2 className="text-xl font-semibold">Education</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white transition-colors">Education</h2>
           {profile.education.map((edu, idx) => (
-            <div key={edu.id} className="border p-4 rounded-lg bg-gray-50 relative">
+            <div key={edu.id} className="border dark:border-gray-700 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50 relative shadow-sm transition-colors">
               <button onClick={() => {
                 const newEdu = profile.education.filter((_, i) => i !== idx);
                 setProfile({ ...profile, education: newEdu });
-              }} className="absolute top-2 right-2 text-red-500"><Trash2 size={16} /></button>
+              }} className="absolute top-2 right-2 text-red-500 hover:text-red-600 transition-colors"><Trash2 size={16} /></button>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <input className="border p-2 rounded" placeholder="Institution" value={edu.institution} onChange={e => updateEducation(idx, 'institution', e.target.value)} />
-                <input className="border p-2 rounded" placeholder="Degree" value={edu.degree} onChange={e => updateEducation(idx, 'degree', e.target.value)} />
-                <input className="border p-2 rounded" placeholder="Year" value={edu.year} onChange={e => updateEducation(idx, 'year', e.target.value)} />
+                <input className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors" placeholder="Institution" value={edu.institution} onChange={e => updateEducation(idx, 'institution', e.target.value)} />
+                <input className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors" placeholder="Degree" value={edu.degree} onChange={e => updateEducation(idx, 'degree', e.target.value)} />
+                <input className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors" placeholder="Year" value={edu.year} onChange={e => updateEducation(idx, 'year', e.target.value)} />
               </div>
             </div>
           ))}
-          <button onClick={addEducation} className="w-full border-2 border-dashed border-gray-300 p-3 rounded-lg text-gray-500 hover:border-blue-500 hover:text-blue-500 flex justify-center items-center gap-2">
+          <button onClick={addEducation} className="w-full border-2 border-dashed border-gray-300 dark:border-gray-700 p-3 rounded-lg text-gray-500 dark:text-gray-400 hover:border-blue-500 dark:hover:border-blue-400 hover:text-blue-500 dark:hover:text-blue-400 flex justify-center items-center gap-2 transition-colors">
             <Plus size={18} /> Add Education
           </button>
           <div className="flex justify-between">
@@ -332,22 +332,22 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
 
       {step === 4 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <h2 className="text-xl font-semibold">Skills</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white transition-colors">Skills</h2>
           <div className="flex gap-2">
             <input
-              className="flex-1 border p-3 rounded"
+              className="flex-1 border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors"
               placeholder="e.g. React, Project Management, Python"
               value={tempSkill}
               onChange={e => setTempSkill(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addSkill()}
             />
-            <button onClick={addSkill} className="bg-gray-900 text-white px-4 rounded">Add</button>
+            <button onClick={addSkill} className="bg-gray-900 dark:bg-gray-700 text-white px-4 rounded hover:bg-black dark:hover:bg-gray-600 transition-colors">Add</button>
           </div>
           <div className="flex flex-wrap gap-2">
             {profile.skills.map((skill, i) => (
-              <span key={i} className="bg-gray-100 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+              <span key={i} className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full text-sm flex items-center gap-2 shadow-sm transition-colors">
                 {skill}
-                <button onClick={() => setProfile(prev => ({ ...prev, skills: prev.skills.filter((_, idx) => idx !== i) }))} className="text-gray-400 hover:text-red-500">×</button>
+                <button onClick={() => setProfile(prev => ({ ...prev, skills: prev.skills.filter((_, idx) => idx !== i) }))} className="text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors">×</button>
               </span>
             ))}
           </div>

@@ -294,7 +294,7 @@ const TechFocused: React.FC<EditableTemplateProps> = ({
                 {/* Other Experience */}
                 {data.otherExperience && data.otherExperience.length > 0 && (
                     <section>
-                        <div className="flex items-center gap-2 mb-3 text-gray-500">
+                        <div className="flex items-center gap-2 mb-3 text-gray-500 dark:text-gray-400 transition-colors">
                             <Folder size={16} />
                             <span className="text-xs uppercase tracking-wider">$ ls ./other</span>
                         </div>
@@ -302,8 +302,8 @@ const TechFocused: React.FC<EditableTemplateProps> = ({
                             {data.otherExperience.map((exp) => (
                                 <div key={exp.id} className="bg-white dark:bg-gray-800/50 rounded p-3 border border-gray-200 dark:border-gray-700/50 transition-colors">
                                     <h3 className="text-gray-800 dark:text-gray-200 font-medium text-sm">{exp.role}</h3>
-                                    <p className="text-gray-500 text-xs">{exp.company}</p>
-                                    <p className="text-gray-400 dark:text-gray-600 text-xs mt-1">{exp.startDate} → {exp.endDate}</p>
+                                    <p className="text-gray-500 dark:text-gray-400 text-xs">{exp.company}</p>
+                                    <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">{exp.startDate} → {exp.endDate}</p>
                                 </div>
                             ))}
                         </div>
@@ -344,8 +344,8 @@ const TechFocused: React.FC<EditableTemplateProps> = ({
                                             </>
                                         ) : (
                                             <>
-                                                <h3 className="text-gray-800 dark:text-gray-200 font-medium text-sm">{edu.institution}</h3>
-                                                <p className="text-gray-500 text-xs">{edu.degree}</p>
+                                                <h3 className="text-gray-800 dark:text-gray-200 font-medium text-sm transition-colors">{edu.institution}</h3>
+                                                <p className="text-gray-500 dark:text-gray-400 text-xs transition-colors">{edu.degree}</p>
                                             </>
                                         )}
                                     </div>
