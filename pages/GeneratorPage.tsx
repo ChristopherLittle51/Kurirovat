@@ -37,7 +37,7 @@ const GeneratorPage: React.FC = () => {
             const profile = await SupabaseService.getProfile(user.id);
             if (!profile) {
                 alert("Profile not found. Please complete onboarding.");
-                navigate('/onboarding');
+                navigate('/admin/onboarding');
                 return;
             }
 
@@ -59,7 +59,7 @@ const GeneratorPage: React.FC = () => {
 
             await SupabaseService.saveApplication(user.id, newApp);
 
-            navigate('/');
+            navigate('/admin/dashboard');
         } catch (e) {
             console.error(e);
             alert("Error generating resume. Please try again.");

@@ -1,0 +1,366 @@
+import React from 'react';
+import { EditableTemplateProps } from './index';
+import { UserProfile } from '../../types';
+import { Mail, Phone, MapPin, Globe, Plus, Trash2 } from 'lucide-react';
+import InlineEdit from '../InlineEdit';
+
+/**
+ * Modern Minimal Template - Editable Version
+ * Clean, minimal design with lots of whitespace and subtle color accents.
+ * Supports inline editing when editable prop is true.
+ */
+const ModernMinimal: React.FC<EditableTemplateProps> = ({
+    data,
+    slug,
+    editable = false,
+    onUpdate,
+    onExperienceUpdate,
+    onEducationUpdate,
+    onAddExperience,
+    onRemoveExperience,
+    onAddEducation,
+    onRemoveEducation,
+    onAddSkill,
+    onRemoveSkill,
+    onBulletUpdate,
+    onAddBullet,
+    onRemoveBullet
+}) => {
+    const portfolioUrl = slug ? `${window.location.origin}/p/${slug}` : null;
+
+    const handleFieldUpdate = (field: keyof UserProfile, value: any) => {
+        if (onUpdate) onUpdate(field, value);
+    };
+
+    return (
+        <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-gray-900 p-10 md:p-14 shadow-2xl dark:shadow-none border border-gray-100 dark:border-gray-800 print:shadow-none print:border-none text-gray-800 dark:text-gray-100 font-sans transition-colors">
+            {/* Header */}
+            <header className="mb-8">
+                <h1 className="text-4xl font-light tracking-wide text-gray-900 dark:text-white mb-2">
+                    {editable && onUpdate ? (
+                        <InlineEdit
+                            value={data.fullName || ''}
+                            onSave={(v) => handleFieldUpdate('fullName', v)}
+                            className="text-4xl font-light tracking-wide text-gray-900 dark:text-white"
+                        />
+                    ) : (
+                        data.fullName
+                    )}
+                </h1>
+                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                    {(data.location || editable) && (
+                        <span className="flex items-center gap-1.5">
+                            <MapPin size={14} className="text-blue-500 dark:text-blue-400" />
+                            {editable && onUpdate ? (
+                                <InlineEdit
+                                    value={data.location || ''}
+                                    onSave={(v) => handleFieldUpdate('location', v)}
+                                    placeholder="Location"
+                                    className="text-sm text-gray-500 dark:text-gray-400"
+                                />
+                            ) : (
+                                data.location
+                            )}
+                        </span>
+                    )}
+                    {(data.email || editable) && (
+                        <span className="flex items-center gap-1.5">
+                            <Mail size={14} className="text-blue-500 dark:text-blue-400" />
+                            {editable && onUpdate ? (
+                                <InlineEdit
+                                    value={data.email || ''}
+                                    onSave={(v) => handleFieldUpdate('email', v)}
+                                    placeholder="Email"
+                                    className="text-sm text-gray-500 dark:text-gray-400"
+                                />
+                            ) : (
+                                data.email
+                            )}
+                        </span>
+                    )}
+                    {(data.phone || editable) && (
+                        <span className="flex items-center gap-1.5">
+                            <Phone size={14} className="text-blue-500 dark:text-blue-400" />
+                            {editable && onUpdate ? (
+                                <InlineEdit
+                                    value={data.phone || ''}
+                                    onSave={(v) => handleFieldUpdate('phone', v)}
+                                    placeholder="Phone"
+                                    className="text-sm text-gray-500 dark:text-gray-400"
+                                />
+                            ) : (
+                                data.phone
+                            )}
+                        </span>
+                    )}
+                    {portfolioUrl && (
+                        <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:underline">
+                            <Globe size={14} />
+                            {portfolioUrl.replace(/^https?:\/\//, '')}
+                        </a>
+                    )}
+                    {data.links?.map((link, idx) => (
+                        <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:underline">
+                            <Globe size={14} />
+                            {link.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                        </a>
+                    ))}
+                </div>
+            </header>
+
+            {/* Summary */}
+            {(data.summary || editable) && (
+                <section className="mb-8">
+                    <h2 className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">
+                        About
+                    </h2>
+                    {editable && onUpdate ? (
+                        <InlineEdit
+                            value={data.summary || ''}
+                            onSave={(v) => handleFieldUpdate('summary', v)}
+                            multiline
+                            placeholder="Write a professional summary..."
+                            className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm w-full"
+                        />
+                    ) : (
+                        <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm">
+                            {data.summary}
+                        </p>
+                    )}
+                </section>
+            )}
+
+            {/* Two Column Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Left Column - Skills & Education */}
+                <div className="space-y-8">
+                    {/* Skills */}
+                    {(data.skills && data.skills.length > 0) || editable ? (
+                        <section>
+                            <h2 className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">
+                                Skills
+                            </h2>
+                            <div className="flex flex-wrap gap-2">
+                                {data.skills?.map((skill, index) => (
+                                    <span key={index} className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2.5 py-1 rounded group relative transition-colors">
+                                        {skill}
+                                        {editable && onRemoveSkill && (
+                                            <button
+                                                onClick={() => onRemoveSkill(index)}
+                                                className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                            >
+                                                <Trash2 size={10} />
+                                            </button>
+                                        )}
+                                    </span>
+                                ))}
+                                {editable && onAddSkill && (
+                                    <button
+                                        onClick={() => {
+                                            const skill = prompt('Enter a new skill:');
+                                            if (skill) onAddSkill(skill);
+                                        }}
+                                        className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded border border-dashed border-blue-300 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 flex items-center gap-1 transition-colors"
+                                    >
+                                        <Plus size={12} /> Add
+                                    </button>
+                                )}
+                            </div>
+                        </section>
+                    ) : null}
+
+                    {/* Education */}
+                    {(data.education && data.education.length > 0) || editable ? (
+                        <section>
+                            <h2 className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">
+                                Education
+                            </h2>
+                            <div className="space-y-3">
+                                {data.education?.map((edu) => (
+                                    <div key={edu.id} className="group relative">
+                                        {editable && onEducationUpdate ? (
+                                            <>
+                                                <InlineEdit
+                                                    value={edu.institution}
+                                                    onSave={(v) => onEducationUpdate(edu.id, 'institution', v)}
+                                                    className="font-semibold text-sm text-gray-900 dark:text-white"
+                                                />
+                                                <InlineEdit
+                                                    value={edu.degree}
+                                                    onSave={(v) => onEducationUpdate(edu.id, 'degree', v)}
+                                                    className="text-xs text-gray-600 dark:text-gray-400"
+                                                />
+                                                <InlineEdit
+                                                    value={edu.year}
+                                                    onSave={(v) => onEducationUpdate(edu.id, 'year', v)}
+                                                    className="text-xs text-gray-400 dark:text-gray-500"
+                                                />
+                                                {onRemoveEducation && (
+                                                    <button
+                                                        onClick={() => onRemoveEducation(edu.id)}
+                                                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <h3 className="font-semibold text-sm text-gray-900 dark:text-white">{edu.institution}</h3>
+                                                <p className="text-xs text-gray-600 dark:text-gray-400">{edu.degree}</p>
+                                                <p className="text-xs text-gray-400 dark:text-gray-500">{edu.year}</p>
+                                            </>
+                                        )}
+                                    </div>
+                                ))}
+                                {editable && onAddEducation && (
+                                    <button
+                                        onClick={onAddEducation}
+                                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 transition-colors"
+                                    >
+                                        <Plus size={12} /> Add Education
+                                    </button>
+                                )}
+                            </div>
+                        </section>
+                    ) : null}
+                </div>
+
+                {/* Right Column - Experience */}
+                <div className="md:col-span-2">
+                    {/* Professional Experience */}
+                    {(data.experience && data.experience.length > 0) || editable ? (
+                        <section className="mb-8">
+                            <h2 className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-4">
+                                Experience
+                            </h2>
+                            <div className="space-y-6">
+                                {data.experience?.map((exp) => (
+                                    <div key={exp.id} className="relative pl-4 border-l-2 border-gray-200 dark:border-gray-800 group">
+                                        <div className="absolute -left-[5px] top-1 w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full"></div>
+                                        {editable && onRemoveExperience && (
+                                            <button
+                                                onClick={() => onRemoveExperience(exp.id)}
+                                                className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
+                                        )}
+                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1 mb-1">
+                                            {editable && onExperienceUpdate ? (
+                                                <InlineEdit
+                                                    value={exp.role}
+                                                    onSave={(v) => onExperienceUpdate(exp.id, 'role', v)}
+                                                    className="font-semibold text-gray-900 dark:text-white"
+                                                />
+                                            ) : (
+                                                <h3 className="font-semibold text-gray-900 dark:text-white">{exp.role}</h3>
+                                            )}
+                                            <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap flex items-center gap-1">
+                                                {editable && onExperienceUpdate ? (
+                                                    <>
+                                                        <InlineEdit
+                                                            value={exp.startDate}
+                                                            onSave={(v) => onExperienceUpdate(exp.id, 'startDate', v)}
+                                                            className="text-xs text-gray-400 dark:text-gray-500 w-20"
+                                                        />
+                                                        <span className="dark:text-gray-600">–</span>
+                                                        <InlineEdit
+                                                            value={exp.endDate}
+                                                            onSave={(v) => onExperienceUpdate(exp.id, 'endDate', v)}
+                                                            className="text-xs text-gray-400 dark:text-gray-500 w-20"
+                                                        />
+                                                    </>
+                                                ) : (
+                                                    `${exp.startDate} – ${exp.endDate}`
+                                                )}
+                                            </span>
+                                        </div>
+                                        {editable && onExperienceUpdate ? (
+                                            <InlineEdit
+                                                value={exp.company}
+                                                onSave={(v) => onExperienceUpdate(exp.id, 'company', v)}
+                                                className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2"
+                                            />
+                                        ) : (
+                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">{exp.company}</p>
+                                        )}
+                                        <ul className="space-y-1">
+                                            {exp.description?.map((point, idx) => (
+                                                <li key={idx} className="text-sm text-gray-600 dark:text-gray-300 flex items-start gap-2 group/bullet">
+                                                    <span className="text-blue-400 dark:text-blue-500 mt-1.5 text-[6px]">●</span>
+                                                    {editable && onBulletUpdate ? (
+                                                        <>
+                                                            <InlineEdit
+                                                                value={point}
+                                                                onSave={(v) => onBulletUpdate(exp.id, idx, v)}
+                                                                multiline
+                                                                className="flex-1 text-sm text-gray-600 dark:text-gray-300"
+                                                            />
+                                                            {onRemoveBullet && (
+                                                                <button
+                                                                    onClick={() => onRemoveBullet(exp.id, idx)}
+                                                                    className="opacity-0 group-hover/bullet:opacity-100 text-red-400 hover:text-red-600"
+                                                                >
+                                                                    <Trash2 size={12} />
+                                                                </button>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <span>{point}</span>
+                                                    )}
+                                                </li>
+                                            ))}
+                                            {editable && onAddBullet && (
+                                                <li>
+                                                    <button
+                                                        onClick={() => onAddBullet(exp.id)}
+                                                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 ml-4 transition-colors"
+                                                    >
+                                                        <Plus size={10} /> Add bullet point
+                                                    </button>
+                                                </li>
+                                            )}
+                                        </ul>
+                                    </div>
+                                ))}
+                                {editable && onAddExperience && (
+                                    <button
+                                        onClick={onAddExperience}
+                                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 mt-4 transition-colors"
+                                    >
+                                        <Plus size={14} /> Add Experience
+                                    </button>
+                                )}
+                            </div>
+                        </section>
+                    ) : null}
+
+                    {/* Other Experience */}
+                    {data.otherExperience && data.otherExperience.length > 0 && (
+                        <section>
+                            <h2 className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-4">
+                                Other Experience
+                            </h2>
+                            <div className="space-y-4">
+                                {data.otherExperience.map((exp) => (
+                                    <div key={exp.id} className="relative pl-4 border-l-2 border-gray-100 dark:border-gray-800">
+                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1 mb-1">
+                                            <h3 className="font-medium text-sm text-gray-800 dark:text-gray-200">{exp.role}</h3>
+                                            <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                                                {exp.startDate} – {exp.endDate}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">{exp.company}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default ModernMinimal;

@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 
 interface Props {
     value: string;
-    onChange: (newValue: string) => void;
+    onSave: (newValue: string) => void;
     className?: string;
     multiline?: boolean;
     placeholder?: string;
 }
 
-const InlineEdit: React.FC<Props> = ({ value, onChange, className = '', multiline = false, placeholder = 'Click to edit' }) => {
+const InlineEdit: React.FC<Props> = ({ value, onSave, className = '', multiline = false, placeholder = 'Click to edit' }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [tempValue, setTempValue] = useState(value);
     const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
@@ -26,7 +26,7 @@ const InlineEdit: React.FC<Props> = ({ value, onChange, className = '', multilin
     const handleBlur = () => {
         setIsEditing(false);
         if (tempValue !== value) {
-            onChange(tempValue);
+            onSave(tempValue);
         }
     };
 
@@ -49,7 +49,7 @@ const InlineEdit: React.FC<Props> = ({ value, onChange, className = '', multilin
                     onChange={(e) => setTempValue(e.target.value)}
                     onBlur={handleBlur}
                     onKeyDown={handleKeyDown}
-                    className={`w-full bg-white border border-blue-400 rounded p-1 outline-none min-h-[60px] ${className}`}
+                    className={`w-full bg-white dark:bg-gray-800 border border-blue-400 dark:border-blue-500 rounded p-1 outline-none min-h-[60px] text-gray-900 dark:text-gray-100 ${className}`}
                 />
             );
         }
@@ -61,7 +61,7 @@ const InlineEdit: React.FC<Props> = ({ value, onChange, className = '', multilin
                 onChange={(e) => setTempValue(e.target.value)}
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
-                className={`w-full bg-white border border-blue-400 rounded p-1 outline-none ${className}`}
+                className={`w-full bg-white dark:bg-gray-800 border border-blue-400 dark:border-blue-500 rounded p-1 outline-none text-gray-900 dark:text-gray-100 ${className}`}
             />
         );
     }
@@ -69,7 +69,7 @@ const InlineEdit: React.FC<Props> = ({ value, onChange, className = '', multilin
     return (
         <div
             onClick={() => setIsEditing(true)}
-            className={`cursor-pointer hover:bg-gray-100/50 hover:outline hover:outline-1 hover:outline-dashed hover:outline-gray-400 rounded px-1 -mx-1 transition-colors ${!value ? 'text-gray-400 italic' : ''} ${className}`}
+            className={`cursor-pointer hover:bg-gray-100/50 dark:hover:bg-gray-800/50 hover:outline hover:outline-1 hover:outline-dashed hover:outline-gray-400 dark:hover:outline-gray-600 rounded px-1 -mx-1 transition-colors ${!value ? 'text-gray-400 italic' : ''} ${className}`}
             title="Click to edit"
         >
             {value || placeholder}

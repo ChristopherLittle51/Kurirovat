@@ -30,7 +30,7 @@ const Layout: React.FC = () => {
         setProfile(p);
 
         if (!p) {
-            navigate('/onboarding');
+            navigate('/admin/onboarding');
             return;
         }
 
@@ -50,8 +50,8 @@ const Layout: React.FC = () => {
             {/* Mobile Header */}
             <div className="md:hidden fixed top-0 w-full bg-gray-900 text-white z-20 flex items-center justify-between p-4 shadow-md print:hidden">
                 <div className="font-bold text-lg flex items-center gap-2">
-                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">R</div>
-                    ResuMatch
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">K</div>
+                    Kurirovat
                 </div>
                 <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2">
                     {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
@@ -75,27 +75,27 @@ const Layout: React.FC = () => {
             `}>
                 <div className="p-6 border-b border-gray-800 hidden md:block">
                     <h1 className="text-xl font-bold flex items-center gap-2">
-                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">R</div>
-                        ResuMatch
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">K</div>
+                        Kurirovat
                     </h1>
                 </div>
 
                 <nav className="flex-1 p-4 space-y-2 overflow-y-auto mt-16 md:mt-0">
-                    <Link to="/" className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${location.pathname === '/' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
+                    <Link to="/admin/dashboard" className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${location.pathname === '/admin/dashboard' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
                         <LayoutDashboard size={20} /> Dashboard
                     </Link>
-                    <Link to="/new" className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${location.pathname === '/new' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
+                    <Link to="/admin/new" className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${location.pathname === '/admin/new' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
                         <Plus size={20} /> New Application
                     </Link>
-                    <Link to="/onboarding" className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${location.pathname === '/onboarding' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
+                    <Link to="/admin/onboarding" className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${location.pathname === '/admin/onboarding' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
                         <User size={20} /> My Profile
                     </Link>
 
                     <div className="pt-6 pb-2 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Recent Applications</div>
                     {recentApps.map(app => (
                         <Link key={app.id}
-                            to={`/application/${app.id}`}
-                            className={`group flex items-center justify-between px-4 py-2 text-sm text-gray-300 rounded hover:bg-gray-800 cursor-pointer ${location.pathname === `/application/${app.id}` ? 'bg-gray-800 text-white' : ''}`}
+                            to={`/admin/application/${app.id}`}
+                            className={`group flex items-center justify-between px-4 py-2 text-sm text-gray-300 rounded hover:bg-gray-800 cursor-pointer ${location.pathname === `/admin/application/${app.id}` ? 'bg-gray-800 text-white' : ''}`}
                         >
                             <span className="truncate w-32">{app.jobDescription.companyName}</span>
                             <span className="text-xs bg-green-900 text-green-300 px-1.5 py-0.5 rounded">{app.matchScore}%</span>

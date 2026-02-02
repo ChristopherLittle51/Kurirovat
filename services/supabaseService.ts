@@ -24,8 +24,11 @@ export const getProfile = async (userId: string): Promise<UserProfile | null> =>
         skills: data.skills || [],
         experience: data.experience || [],
         education: data.education || [],
-        links: data.links || [], // Assuming links is SocialLink[] stored as JSONB
+        links: data.links || [],
         githubUsername: data.github_username,
+        otherExperience: data.other_experience || [],
+        portfolioTemplate: data.portfolio_template,
+        portfolioTheme: data.portfolio_theme,
     };
 };
 
@@ -44,6 +47,9 @@ export const saveProfile = async (userId: string, profile: UserProfile): Promise
             education: profile.education,
             links: profile.links,
             github_username: profile.githubUsername,
+            other_experience: profile.otherExperience,
+            portfolio_template: profile.portfolioTemplate,
+            portfolio_theme: profile.portfolioTheme,
             updated_at: new Date().toISOString(),
         });
 
@@ -82,6 +88,8 @@ export const getApplications = async (userId: string): Promise<TailoredApplicati
         slug: app.slug,
         githubProjects: app.github_projects,
         showMatchScore: app.show_match_score,
+        template: app.template,
+        portfolioTheme: app.portfolio_theme,
     }));
 };
 
@@ -102,7 +110,9 @@ export const saveApplication = async (userId: string, application: TailoredAppli
             search_sources: application.searchSources,
             status: application.status || 'Pending',
             github_projects: application.githubProjects,
-            show_match_score: application.showMatchScore
+            show_match_score: application.showMatchScore,
+            template: application.template,
+            portfolio_theme: application.portfolioTheme
         });
 
     if (error) {
@@ -117,6 +127,8 @@ export const updateApplication = async (appId: string, updates: Partial<Tailored
     if (updates.resume) updatePayload.resume_data = updates.resume;
     if (updates.coverLetter) updatePayload.cover_letter = updates.coverLetter;
     if (updates.status) updatePayload.status = updates.status;
+    if (updates.template) updatePayload.template = updates.template;
+    if (updates.portfolioTheme) updatePayload.portfolio_theme = updates.portfolioTheme;
     // Add other fields as necessary, but these are the main editable ones
 
     if (Object.keys(updatePayload).length === 0) return;
@@ -165,6 +177,8 @@ export const getApplicationBySlug = async (slug: string): Promise<TailoredApplic
         slug: data.slug,
         githubProjects: data.github_projects,
         showMatchScore: data.show_match_score,
+        template: data.template,
+        portfolioTheme: data.portfolio_theme,
     };
 }
 

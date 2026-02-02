@@ -40,6 +40,8 @@ export interface UserProfile {
   links: SocialLink[];
   githubUsername?: string;
   otherExperience?: Experience[];
+  portfolioTemplate?: string; // Template ID for Resume/PDF rendering
+  portfolioTheme?: string;    // Theme ID for public-facing portfolio website
 }
 
 export interface JobDescription {
@@ -68,6 +70,8 @@ export interface TailoredApplication {
   slug?: string;
   githubProjects?: GithubProject[];
   showMatchScore?: boolean;
+  template?: string; // Template ID for resume rendering
+  portfolioTheme?: string; // Theme ID for portfolio rendering
 }
 
 export type ViewState =
