@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" alt="Kurirovat Banner" width="100%" />
   
   # Kurirovat
   
@@ -14,7 +13,7 @@
 
 ---
 
-**Kurirovat** (formerly ResuMatch) is an intelligent, open-source application designed to help job seekers tailor their resumes and cover letters to specific job descriptions using the power of Google's Gemini AI. 
+**Kurirovat** is an intelligent, open-source application designed to help job seekers tailor their resumes and cover letters to specific job descriptions using the power of Google's Gemini AI. 
 
 Stop sending generic applications. Kurirovat analyzes your profile against job requirements to highlight your most relevant skills and experiences, increasing your chances of landing an interview.
 
@@ -31,7 +30,7 @@ Stop sending generic applications. Kurirovat analyzes your profile against job r
 
 -   **Frontend**: React 19, Vite, TailwindCSS v4, React Router v7
 -   **Backend / DB**: Supabase (PostgreSQL, Auth, Edge Functions)
--   **AI**: Google Gemini Pro (via `gemini-1.5-flash` and `gemini-1.5-pro`)
+-   **AI**: Google Gemini Pro (via `gemini-3-flash` and `gemini-3-pro`)
 -   **PDF Rendering**: `@react-pdf/renderer`
 
 ## 🏁 Getting Started
@@ -49,7 +48,7 @@ Follow these steps to set up the project locally.
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/yourusername/kurirovat.git
+    git clone https://github.com/ChristopherLittle51/kurirovat.git
     cd kurirovat
     ```
 
