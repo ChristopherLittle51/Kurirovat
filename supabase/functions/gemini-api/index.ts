@@ -308,6 +308,9 @@ async function handleTailorResume(ai: any, payload: {
     CRITICAL RULE: Prioritize RELEVANT experience over RECENT experience. 
     If the candidate has older experience that is more relevant to the target role (e.g., same industry, same role, same tech stack), 
     it MUST appear first in the 'tailoredExperience' array, even if it is not the most recent job.
+
+    LINGO RULE: STRICTLY AVOID company-specific jargon, internal proprietary terminology, or non-standard shorthand from the candidate's original resume or the company research. 
+    Translate all achievements and responsibilities into professional, industry-standard language that is universally understood by recruiters and ATS systems.
     
     Candidate Profile:
     ${JSON.stringify(baseProfile)}
@@ -448,6 +451,8 @@ async function handleCondenseResume(ai: any, payload: { profile: UserProfile }) 
     4. keepEducationIds: Array of education IDs to keep (usually all)
     
     CRITICAL: Only return the delta/changes, not full data. Use exact IDs from input.
+    
+    LINGO RULE: Maintain professional, industry-standard terminology. Do not use company-specific shorthand or internal jargon.
   `;
 
     try {
@@ -551,6 +556,8 @@ async function handleCondenseCoverLetter(ai: any, payload: { content: string, ca
     4. Remove any redundant or filler content.
     5. Do NOT include any greeting(Dear...) or sign - off(Sincerely...) - those are added separately.
     
+    LINGO RULE: Avoid company-specific jargon or internal lingo. Use professional language that demonstrates alignment with the company's public-facing values and culture without using "insider" buzzwords.
+
     Return ONLY the condensed body text, nothing else.
   `;
 
