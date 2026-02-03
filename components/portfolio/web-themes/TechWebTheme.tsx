@@ -92,6 +92,30 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                             </p>
                         </div>
                     </div>
+                    {/* Github Contributions Graph */}
+                    {data.githubUsername && (
+                        <a
+                            href={`https://github.com/${data.githubUsername}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block mt-8 md:mt-12 p-4 bg-[#0d0d0e] border border-emerald-900/30 rounded-xl relative group overflow-hidden hover:border-emerald-500/40 transition-colors"
+                        >
+                            <div className="absolute top-0 right-0 p-2 text-[8px] opacity-20 group-hover:opacity-40 transition-opacity">
+                                [GIT_LOG :: {new Date().getFullYear()}]
+                            </div>
+                            <div className="flex items-center gap-3 mb-4 text-emerald-500/80 text-sm font-mono uppercase tracking-widest">
+                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                git contributions --user {data.githubUsername}
+                            </div>
+                            <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-emerald-900 scrollbar-track-transparent">
+                                <img
+                                    src={`https://ghchart.rshah.org/${data.githubUsername}`}
+                                    alt={`GitHub contributions for ${data.githubUsername}`}
+                                    className="w-full min-w-[600px] opacity-60 group-hover:opacity-100 transition-all invert hue-rotate-180"
+                                />
+                            </div>
+                        </a>
+                    )}
                 </section>
 
                 {/* Core Skills - Hardware/Software metaphor */}
