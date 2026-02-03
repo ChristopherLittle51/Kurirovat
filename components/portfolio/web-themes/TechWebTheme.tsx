@@ -7,7 +7,7 @@ import { WebThemeProps } from './index';
 
 const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPreview }) => {
     return (
-        <div className={`min-h-screen bg-[#0a0a0b] text-emerald-500 font-mono selection:bg-emerald-500 selection:text-black transition-colors ${isPreview ? 'relative overflow-hidden' : ''}`}>
+        <div className={`min-h-screen bg-[#0a0a0b] text-emerald-500 font-['Space_Mono',monospace] selection:bg-emerald-500 selection:text-black transition-colors ${isPreview ? 'relative overflow-hidden' : ''}`}>
             {/* Scanline Effect */}
             <div className={`${isPreview ? 'absolute' : 'fixed'} inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-[length:100%_4px,3px_100%]`} />
 
