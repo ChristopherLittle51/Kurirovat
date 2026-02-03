@@ -253,6 +253,7 @@ async function researchCompany(ai: any, companyName: string): Promise<{ summary:
     Research the company "${companyName}". 
     Find their mission statement, core values, recent significant news, and description of their corporate culture.
     Summarize these findings into a concise paragraph.
+    Do not use trademarked or branded terms specific to the company.
   `;
 
     try {
@@ -293,24 +294,38 @@ async function handleTailorResume(ai: any, payload: {
     jd: JobDescription,
     githubProjects: any[],
     includeScore: boolean,
-    targetPageCount?: number
+    targetPageCount?: number,
+    options?: {
+        tone?: string;
+        conciseness?: string;
+        focusSkill?: string;
+    }
 }) {
-    const { baseProfile, jd, githubProjects = [], includeScore = true, targetPageCount = 1 } = payload;
+    const { baseProfile, jd, githubProjects = [], includeScore = true, targetPageCount = 1, options } = payload;
 
     console.log(`Starting research for ${jd.companyName}...`);
     const research = await researchCompany(ai, jd.companyName);
+
+    const toneInstruction = options?.tone ? `TONE: Adopt a ${options.tone} tone.` : '';
+    const lengthInstruction = options?.conciseness === 'concise'
+        ? "Be extremely concise and direct."
+        : (options?.conciseness === 'detailed' ? "Provide detailed, in-depth explanations of achievements." : "Maintain a balanced professional density.");
+    const focusInstruction = options?.focusSkill ? `FOCUS: Emphasize experience and achievements related to "${options.focusSkill}".` : '';
 
     const prompt = `
     You are an elite Resume Writer and Career Strategist.
     
     Task: Tailor the candidate's profile to match the Job Description (JD), incorporating the provided company research.
     
-    CRITICAL RULE: Prioritize RELEVANT experience over RECENT experience. 
-    If the candidate has older experience that is more relevant to the target role (e.g., same industry, same role, same tech stack), 
-    it MUST appear first in the 'tailoredExperience' array, even if it is not the most recent job.
+    CRITICAL RULE: Sort experience by Start Date in descending order (newest first).
+    Do NOT reorder based on relevance. The chronological order must be preserved.
 
     LINGO RULE: STRICTLY AVOID company-specific jargon, internal proprietary terminology, or non-standard shorthand from the candidate's original resume or the company research. 
-    Translate all achievements and responsibilities into professional, industry-standard language that is universally understood by recruiters and ATS systems.
+    Translate all achievements and responsibilities into professional, industry-standard language that is universally understood by recruiters and ATS systems. Do not use trademarked or branded terms specific to the company.
+    
+    ${toneInstruction}
+    ${lengthInstruction}
+    ${focusInstruction}
     
     Candidate Profile:
     ${JSON.stringify(baseProfile)}
@@ -330,14 +345,13 @@ async function handleTailorResume(ai: any, payload: {
     1. **Summary**: Rewrite as an "Elevator Pitch" aligning with the JD and Company Culture (Max 3 lines).
     2. **Skills**: Select top 6-8 skills relevant to the JD.
     3. **Experience**: 
-       - Select the TOP ${targetPageCount === 1 ? '3-4' : '5'} most relevant roles for this job.
-       - REORDER them to show the most relevant first.
+       - Include ALL provided experience roles.
+       - Maintain strict reverse chronological order (newest start date first).
        - Rewrite bullets for these roles to STAR method (max ${targetPageCount === 1 ? '3' : '4'} bullets per role).
-       - Omit less relevant roles to strictly fit within ${targetPageCount} page(s).
     4. **Cover Letter**: 3 paragraphs (Hook + Company alignment, Achievements, Call to Action), Do NOT include any greeting(Dear...) or sign - off(Sincerely...) - those are added separately.
     5. **Match Score**: ${includeScore ? '0-100 semantic match.' : 'Set to 0 (user opted out).'}
     6. **Keywords**: 5 critical hard keywords from JD.
-    7. **Length Constraint**: STRICTLY ensure the total content fits on ${targetPageCount} page(s). Be concise.
+    7. **Length Constraint**: Optimize content density to fit within ${targetPageCount} page(s), but DO NOT omit any experience entries. Reduce bullet points per role if necessary.
   `;
 
     try {
@@ -446,7 +460,7 @@ async function handleCondenseResume(ai: any, payload: { profile: UserProfile }) 
     Return ONLY:
     1. condensedSummary: Shorten to 2-3 sentences max
     2. selectedSkillIndices: Array of indices (0-based) of top 6-8 skills to keep
-    3. condensedExperience: Array of {id, condensedBullets} for top 3-4 roles only
+    3. condensedExperience: Array of {id, condensedBullets} for ALL roles.
        - condensedBullets should have 2-3 items max, each made more concise
     4. keepEducationIds: Array of education IDs to keep (usually all)
     
@@ -518,7 +532,7 @@ async function handleCondenseResume(ai: any, payload: { profile: UserProfile }) 
             ...profile,
             summary: result.condensedSummary || profile.summary,
             skills: condensedSkills.length > 0 ? condensedSkills : profile.skills.slice(0, 8),
-            experience: condensedExperience.length > 0 ? condensedExperience : profile.experience.slice(0, 4),
+            experience: condensedExperience.length > 0 ? condensedExperience : profile.experience,
             education: keepEducation,
             links: profile.links.slice(0, 3)
         };

@@ -28,7 +28,7 @@ const GeneratorPage: React.FC = () => {
         }
     };
 
-    const handleGenerate = async (jd: JobDescription, projects: any[], showScore: boolean) => {
+    const handleGenerate = async (jd: JobDescription, projects: any[], showScore: boolean, options?: any) => {
         if (!user) return;
         setIsGenerating(true);
 
@@ -41,7 +41,7 @@ const GeneratorPage: React.FC = () => {
                 return;
             }
 
-            const result = await GeminiService.tailorResume(profile, jd, projects, showScore);
+            const result = await GeminiService.tailorResume(profile, jd, projects, showScore, 1, options);
             const { application } = result;
 
             const newApp: TailoredApplication = {
@@ -70,7 +70,7 @@ const GeneratorPage: React.FC = () => {
 
     return (
         <div className="p-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6 max-w-5xl mx-auto">New Application</h2>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 max-w-5xl mx-auto">New Application</h2>
             <Generator
                 onGenerate={handleGenerate}
                 isLoading={isGenerating}

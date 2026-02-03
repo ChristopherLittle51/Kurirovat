@@ -71,7 +71,8 @@ export const tailorResume = async (
   jd: JobDescription,
   githubProjects: any[] = [],
   includeScore: boolean = true,
-  pageCount: number = 1
+  pageCount: number = 1,
+  options?: { tone?: string, conciseness?: string, focusSkill?: string }
 ): Promise<{ application: Partial<TailoredApplication>, rawResponse: string }> => {
   try {
     return await callGeminiFunction('tailorResume', {
@@ -79,7 +80,8 @@ export const tailorResume = async (
       jd,
       githubProjects,
       includeScore,
-      targetPageCount: pageCount
+      targetPageCount: pageCount,
+      options
     });
   } catch (error: any) {
     console.error("Gemini API Error:", error);

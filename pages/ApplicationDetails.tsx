@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { TailoredApplication, ApplicationStatus, UserProfile, Experience, Education } from '../types';
+import { TailoredApplication, ApplicationStatus, UserProfile, Experience, Education, JobDescription } from '../types';
 import * as SupabaseService from '../services/supabaseService';
 import { tailorResume } from '../services/geminiService';
 import { useAuth } from '../contexts/AuthContext';
@@ -32,7 +32,13 @@ import {
     CheckCircle2,
     Palette,
     Edit3,
-    Eye
+    Eye,
+    Settings,
+    MoreVertical,
+    ChevronDown,
+    X,
+    MessageSquare,
+    Sliders
 } from 'lucide-react';
 
 const STATUS_COLORS: Record<ApplicationStatus, string> = {
@@ -57,6 +63,19 @@ const ApplicationDetails: React.FC = () => {
     const [showThemePicker, setShowThemePicker] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern-minimal');
     const [selectedTheme, setSelectedTheme] = useState<TemplateId>('modern-minimal');
+
+    // Regeneration Options State
+    const [genOptions, setGenOptions] = useState({
+        tone: 'professional',
+        conciseness: 'standard',
+        focusSkill: ''
+    });
+    const [showRegenMenu, setShowRegenMenu] = useState(false);
+    const [showJDEditor, setShowJDEditor] = useState(false);
+    const [showOptionsModal, setShowOptionsModal] = useState(false);
+
+    // Temp JD for editing
+    const [tempJD, setTempJD] = useState<Partial<JobDescription>>({});
 
     useEffect(() => {
         if (user && id) {
@@ -139,7 +158,8 @@ const ApplicationDetails: React.FC = () => {
             resume: application.resume,
             coverLetter: application.coverLetter,
             template: selectedTemplate,
-            portfolioTheme: selectedTheme
+            portfolioTheme: selectedTheme,
+            jobDescription: application.jobDescription // Track JD changes
         });
 
         // Don't save if it matches the last saved data
@@ -156,6 +176,7 @@ const ApplicationDetails: React.FC = () => {
                 coverLetter: application.coverLetter,
                 template: selectedTemplate,
                 portfolioTheme: selectedTheme,
+                jobDescription: application.jobDescription, // Save updated JD
             });
             console.log("Application saved successfully");
             lastSavedData.current = snapshot;
@@ -165,7 +186,8 @@ const ApplicationDetails: React.FC = () => {
                 resume: application.resume,
                 coverLetter: application.coverLetter,
                 template: selectedTemplate,
-                portfolioTheme: selectedTheme
+                portfolioTheme: selectedTheme,
+                jobDescription: application.jobDescription
             });
 
             if (currentSnapshot === snapshot) {
@@ -379,6 +401,8 @@ const ApplicationDetails: React.FC = () => {
     const handleRegenerate = async () => {
         if (!application || !user) return;
         setIsRegenerating(true);
+        setShowRegenMenu(false); // Close menu if open
+
         try {
             const baseProfile = await SupabaseService.getProfile(user.id);
             if (!baseProfile) {
@@ -390,7 +414,8 @@ const ApplicationDetails: React.FC = () => {
                 application.jobDescription,
                 application.githubProjects || [],
                 application.showMatchScore ?? true,
-                1
+                1,
+                genOptions // Pass options
             );
             const { application: regenerated } = result;
 
@@ -408,6 +433,21 @@ const ApplicationDetails: React.FC = () => {
         } finally {
             setIsRegenerating(false);
         }
+    };
+
+    const handleJDSave = () => {
+        if (!application || !tempJD.companyName || !tempJD.roleTitle || !tempJD.rawText) return;
+
+        setApplication(prev => prev ? ({
+            ...prev,
+            jobDescription: {
+                companyName: tempJD.companyName!,
+                roleTitle: tempJD.roleTitle!,
+                rawText: tempJD.rawText!
+            }
+        }) : null);
+        setHasUnsavedChanges(true);
+        setShowJDEditor(false);
     };
 
     // Render the selected template with optional editing support
@@ -574,14 +614,53 @@ const ApplicationDetails: React.FC = () => {
                             {/* Action Buttons */}
                             <div className="flex items-center gap-2">
                                 {(view === 'RESUME' || view === 'COVER_LETTER') && (
-                                    <button
-                                        onClick={handleRegenerate}
-                                        disabled={isRegenerating}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 transition disabled:opacity-50"
-                                    >
-                                        {isRegenerating ? <Loader2 className="animate-spin" size={14} /> : <RefreshCw size={14} />}
-                                        <span className="hidden sm:inline">Regenerate</span>
-                                    </button>
+                                    <div className="relative">
+                                        <div className="flex rounded-lg shadow-sm bg-gradient-to-r from-amber-500 to-orange-500 text-white transition hover:from-amber-600 hover:to-orange-600">
+                                            <button
+                                                onClick={handleRegenerate}
+                                                disabled={isRegenerating}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border-r border-white/20 disabled:opacity-50"
+                                            >
+                                                {isRegenerating ? <Loader2 className="animate-spin" size={14} /> : <RefreshCw size={14} />}
+                                                <span className="hidden sm:inline">Regenerate</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setShowRegenMenu(!showRegenMenu)}
+                                                disabled={isRegenerating}
+                                                className="px-1.5 py-1.5 hover:bg-black/10 rounded-r-lg transition disabled:opacity-50"
+                                            >
+                                                <ChevronDown size={14} />
+                                            </button>
+                                        </div>
+
+                                        {showRegenMenu && (
+                                            <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                                                <div className="p-1">
+                                                    <button
+                                                        onClick={() => {
+                                                            setTempJD(application?.jobDescription || {});
+                                                            setShowJDEditor(true);
+                                                            setShowRegenMenu(false);
+                                                        }}
+                                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-left"
+                                                    >
+                                                        <Edit3 size={16} className="text-gray-500" />
+                                                        Edit Job Description
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setShowOptionsModal(true);
+                                                            setShowRegenMenu(false);
+                                                        }}
+                                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-left"
+                                                    >
+                                                        <Sliders size={16} className="text-gray-500" />
+                                                        Generation Settings
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
 
                                 <button
@@ -705,6 +784,126 @@ const ApplicationDetails: React.FC = () => {
                     </div>
                 )}
             </main>
+            {/* Job Description Editor Modal */}
+            {showJDEditor && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Edit Job Description</h3>
+                            <button onClick={() => setShowJDEditor(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Company</label>
+                                    <input
+                                        type="text"
+                                        value={tempJD.companyName || ''}
+                                        onChange={e => setTempJD({ ...tempJD, companyName: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role Title</label>
+                                    <input
+                                        type="text"
+                                        value={tempJD.roleTitle || ''}
+                                        onChange={e => setTempJD({ ...tempJD, roleTitle: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Job Description Text</label>
+                                <textarea
+                                    value={tempJD.rawText || ''}
+                                    onChange={e => setTempJD({ ...tempJD, rawText: e.target.value })}
+                                    rows={10}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent font-mono text-sm"
+                                    placeholder="Paste the job description here..."
+                                />
+                            </div>
+                        </div>
+                        <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex justify-end gap-3 bg-gray-50 dark:bg-gray-900/50">
+                            <button
+                                onClick={() => setShowJDEditor(false)}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleJDSave}
+                                className="px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-sm"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Generation Settings Modal */}
+            {showOptionsModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-lg">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Regeneration Settings</h3>
+                            <button onClick={() => setShowOptionsModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Writing Tone</label>
+                                <select
+                                    value={genOptions.tone}
+                                    onChange={e => setGenOptions({ ...genOptions, tone: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
+                                >
+                                    <option value="professional">Professional (Standard)</option>
+                                    <option value="enthusiastic">Enthusiastic & Energetic</option>
+                                    <option value="technical">Technical & Direct</option>
+                                    <option value="creative">Creative & Story-driven</option>
+                                    <option value="executive">Executive & Strategic</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Conciseness Level</label>
+                                <select
+                                    value={genOptions.conciseness}
+                                    onChange={e => setGenOptions({ ...genOptions, conciseness: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
+                                >
+                                    <option value="standard">Standard (Balanced)</option>
+                                    <option value="concise">Concise (Dense & Direct)</option>
+                                    <option value="detailed">Detailed (Expanded context)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Focus Skill (Optional)</label>
+                                <input
+                                    type="text"
+                                    value={genOptions.focusSkill}
+                                    onChange={e => setGenOptions({ ...genOptions, focusSkill: e.target.value })}
+                                    placeholder="e.g. React, Leadership, Python"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">If set, the AI will prioritize experience related to this skill.</p>
+                            </div>
+                        </div>
+                        <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex justify-end gap-3 bg-gray-50 dark:bg-gray-900/50">
+                            <button
+                                onClick={() => setShowOptionsModal(false)}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
