@@ -30,6 +30,7 @@ export const getProfile = async (userId: string): Promise<UserProfile | null> =>
         portfolioTemplate: data.portfolio_template,
         portfolioTheme: data.portfolio_theme,
         profilePhotoUrl: data.profile_photo_url,
+        githubProjects: data.github_projects || [],
     };
 };
 
@@ -52,6 +53,7 @@ export const saveProfile = async (userId: string, profile: UserProfile): Promise
             portfolio_template: profile.portfolioTemplate,
             portfolio_theme: profile.portfolioTheme,
             profile_photo_url: profile.profilePhotoUrl,
+            github_projects: profile.githubProjects,
             updated_at: new Date().toISOString(),
         });
 

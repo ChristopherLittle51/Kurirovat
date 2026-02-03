@@ -1,6 +1,5 @@
 import React from 'react';
-import { UserProfile } from '../../../types';
-import { Mail, Phone, MapPin, Github, Linkedin, ExternalLink, Download, Terminal, Code2, Cpu, Database } from 'lucide-react';
+import { Mail, Phone, MapPin, Github, Linkedin, ExternalLink, Download, Terminal, Code2, Cpu, Database, Star } from 'lucide-react';
 import { ensureAbsoluteUrl } from '../../../services/urlUtils';
 
 import { WebThemeProps } from './index';
@@ -9,7 +8,7 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
     return (
         <div className={`min-h-screen bg-[#0a0a0b] text-emerald-500 font-['Space_Mono',monospace] selection:bg-emerald-500 selection:text-black transition-colors ${isPreview ? 'relative overflow-hidden' : ''}`}>
             {/* Scanline Effect */}
-            <div className={`${isPreview ? 'absolute' : 'fixed'} inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-[length:100%_4px,3px_100%]`} />
+            <div className={`${isPreview ? 'absolute' : 'fixed'} inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-size-[100%_4px,3px_100%]`} />
 
             {/* Mobile Header - Visible below lg */}
             <header className={`lg:hidden ${isPreview ? 'absolute' : 'fixed'} top-0 left-0 right-0 z-40 bg-[#0d0d0e] border-b border-emerald-900/30 px-4 sm:px-6 py-3 flex items-center justify-between`}>
@@ -89,7 +88,7 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                                 <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-2xl border-2 border-emerald-500/30 overflow-hidden grayscale contrast-125 brightness-75 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-500">
                                     <img src={data.profilePhotoUrl} alt={data.fullName} className="w-full h-full object-cover" />
                                     {/* Grid Overlay */}
-                                    <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.1)_1px,transparent_1px)] bg-[length:20px_20px]" />
+                                    <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.1)_1px,transparent_1px)] bg-size-[20px_20px]" />
                                 </div>
                             </div>
                         )}
@@ -133,6 +132,50 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                         </div>
                     </div>
                 </section>
+
+                {/* Open Source / Projects */}
+                {data.githubProjects && data.githubProjects.length > 0 && (
+                    <section className="space-y-8">
+                        <div className="flex items-center gap-4 text-white">
+                            <Github size={24} className="text-emerald-500" />
+                            <h2 className="text-2xl font-bold uppercase tracking-widest">Open Source</h2>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {data.githubProjects.map((repo) => (
+                                <a
+                                    key={repo.id}
+                                    href={repo.html_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-6 bg-[#0d0d0e] border border-emerald-900/20 rounded-xl group hover:border-emerald-500/50 transition-all hover:translate-x-1"
+                                >
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <Github size={18} className="text-emerald-600 group-hover:text-emerald-500 transition-colors" />
+                                            <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">{repo.name}</h3>
+                                        </div>
+                                        <ExternalLink size={16} className="text-emerald-800 group-hover:text-emerald-500 transition-colors" />
+                                    </div>
+                                    <p className="text-emerald-500/60 text-sm mb-4 line-clamp-10 leading-relaxed">
+                                        {repo.description || 'No description provided.'}
+                                    </p>
+                                    <div className="flex items-center gap-4 text-xs text-emerald-800 font-mono">
+                                        {repo.language && (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-emerald-700" />
+                                                {repo.language}
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-1">
+                                            <Star size={12} />
+                                            {repo.stargazers_count}
+                                        </div>
+                                    </div>
+                                </a>
+                            ))}
+                        </div>
+                    </section>
+                )}
 
                 {/* Experience Log */}
                 <section className="space-y-12">

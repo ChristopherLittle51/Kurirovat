@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserProfile } from '../../../types';
-import { Mail, Phone, MapPin, Github, Linkedin, ExternalLink, Download, Sparkles } from 'lucide-react';
+import { Mail, Phone, MapPin, Github, Linkedin, ExternalLink, Download, Sparkles, Star } from 'lucide-react';
 import { ensureAbsoluteUrl } from '../../../services/urlUtils';
 
 import { WebThemeProps } from './index';
@@ -52,12 +52,12 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                 </div>
 
                 {/* Abstract Blobs */}
-                <div className="absolute -top-20 -left-20 w-[40rem] h-[40rem] bg-rose-200/50 dark:bg-rose-900/10 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute top-1/2 -right-20 w-[30rem] h-[30rem] bg-orange-200/50 dark:bg-orange-900/10 rounded-full blur-[100px]" />
+                <div className="absolute -top-20 -left-20 w-160 h-160 bg-rose-200/50 dark:bg-rose-900/10 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute top-1/2 -right-20 w-120 h-120 bg-orange-200/50 dark:bg-orange-900/10 rounded-full blur-[100px]" />
             </section>
 
             {/* Work */}
-            <section className="px-4 sm:px-6 md:px-20 py-20 sm:py-40 bg-zinc-900 text-white rounded-[2rem] sm:rounded-[4rem] md:rounded-[8rem] mx-2 sm:mx-4 md:mx-8">
+            <section className="px-4 sm:px-6 md:px-20 py-20 sm:py-40 bg-zinc-900 text-white rounded-4xl sm:rounded-4xl md:rounded-4xl mx-2 sm:mx-4 md:mx-8">
                 <div className="max-w-6xl mx-auto">
                     <h2 className="text-3xl sm:text-5xl md:text-8xl font-black mb-16 sm:mb-32 tracking-tighter">Selected<br /><span className="text-rose-500">Exp.</span></h2>
 
@@ -84,11 +84,51 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                 </div>
             </section>
 
+            {/* Creative Experiments / GitHub */}
+            {data.githubProjects && data.githubProjects.length > 0 && (
+                <section className="px-4 sm:px-6 md:px-20 py-20">
+                    <div className="max-w-6xl mx-auto">
+                        <h2 className="text-3xl sm:text-5xl md:text-8xl font-black mb-16 sm:mb-24 tracking-tighter text-right">Dev <span className="text-rose-500 italic">Labs</span></h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+                            {data.githubProjects.map((repo, idx) => (
+                                <a
+                                    key={repo.id}
+                                    href={repo.html_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`group p-8 rounded-4xl border-4 border-zinc-900 dark:border-rose-500/20 bg-white dark:bg-zinc-900 hover:bg-rose-50 dark:hover:bg-rose-900/5 transition-colors relative overflow-hidden ${idx % 2 !== 0 ? 'md:translate-y-12' : ''}`}
+                                >
+                                    <div className="flex justify-between items-start mb-6">
+                                        <Github size={32} className="text-zinc-900 dark:text-white" />
+                                        <div className="px-4 py-1 rounded-full border border-black dark:border-white text-xs font-bold uppercase tracking-wider">
+                                            {repo.language || 'Code'}
+                                        </div>
+                                    </div>
+
+                                    <h3 className="text-2xl sm:text-3xl font-black mb-4 group-hover:underline decoration-4 decoration-rose-500 underline-offset-4">{repo.name}</h3>
+                                    <p className="text-lg text-zinc-600 dark:text-zinc-400 font-medium leading-tight mb-8">
+                                        {repo.description || 'A creative project.'}
+                                    </p>
+
+                                    <div className="flex items-center gap-2 text-rose-500 font-bold">
+                                        <Star size={18} className="fill-current" />
+                                        <span>{repo.stargazers_count}</span>
+                                    </div>
+
+                                    <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-rose-200 dark:bg-rose-900/30 rounded-full blur-[60px] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
+
             {/* Skills / Grid */}
             <section className="px-4 sm:px-6 md:px-20 py-16 sm:py-40">
                 <div className="max-w-6xl mx-auto">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                        <div className="col-span-2 md:row-span-2 bg-rose-500 p-8 sm:p-12 rounded-[2rem] sm:rounded-[3rem] flex flex-col justify-between aspect-square md:aspect-auto">
+                        <div className="col-span-2 md:row-span-2 bg-rose-500 p-8 sm:p-12 rounded-4xl sm:rounded-4xl flex flex-col justify-between aspect-square md:aspect-auto">
                             <h2 className="text-3xl sm:text-5xl font-black text-white">Skills<br />Matrix</h2>
                             <div className="flex flex-wrap gap-2">
                                 {data.skills?.slice(0, 5).map((skill, idx) => (
@@ -99,7 +139,7 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                             </div>
                         </div>
                         {data.skills?.slice(5).map((skill, idx) => (
-                            <div key={idx} className="p-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] flex items-center justify-center text-center font-bold text-xl hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-colors">
+                            <div key={idx} className="p-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-4xl flex items-center justify-center text-center font-bold text-xl hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-colors">
                                 {skill}
                             </div>
                         ))}

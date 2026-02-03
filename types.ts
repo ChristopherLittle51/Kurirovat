@@ -43,6 +43,7 @@ export interface UserProfile {
   portfolioTemplate?: string; // Template ID for Resume/PDF rendering
   portfolioTheme?: string;    // Theme ID for public-facing portfolio website
   profilePhotoUrl?: string;   // URL to profile photo in Supabase Storage
+  githubProjects?: GithubProject[];
 }
 
 export interface JobDescription {

@@ -310,6 +310,37 @@ const TechFocused: React.FC<EditableTemplateProps> = ({
                     </section>
                 )}
 
+                {/* GitHub Projects */}
+                {((data.githubProjects && data.githubProjects.length > 0) || editable) && (
+                    <section>
+                        <div className="flex items-center gap-2 mb-3 text-gray-400">
+                            <GitBranch size={16} />
+                            <span className="text-xs uppercase tracking-wider">$ ls ./github-projects</span>
+                        </div>
+                        <div className="space-y-4">
+                            {data.githubProjects?.map((repo) => (
+                                <div key={repo.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                                    <div className="flex justify-between items-start">
+                                        <h3 className="text-green-400 font-bold text-sm">
+                                            {repo.name} <span className="text-gray-500 font-normal text-xs">({repo.language || 'Code'})</span>
+                                        </h3>
+                                        <span className="text-gray-500 text-xs flex items-center gap-1">★ {repo.stargazers_count}</span>
+                                    </div>
+                                    <p className="text-gray-300 text-xs mt-1 leading-relaxed">
+                                        {repo.description || 'No description provided.'}
+                                    </p>
+                                    <a href={repo.html_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline mt-2 inline-block">
+                                        {repo.html_url}
+                                    </a>
+                                </div>
+                            ))}
+                            {editable && (!data.githubProjects || data.githubProjects.length === 0) && (
+                                <p className="text-gray-500 text-xs italic">Select GitHub projects in your profile settings to appear here.</p>
+                            )}
+                        </div>
+                    </section>
+                )}
+
                 {/* Education */}
                 {((data.education && data.education.length > 0) || editable) && (
                     <section>

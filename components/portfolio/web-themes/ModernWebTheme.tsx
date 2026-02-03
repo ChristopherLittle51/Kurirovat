@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserProfile } from '../../../types';
-import { Mail, Phone, MapPin, Github, Linkedin, ExternalLink, Download } from 'lucide-react';
+import { Mail, Phone, MapPin, Github, Linkedin, ExternalLink, Download, Star } from 'lucide-react';
 import { ensureAbsoluteUrl } from '../../../services/urlUtils';
 
 import { WebThemeProps } from './index';
@@ -17,7 +17,7 @@ const ModernWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPre
                             <img src={data.profilePhotoUrl} alt={data.fullName} className="w-full h-full object-cover" />
                         </div>
                     ) : (
-                        <div className="w-32 h-32 sm:w-48 sm:h-48 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-2xl rotate-3">
+                        <div className="w-32 h-32 sm:w-48 sm:h-48 rounded-3xl bg-linear-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-2xl rotate-3">
                             <span className="text-5xl sm:text-7xl font-bold text-white uppercase">{data.fullName.charAt(0)}</span>
                         </div>
                     )}
@@ -127,6 +127,50 @@ const ModernWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPre
                         ))}
                     </div>
                 </section>
+
+                {/* Featured Projects */}
+                {data.githubProjects && data.githubProjects.length > 0 && (
+                    <section>
+                        <div className="flex items-center gap-4 mb-12">
+                            <h2 className="text-3xl font-black">Featured Projects</h2>
+                            <div className="h-0.5 flex-1 bg-slate-200 dark:bg-slate-800" />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {data.githubProjects.map((repo) => (
+                                <a
+                                    key={repo.id}
+                                    href={repo.html_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="group bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl hover:border-blue-500/30 hover:-translate-y-1 block"
+                                >
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-colors">
+                                            <Github size={24} className="text-slate-700 dark:text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                                        </div>
+                                        <ExternalLink size={20} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{repo.name}</h3>
+                                    <p className="text-slate-600 dark:text-slate-400 mb-6 line-clamp-2 h-12 leading-relaxed">
+                                        {repo.description || 'No description provided.'}
+                                    </p>
+                                    <div className="flex items-center gap-4 text-sm font-medium text-slate-500">
+                                        {repo.language && (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-slate-400" />
+                                                {repo.language}
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-1.5">
+                                            <Star size={14} className="mb-0.5" />
+                                            {repo.stargazers_count}
+                                        </div>
+                                    </div>
+                                </a>
+                            ))}
+                        </div>
+                    </section>
+                )}
 
                 {/* Skills */}
                 <section className="bg-slate-900 text-white rounded-[3rem] p-12 md:p-16 overflow-hidden relative">

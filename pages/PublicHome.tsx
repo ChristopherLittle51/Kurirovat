@@ -62,6 +62,7 @@ const PublicHome: React.FC = () => {
                 portfolioTemplate: data.portfolio_template,
                 portfolioTheme: data.portfolio_theme || 'modern-minimal',
                 profilePhotoUrl: data.profile_photo_url,
+                githubProjects: data.github_projects || [],
             };
 
             setProfile(userProfile);

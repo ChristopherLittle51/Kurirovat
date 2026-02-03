@@ -308,6 +308,26 @@ const TechFocusedPDF: React.FC<Props> = ({ data, slug }) => {
                         </View>
                     )}
 
+                    {/* GitHub Projects */}
+                    {data.githubProjects && data.githubProjects.length > 0 && (
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <Text style={styles.sectionIcon}>*</Text>
+                                <Text>$ ls ./github-projects</Text>
+                            </View>
+                            {data.githubProjects.map((repo) => (
+                                <View key={repo.id} style={styles.expCard} wrap={false}>
+                                    <View style={styles.expHeader}>
+                                        <Text style={styles.expRole}>{repo.name}</Text>
+                                        <Text style={styles.expDate}>{repo.language || 'Code'}</Text>
+                                    </View>
+                                    <Text style={[styles.text, { fontSize: 8, marginTop: 4 }]}>{repo.description}</Text>
+                                    <Link src={repo.html_url} style={{ fontSize: 8, color: '#22d3ee', marginTop: 4 }}>{repo.html_url}</Link>
+                                </View>
+                            ))}
+                        </View>
+                    )}
+
                     {/* Education */}
                     {data.education && data.education.length > 0 && (
                         <View style={styles.section}>

@@ -37,7 +37,8 @@ const PortfolioPreview: React.FC<Props> = ({
       const ThemeComponent = WEB_THEMES[theme] || WEB_THEMES['modern-minimal'];
       const profileWithPhoto: UserProfile = {
         ...resume,
-        profilePhotoUrl: application.profilePhotoUrl
+        profilePhotoUrl: application.profilePhotoUrl,
+        githubProjects: application.githubProjects || resume.githubProjects
       };
       const isAdminPreview = window.location.pathname.startsWith('/admin');
       return (
