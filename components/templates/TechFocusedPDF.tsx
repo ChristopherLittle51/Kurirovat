@@ -4,11 +4,17 @@ import { UserProfile } from '../../types';
 
 const styles = StyleSheet.create({
     page: {
+        paddingTop: 24,
+        paddingBottom: 24,
         fontFamily: 'Courier',
         fontSize: 9,
         lineHeight: 1.4,
         backgroundColor: '#111827',
         color: '#f3f4f6',
+    },
+    // Add this for continuation pages
+    pageContent: {
+        paddingTop: 24,
     },
     header: {
         backgroundColor: '#1f2937',
@@ -154,6 +160,14 @@ interface Props {
     slug?: string;
 }
 
+// Helper to ensure URL has protocol
+const ensureProtocol = (url: string): string => {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        return 'https://' + url;
+    }
+    return url;
+};
+
 const TechFocusedPDF: React.FC<Props> = ({ data, slug }) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const portfolioUrl = slug ? `${origin}/p/${slug}` : null;
@@ -206,7 +220,7 @@ const TechFocusedPDF: React.FC<Props> = ({ data, slug }) => {
                         <Text key={i} style={styles.yamlLine}>
                             <Text>  </Text>
                             <Text style={styles.yamlNested}>{link.platform?.toLowerCase() || 'link'}: </Text>
-                            <Link src={link.url} style={{ color: '#22d3ee' }}>
+                            <Link src={ensureProtocol(link.url)} style={{ color: '#22d3ee' }}>
                                 "{link.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}"
                             </Link>
                         </Text>
@@ -243,14 +257,14 @@ const TechFocusedPDF: React.FC<Props> = ({ data, slug }) => {
                         <View style={styles.section}>
                             <Text style={styles.sectionHeader}>$ ls -la ./experience</Text>
                             {data.experience.map((exp) => (
-                                <View key={exp.id} style={styles.expCard}>
+                                <View key={exp.id} style={styles.expCard} wrap={false}>
                                     <View style={styles.expHeader}>
                                         <Text style={styles.expRole}>{exp.role}</Text>
                                         <Text style={styles.expDate}>{exp.startDate} → {exp.endDate}</Text>
                                     </View>
                                     <Text style={styles.expCompany}>{exp.company}</Text>
                                     {exp.description?.map((point, idx) => (
-                                        <View key={idx} style={styles.bulletItem}>
+                                        <View key={idx} style={styles.bulletItem} wrap={false}>
                                             <Text style={styles.bullet}>-</Text>
                                             <Text style={styles.bulletText}>{point}</Text>
                                         </View>
@@ -265,7 +279,7 @@ const TechFocusedPDF: React.FC<Props> = ({ data, slug }) => {
                         <View style={styles.section}>
                             <Text style={styles.sectionHeader}>$ ls ./other</Text>
                             {data.otherExperience.map((exp) => (
-                                <View key={exp.id} style={styles.eduRow}>
+                                <View key={exp.id} style={styles.eduRow} wrap={false}>
                                     <View>
                                         <Text style={styles.eduName}>{exp.role}</Text>
                                         <Text style={styles.eduDegree}>{exp.company}</Text>

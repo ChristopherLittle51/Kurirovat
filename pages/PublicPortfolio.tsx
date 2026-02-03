@@ -55,7 +55,7 @@ const PublicPortfolio: React.FC = () => {
     const getPDFDocument = () => {
         if (!application) return null;
         const templateId = (application.template as TemplateId) || 'modern-minimal';
-        const props = { data: application.resume };
+        const props = { data: application.resume, slug: application.slug };
 
         switch (templateId) {
             case 'modern-minimal': return <ModernMinimalPDF {...props} />;
@@ -75,6 +75,7 @@ const PublicPortfolio: React.FC = () => {
 
             <div className="hidden">
                 <PDFDownloadLink
+                    key={`${application.template || 'modern-minimal'}-${JSON.stringify(application.resume)}`}
                     id="resume-download-link"
                     document={getPDFDocument()!}
                     fileName={`${application.resume.fullName.replace(/\s+/g, '_')}_Resume.pdf`}

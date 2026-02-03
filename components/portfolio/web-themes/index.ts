@@ -1,3 +1,4 @@
+import { UserProfile } from '../../../types';
 import ModernWebTheme from './ModernWebTheme';
 import CreativeWebTheme from './CreativeWebTheme';
 import TechWebTheme from './TechWebTheme';
@@ -16,3 +17,5 @@ export const WEB_THEMES = {
     'tech-focused': TechWebTheme,
     'professional-classic': ModernWebTheme, // Fallback to modern for now
 } as const;
+
+export type WebThemeId = keyof typeof WEB_THEMES;

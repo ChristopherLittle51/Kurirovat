@@ -357,6 +357,7 @@ const LandingPage: React.FC = () => {
                 <div className="relative">
                     <div className="hidden">
                         <PDFDownloadLink
+                            key={`${selectedTemplate}-${JSON.stringify(profile)}`}
                             id="admin-preview-download"
                             document={getPDFDocumentForWeb()!}
                             fileName={`${profile.fullName.replace(/\s+/g, '_')}_Resume.pdf`}

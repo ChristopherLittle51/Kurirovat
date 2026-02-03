@@ -100,6 +100,7 @@ const PublicHome: React.FC = () => {
                 {/* PDF Download Portal - invisible link triggered by theme */}
                 <div className="hidden">
                     <PDFDownloadLink
+                        key={`${profile.portfolioTemplate || 'modern-minimal'}-${JSON.stringify(profile)}`}
                         id="resume-download-link"
                         document={getPDFDocument()!}
                         fileName={`${profile.fullName.replace(/\s+/g, '_')}_Resume.pdf`}

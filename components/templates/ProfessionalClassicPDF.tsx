@@ -4,55 +4,51 @@ import { UserProfile } from '../../types';
 
 const styles = StyleSheet.create({
     page: {
-        padding: 30,
+        paddingTop: 30,
+        paddingBottom: 30,
+        paddingLeft: 35,
+        paddingRight: 35,
         fontFamily: 'Times-Roman',
         fontSize: 10,
-        lineHeight: 1.4,
+        lineHeight: 1.3,
         color: '#111827',
     },
     header: {
         textAlign: 'center',
         borderBottomWidth: 2,
-        borderBottomColor: '#1f2937',
-        paddingBottom: 16,
-        marginBottom: 16,
+        borderBottomColor: '#111827',
+        paddingBottom: 10,
+        marginBottom: 12,
     },
     name: {
-        fontSize: 24,
+        fontSize: 22,
         fontFamily: 'Times-Bold',
         textTransform: 'uppercase',
         letterSpacing: 3,
-        marginBottom: 8,
+        marginBottom: 6,
     },
-    contactRow: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        flexWrap: 'wrap',
-        gap: 8,
+    contactLine: {
         fontSize: 9,
-        color: '#4b5563',
-    },
-    link: {
-        color: '#1d4ed8',
-        textDecoration: 'none',
+        color: '#374151',
+        textAlign: 'center',
     },
     section: {
-        marginBottom: 14,
+        marginBottom: 10,
     },
     sectionTitle: {
         fontSize: 10,
         fontFamily: 'Times-Bold',
         textTransform: 'uppercase',
-        letterSpacing: 2,
+        letterSpacing: 1.5,
         borderBottomWidth: 1,
-        borderBottomColor: '#d1d5db',
-        paddingBottom: 3,
-        marginBottom: 8,
+        borderBottomColor: '#9ca3af',
+        paddingBottom: 2,
+        marginBottom: 6,
     },
     text: {
-        fontSize: 10,
-        color: '#374151',
-        lineHeight: 1.5,
+        fontSize: 9,
+        color: '#1f2937',
+        lineHeight: 1.4,
     },
     skillsRow: {
         flexDirection: 'row',
@@ -62,52 +58,48 @@ const styles = StyleSheet.create({
     skillTag: {
         fontSize: 8,
         backgroundColor: '#f3f4f6',
-        border: 1,
-        borderColor: '#e5e7eb',
-        padding: '3 6',
-        borderRadius: 2,
-        color: '#1f2937',
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        padding: '2 6',
+        color: '#374151',
     },
     experienceItem: {
-        marginBottom: 10,
+        marginBottom: 8,
     },
     expHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'baseline',
-        marginBottom: 2,
     },
     expRole: {
-        fontSize: 11,
+        fontSize: 10,
         fontFamily: 'Times-Bold',
     },
     expDate: {
         fontSize: 8,
-        color: '#6b7280',
-        fontFamily: 'Times-Bold',
+        color: '#4b5563',
+        fontFamily: 'Times-Italic',
     },
     expCompany: {
-        fontSize: 10,
-        fontFamily: 'Times-Bold',
+        fontSize: 9,
+        fontFamily: 'Times-Italic',
         color: '#374151',
-        marginBottom: 4,
-    },
-    bulletList: {
-        marginLeft: 12,
+        marginBottom: 3,
     },
     bulletItem: {
         flexDirection: 'row',
         marginBottom: 2,
+        marginLeft: 10,
     },
     bullet: {
         width: 8,
-        fontSize: 10,
-        color: '#374151',
+        fontSize: 9,
     },
     bulletText: {
         flex: 1,
-        fontSize: 10,
-        color: '#374151',
+        fontSize: 9,
+        color: '#1f2937',
+        lineHeight: 1.3,
     },
     educationItem: {
         flexDirection: 'row',
@@ -115,12 +107,13 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     eduInstitution: {
-        fontSize: 10,
+        fontSize: 9,
         fontFamily: 'Times-Bold',
     },
     eduDegree: {
-        fontSize: 10,
+        fontSize: 9,
         color: '#4b5563',
+        fontFamily: 'Times-Italic',
     },
 });
 
@@ -129,10 +122,31 @@ interface Props {
     slug?: string;
 }
 
+// Helper to ensure URL has protocol
+const ensureProtocol = (url: string): string => {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        return 'https://' + url;
+    }
+    return url;
+};
+
 const ProfessionalClassicPDF: React.FC<Props> = ({ data, slug }) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const portfolioUrl = slug ? `${origin}/p/${slug}` : null;
-    const portfolioDisplay = portfolioUrl ? portfolioUrl.replace(/^https?:\/\//, '') : '';
+
+    // Build links array for clickable rendering
+    const linksArray: { url: string; label: string }[] = [];
+    if (portfolioUrl) {
+        linksArray.push({ url: portfolioUrl, label: portfolioUrl.replace(/^https?:\/\//, '') });
+    }
+    if (data.links) {
+        data.links.forEach(link => {
+            linksArray.push({
+                url: ensureProtocol(link.url),
+                label: link.url.replace(/^https?:\/\//, '').replace(/^www\./, '')
+            });
+        });
+    }
 
     return (
         <Document>
@@ -140,19 +154,35 @@ const ProfessionalClassicPDF: React.FC<Props> = ({ data, slug }) => {
                 {/* Header */}
                 <View style={styles.header}>
                     <Text style={styles.name}>{data.fullName}</Text>
-                    <View style={styles.contactRow}>
-                        {data.location && <Text>{data.location}</Text>}
-                        {data.email && <Text>• {data.email}</Text>}
-                        {data.phone && <Text>• {data.phone}</Text>}
-                        {portfolioUrl && (
-                            <Link src={portfolioUrl} style={styles.link}>• {portfolioDisplay}</Link>
-                        )}
-                        {data.links?.map((link, i) => (
-                            <Link key={i} src={link.url} style={styles.link}>
-                                • {link.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                    {/* Contact info line */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+                        {data.location && <Text style={styles.contactLine}>{data.location}</Text>}
+                        {data.location && (data.email || data.phone) && <Text style={styles.contactLine}>  |  </Text>}
+                        {data.email && (
+                            <Link src={`mailto:${data.email}`}>
+                                <Text style={styles.contactLine}>{data.email}</Text>
                             </Link>
-                        ))}
+                        )}
+                        {data.email && data.phone && <Text style={styles.contactLine}>  |  </Text>}
+                        {data.phone && (
+                            <Link src={`tel:${data.phone.replace(/\D/g, '')}`}>
+                                <Text style={styles.contactLine}>{data.phone}</Text>
+                            </Link>
+                        )}
                     </View>
+                    {/* Links line */}
+                    {linksArray.length > 0 && (
+                        <View style={{ flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', marginTop: 2 }}>
+                            {linksArray.map((link, i) => (
+                                <View key={i} style={{ flexDirection: 'row' }}>
+                                    <Link src={link.url}>
+                                        <Text style={styles.contactLine}>{link.label}</Text>
+                                    </Link>
+                                    {i < linksArray.length - 1 && <Text style={styles.contactLine}>  |  </Text>}
+                                </View>
+                            ))}
+                        </View>
+                    )}
                 </View>
 
                 {/* Summary */}
@@ -182,20 +212,18 @@ const ProfessionalClassicPDF: React.FC<Props> = ({ data, slug }) => {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Professional Experience</Text>
                         {data.experience.map((exp) => (
-                            <View key={exp.id} style={styles.experienceItem}>
+                            <View key={exp.id} style={styles.experienceItem} wrap={false}>
                                 <View style={styles.expHeader}>
                                     <Text style={styles.expRole}>{exp.role}</Text>
                                     <Text style={styles.expDate}>{exp.startDate} – {exp.endDate}</Text>
                                 </View>
                                 <Text style={styles.expCompany}>{exp.company}</Text>
-                                <View style={styles.bulletList}>
-                                    {exp.description?.map((point, idx) => (
-                                        <View key={idx} style={styles.bulletItem}>
-                                            <Text style={styles.bullet}>•</Text>
-                                            <Text style={styles.bulletText}>{point}</Text>
-                                        </View>
-                                    ))}
-                                </View>
+                                {exp.description?.map((point, idx) => (
+                                    <View key={idx} style={styles.bulletItem} wrap={false}>
+                                        <Text style={styles.bullet}>•</Text>
+                                        <Text style={styles.bulletText}>{point}</Text>
+                                    </View>
+                                ))}
                             </View>
                         ))}
                     </View>
@@ -206,7 +234,7 @@ const ProfessionalClassicPDF: React.FC<Props> = ({ data, slug }) => {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Additional Experience</Text>
                         {data.otherExperience.map((exp) => (
-                            <View key={exp.id} style={styles.experienceItem}>
+                            <View key={exp.id} style={styles.experienceItem} wrap={false}>
                                 <View style={styles.expHeader}>
                                     <Text style={styles.expRole}>{exp.role}</Text>
                                     <Text style={styles.expDate}>{exp.startDate} – {exp.endDate}</Text>

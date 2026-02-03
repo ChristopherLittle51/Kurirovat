@@ -443,19 +443,6 @@ const ApplicationDetails: React.FC = () => {
         }
     };
 
-    // Helper to get PDF component (for web download)
-    const getPDFDocumentForWeb = () => {
-        if (!application) return null;
-        const props = { data: application.resume, slug: application.slug };
-        switch (selectedTemplate) {
-            case 'modern-minimal': return <ModernMinimalPDF {...props} />;
-            case 'professional-classic': return <ProfessionalClassicPDF {...props} />;
-            case 'creative-bold': return <CreativeBoldPDF {...props} />;
-            case 'tech-focused': return <TechFocusedPDF {...props} />;
-            default: return <ModernMinimalPDF {...props} />;
-        }
-    };
-
     // Get the PDF component for the selected template
     const getPDFDocument = () => {
         if (!application) return null;
@@ -611,6 +598,7 @@ const ApplicationDetails: React.FC = () => {
 
                                 {view === 'RESUME' && application && (
                                     <PDFDownloadLink
+                                        key={`${selectedTemplate}-${JSON.stringify(application.resume)}`}
                                         document={getPDFDocument()!}
                                         fileName={`${application.resume.fullName.replace(/\s+/g, '_')}_Resume.pdf`}
                                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-900 dark:bg-gray-700 text-white hover:bg-gray-800 dark:hover:bg-gray-600 transition"
@@ -695,8 +683,9 @@ const ApplicationDetails: React.FC = () => {
                         {/* PDF Download Portal for Web Preview */}
                         <div className="hidden">
                             <PDFDownloadLink
+                                key={`${selectedTemplate}-${JSON.stringify(application.resume)}`}
                                 id="web-preview-resume-download"
-                                document={getPDFDocumentForWeb()!}
+                                document={getPDFDocument()!}
                                 fileName={`${application.resume.fullName.replace(/\s+/g, '_')}_Resume.pdf`}
                             >
                                 {({ loading }) => loading ? '...' : 'Download'}
