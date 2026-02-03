@@ -85,7 +85,7 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                         {data.profilePhotoUrl && (
                             <div className="shrink-0 relative group">
                                 <div className="absolute -inset-4 bg-emerald-500/20 rounded-2xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-2xl border-2 border-emerald-500/30 overflow-hidden grayscale contrast-125 brightness-75 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-500">
+                                <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-2xl border-2 border-emerald-500/30 overflow-hidden grayscale-0 md:grayscale contrast-125 brightness-100 md:brightness-75 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-500">
                                     <img src={data.profilePhotoUrl} alt={data.fullName} className="w-full h-full object-cover" />
                                     {/* Grid Overlay */}
                                     <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.1)_1px,transparent_1px)] bg-size-[20px_20px]" />
@@ -118,17 +118,21 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                             <h2 className="text-2xl font-bold uppercase tracking-widest">Connect</h2>
                         </div>
                         <div className="space-y-3">
-                            {[
-                                { icon: Mail, label: 'Email', value: data.email },
-                                { icon: Phone, label: 'Call', value: data.phone },
-                                { icon: MapPin, label: 'Geo', value: data.location },
-                            ].map(({ icon: Icon, label, value }) => (
-                                <div key={label} className="flex items-center gap-4 p-4 bg-[#0d0d0e] border border-emerald-900/20 rounded-lg group hover:border-emerald-500/30 transition-colors">
-                                    <Icon size={18} className="text-emerald-700 group-hover:text-emerald-500 transition-colors" />
-                                    <span className="text-xs text-emerald-900 group-hover:text-emerald-700 uppercase">{label}:</span>
-                                    <span className="text-sm truncate text-emerald-400">{value}</span>
-                                </div>
-                            ))}
+                            <a href={`mailto:${data.email}`} className="flex items-center gap-4 p-4 bg-[#0d0d0e] border border-emerald-900/20 rounded-lg group hover:border-emerald-500/30 transition-colors">
+                                <Mail size={18} className="text-emerald-700 group-hover:text-emerald-500 transition-colors" />
+                                <span className="text-xs text-emerald-900 group-hover:text-emerald-700 uppercase">Email:</span>
+                                <span className="text-sm truncate text-emerald-400">{data.email}</span>
+                            </a>
+                            <a href={`tel:${data.phone}`} className="flex items-center gap-4 p-4 bg-[#0d0d0e] border border-emerald-900/20 rounded-lg group hover:border-emerald-500/30 transition-colors">
+                                <Phone size={18} className="text-emerald-700 group-hover:text-emerald-500 transition-colors" />
+                                <span className="text-xs text-emerald-900 group-hover:text-emerald-700 uppercase">Call:</span>
+                                <span className="text-sm truncate text-emerald-400">{data.phone}</span>
+                            </a>
+                            <div className="flex items-center gap-4 p-4 bg-[#0d0d0e] border border-emerald-900/20 rounded-lg group hover:border-emerald-500/30 transition-colors">
+                                <MapPin size={18} className="text-emerald-700 group-hover:text-emerald-500 transition-colors" />
+                                <span className="text-xs text-emerald-900 group-hover:text-emerald-700 uppercase">Geo:</span>
+                                <span className="text-sm truncate text-emerald-400">{data.location}</span>
+                            </div>
                         </div>
                     </div>
                 </section>

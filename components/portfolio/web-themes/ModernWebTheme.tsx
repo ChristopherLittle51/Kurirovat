@@ -83,7 +83,7 @@ const ModernWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPre
                         </div>
                         <div>
                             <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Phone</p>
-                            <p className="font-medium">{data.phone}</p>
+                            <a href={`tel:${data.phone}`} className="font-medium hover:text-indigo-600 transition-colors">{data.phone}</a>
                         </div>
                     </div>
                     <div className="flex items-center gap-4 p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-transform hover:scale-[1.02]">
