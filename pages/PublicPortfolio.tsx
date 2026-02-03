@@ -21,6 +21,26 @@ const PublicPortfolio: React.FC = () => {
         }
     }, [slug]);
 
+    useEffect(() => {
+        if (application && application.resume) {
+            // Use summary as tagline, truncating if necessary
+            // For tailored applications, we could also consider using the Role Title 
+            // but the summary is the most direct mapping to "Personal Tagline".
+            const summary = application.resume.summary || '';
+            const tagline = summary.length > 50
+                ? `${summary.substring(0, 50)}...`
+                : summary;
+
+            document.title = `${application.resume.fullName} | ${tagline}`;
+        } else {
+            document.title = 'Portfolio';
+        }
+
+        return () => {
+            document.title = 'Kurirovat';
+        };
+    }, [application]);
+
     const loadApplication = async () => {
         if (!slug) return;
         setLoading(true);

@@ -26,6 +26,23 @@ const PublicHome: React.FC = () => {
         loadPublicProfile();
     }, []);
 
+    useEffect(() => {
+        if (profile) {
+            // Use summary as tagline, truncating if necessary for the tab title
+            const tagline = profile.summary.length > 50
+                ? `${profile.summary.substring(0, 50)}...`
+                : profile.summary;
+            document.title = `${profile.fullName} | ${tagline}`;
+        } else {
+            document.title = 'Portfolio';
+        }
+
+        // Cleanup to reset title when unmounting (optional, but good practice if navigating away)
+        return () => {
+            document.title = 'Kurirovat';
+        };
+    }, [profile]);
+
     const loadPublicProfile = async () => {
         try {
             // Fetch the first (and only) profile since this is a single-user app
