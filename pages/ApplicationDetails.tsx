@@ -628,6 +628,16 @@ const ApplicationDetails: React.FC = () => {
                     </div>
                 </div>
 
+                {showTemplatePicker && view === 'RESUME' && (
+                    <div className="absolute right-4 top-full mt-2 w-80 z-30">
+                        <TemplateSwitcher
+                            title="Select Resume Template"
+                            currentTemplate={selectedTemplate}
+                            onSelect={handleTemplateChange}
+                        />
+                    </div>
+                )}
+
                 {showThemePicker && view === 'PORTFOLIO' && (
                     <div className="absolute right-4 top-full mt-2 w-80 z-30">
                         <TemplateSwitcher

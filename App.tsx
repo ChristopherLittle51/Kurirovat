@@ -13,6 +13,7 @@ import PublicHome from './pages/PublicHome';
 import LandingPage from './pages/LandingPage';
 import * as SupabaseService from './services/supabaseService';
 import { Loader2 } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 
 // Protected Route Wrapper
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -69,6 +70,7 @@ const AdminLayout: React.FC = () => {
 const App: React.FC = () => {
   return (
     <ThemeProvider>
+      <Analytics />
       <AuthProvider>
         <Router>
           <Routes>
