@@ -66,32 +66,31 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                         User Profile Loaded: v1.0.4
                     </div>
 
-                    <div className="flex flex-col md:flex-row gap-12 items-start">
-                        <div className="flex-1 space-y-6">
-                            <h1 className="text-4xl md:text-7xl font-bold tracking-tighter text-white">
-                                <span className="text-emerald-500 font-light">$ whoami</span><br />
-                                {data.fullName}
-                            </h1>
-                            <div className="p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-xl relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-2 text-[8px] opacity-20 group-hover:opacity-40 transition-opacity">
-                                    [SYSTEM_RECAP]
-                                </div>
-                                <p className="text-lg md:text-xl leading-relaxed text-emerald-400/80">
-                                    {data.summary}
-                                </p>
-                            </div>
-                        </div>
+                    <div className="grid grid-cols-[1fr_auto] md:grid-cols-[1fr_auto] gap-x-4 gap-y-6 md:gap-12 items-start">
+                        <h1 className="col-span-1 text-2xl sm:text-4xl md:text-7xl font-bold tracking-tighter text-white break-words">
+                            <span className="text-emerald-500 font-light">$ whoami</span><br />
+                            {data.fullName}
+                        </h1>
 
                         {data.profilePhotoUrl && (
-                            <div className="shrink-0 relative group">
+                            <div className="col-span-1 row-span-1 md:row-span-2 shrink-0 relative group">
                                 <div className="absolute -inset-4 bg-emerald-500/20 rounded-2xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-2xl border-2 border-emerald-500/30 overflow-hidden grayscale-0 md:grayscale contrast-125 brightness-100 md:brightness-75 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-500">
+                                <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-64 md:h-64 rounded-2xl border-2 border-emerald-500/30 overflow-hidden grayscale-0 md:grayscale contrast-125 brightness-100 md:brightness-75 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-500">
                                     <img src={data.profilePhotoUrl} alt={data.fullName} className="w-full h-full object-cover" />
                                     {/* Grid Overlay */}
                                     <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.1)_1px,transparent_1px)] bg-size-[20px_20px]" />
                                 </div>
                             </div>
                         )}
+
+                        <div className="col-span-2 md:col-span-1 p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-2 text-[8px] opacity-20 group-hover:opacity-40 transition-opacity">
+                                [SYSTEM_RECAP]
+                            </div>
+                            <p className="text-lg md:text-xl leading-relaxed text-emerald-400/80">
+                                {data.summary}
+                            </p>
+                        </div>
                     </div>
                 </section>
 
