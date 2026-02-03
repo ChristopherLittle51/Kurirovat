@@ -4,7 +4,7 @@ import { UserProfile } from '../../types';
 
 const styles = StyleSheet.create({
     page: {
-        paddingTop: 0,
+        paddingTop: 30,
         paddingBottom: 30,
         paddingLeft: 0,
         paddingRight: 0,
@@ -13,9 +13,10 @@ const styles = StyleSheet.create({
         lineHeight: 1.4,
         color: '#111827',
     },
-    // Header with gradient-like effect using solid indigo
+    // Header with purple gradient-inspired color
     header: {
-        backgroundColor: '#4f46e5',
+        backgroundColor: '#7c3aed', // Purple-600 to match gradient center
+        marginTop: -30,
         paddingTop: 30,
         paddingBottom: 25,
         paddingLeft: 35,
@@ -40,7 +41,7 @@ const styles = StyleSheet.create({
     },
     contactText: {
         fontSize: 9,
-        color: '#c7d2fe',
+        color: '#ddd6fe', // Purple-200
         marginBottom: 3,
     },
     linkText: {
@@ -55,22 +56,22 @@ const styles = StyleSheet.create({
         paddingRight: 35,
     },
     section: {
-        marginBottom: 18,
+        marginBottom: 16,
     },
     sectionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 10,
         borderLeftWidth: 4,
-        borderLeftColor: '#4f46e5',
+        borderLeftColor: '#7c3aed', // Purple-600
         paddingLeft: 10,
     },
     sectionTitle: {
-        fontSize: 12,
+        fontSize: 11,
         fontFamily: 'Helvetica-Bold',
         color: '#111827',
         textTransform: 'uppercase',
-        letterSpacing: 1,
+        letterSpacing: 1.5,
     },
     text: {
         fontSize: 10,
@@ -86,22 +87,22 @@ const styles = StyleSheet.create({
     },
     skillTag: {
         fontSize: 9,
-        backgroundColor: '#f5f3ff',
+        backgroundColor: '#ede9fe', // Purple-100
         borderWidth: 1,
-        borderColor: '#c4b5fd',
-        padding: '4 10',
-        borderRadius: 4,
-        color: '#4f46e5',
+        borderColor: '#a78bfa', // Purple-400
+        padding: '5 12',
+        borderRadius: 12, // More rounded like web
+        color: '#7c3aed', // Purple-600
         fontFamily: 'Helvetica-Bold',
     },
     experienceCard: {
-        backgroundColor: '#f9fafb',
+        backgroundColor: '#faf5ff', // Purple-50 tint
         padding: 14,
         borderRadius: 8,
         marginBottom: 10,
         marginLeft: 14,
         borderWidth: 1,
-        borderColor: '#e5e7eb',
+        borderColor: '#e9d5ff', // Purple-200
     },
     expHeader: {
         flexDirection: 'row',
@@ -116,15 +117,15 @@ const styles = StyleSheet.create({
     },
     expDate: {
         fontSize: 8,
-        backgroundColor: '#e0e7ff',
-        color: '#4f46e5',
+        backgroundColor: '#f3e8ff', // Purple-100
+        color: '#7c3aed', // Purple-600
         padding: '3 8',
-        borderRadius: 4,
+        borderRadius: 10,
         fontFamily: 'Helvetica-Bold',
     },
     expCompany: {
         fontSize: 10,
-        color: '#4f46e5',
+        color: '#7c3aed', // Purple-600
         fontFamily: 'Helvetica-Bold',
         marginBottom: 6,
     },
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
     bullet: {
         width: 10,
         fontSize: 9,
-        color: '#818cf8',
+        color: '#a78bfa', // Purple-400
     },
     bulletText: {
         flex: 1,
@@ -160,7 +161,7 @@ const styles = StyleSheet.create({
     },
     eduYear: {
         fontSize: 9,
-        color: '#4f46e5',
+        color: '#7c3aed', // Purple-600
         fontFamily: 'Helvetica-Bold',
     },
 });

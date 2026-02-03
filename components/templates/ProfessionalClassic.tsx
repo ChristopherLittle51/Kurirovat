@@ -31,18 +31,19 @@ const ProfessionalClassic: React.FC<EditableTemplateProps> = ({
         <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-gray-950 p-8 md:p-12 shadow-2xl dark:shadow-none border border-gray-100 dark:border-gray-900 print:shadow-none print:border-none text-gray-900 dark:text-gray-100 font-serif transition-colors">
             {/* Header */}
             <header className="text-center border-b-2 border-gray-800 dark:border-gray-400 pb-6 mb-6">
-                <h1 className="text-3xl md:text-4xl font-bold uppercase tracking-widest mb-3 text-gray-900 dark:text-white">
+                <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-[0.2em] mb-3 text-gray-900 dark:text-white">
                     {editable && onUpdate ? (
                         <InlineEdit
                             value={data.fullName || ''}
                             onSave={(v) => onUpdate('fullName', v)}
-                            className="text-3xl md:text-4xl font-bold uppercase tracking-widest"
+                            className="text-2xl md:text-3xl font-bold uppercase tracking-[0.2em]"
                         />
                     ) : (
                         data.fullName
                     )}
                 </h1>
-                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
+                {/* Contact info line: location | email | phone */}
+                <div className="flex flex-wrap justify-center items-center gap-x-0 gap-y-1 text-sm text-gray-600 dark:text-gray-400 mb-1">
                     {(data.location || editable) && (
                         editable && onUpdate ? (
                             <InlineEdit
@@ -55,47 +56,64 @@ const ProfessionalClassic: React.FC<EditableTemplateProps> = ({
                             <span>{data.location}</span>
                         )
                     )}
+                    {data.location && (data.email || data.phone) && (
+                        <span className="mx-2 text-gray-400">|</span>
+                    )}
                     {(data.email || editable) && (
-                        <span className="flex items-center gap-1">
-                            •
-                            {editable && onUpdate ? (
-                                <InlineEdit
-                                    value={data.email || ''}
-                                    onSave={(v) => onUpdate('email', v)}
-                                    placeholder="Email"
-                                    className="text-sm text-gray-600 dark:text-gray-400"
-                                />
-                            ) : (
-                                data.email
-                            )}
-                        </span>
+                        editable && onUpdate ? (
+                            <InlineEdit
+                                value={data.email || ''}
+                                onSave={(v) => onUpdate('email', v)}
+                                placeholder="Email"
+                                className="text-sm text-gray-600 dark:text-gray-400"
+                            />
+                        ) : (
+                            <a href={`mailto:${data.email}`} className="hover:text-blue-700 dark:hover:text-blue-400">
+                                {data.email}
+                            </a>
+                        )
+                    )}
+                    {data.email && data.phone && (
+                        <span className="mx-2 text-gray-400">|</span>
                     )}
                     {(data.phone || editable) && (
-                        <span className="flex items-center gap-1">
-                            •
-                            {editable && onUpdate ? (
-                                <InlineEdit
-                                    value={data.phone || ''}
-                                    onSave={(v) => onUpdate('phone', v)}
-                                    placeholder="Phone"
-                                    className="text-sm text-gray-600 dark:text-gray-400"
-                                />
-                            ) : (
-                                data.phone
-                            )}
-                        </span>
+                        editable && onUpdate ? (
+                            <InlineEdit
+                                value={data.phone || ''}
+                                onSave={(v) => onUpdate('phone', v)}
+                                placeholder="Phone"
+                                className="text-sm text-gray-600 dark:text-gray-400"
+                            />
+                        ) : (
+                            <a href={`tel:${data.phone?.replace(/\D/g, '')}`} className="hover:text-blue-700 dark:hover:text-blue-400">
+                                {data.phone}
+                            </a>
+                        )
                     )}
-                    {portfolioUrl && (
-                        <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 dark:text-blue-400 hover:underline">
-                            • {portfolioUrl.replace(/^https?:\/\//, '')}
-                        </a>
-                    )}
-                    {data.links?.map((link, idx) => (
-                        <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="text-blue-700 dark:text-blue-400 hover:underline">
-                            • {link.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
-                        </a>
-                    ))}
                 </div>
+                {/* Links line */}
+                {(portfolioUrl || (data.links && data.links.length > 0)) && (
+                    <div className="flex flex-wrap justify-center items-center gap-x-0 gap-y-1 text-sm">
+                        {portfolioUrl && (
+                            <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-blue-700 dark:hover:text-blue-400">
+                                {portfolioUrl.replace(/^https?:\/\//, '')}
+                            </a>
+                        )}
+                        {portfolioUrl && data.links && data.links.length > 0 && (
+                            <span className="mx-2 text-gray-400">|</span>
+                        )}
+                        {data.links?.map((link, idx) => (
+                            <React.Fragment key={idx}>
+                                <a href={link.url.startsWith('http') ? link.url : `https://${link.url}`} target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-blue-700 dark:hover:text-blue-400">
+                                    {link.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                                </a>
+                                {idx < (data.links?.length || 0) - 1 && (
+                                    <span className="mx-2 text-gray-400">|</span>
+                                )}
+                            </React.Fragment>
+                        ))}
+                    </div>
+                )}
             </header>
 
             {/* Summary */}

@@ -9,13 +9,13 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
     return (
         <div className={`min-h-screen bg-rose-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-serif selection:bg-rose-500 selection:text-white ${isPreview ? 'relative overflow-hidden' : ''}`}>
             {/* Nav / Floating buttons */}
-            <div className={`${isPreview ? 'absolute' : 'fixed'} top-8 right-8 z-50`}>
+            <div className={`${isPreview ? 'absolute' : 'fixed'} top-4 sm:top-8 right-4 sm:right-8 z-50`}>
                 <button
                     onClick={onDownloadResume}
-                    className="p-4 bg-zinc-900 dark:bg-rose-500 text-white dark:text-zinc-900 rounded-full shadow-2xl hover:scale-110 active:scale-90 transition-all group"
+                    className="p-3 sm:p-4 min-w-[48px] min-h-[48px] bg-zinc-900 dark:bg-rose-500 text-white dark:text-zinc-900 rounded-full shadow-2xl hover:scale-110 active:scale-90 transition-all group"
                     title="Download Resume"
                 >
-                    <Download size={24} className="group-hover:rotate-12 transition-transform" />
+                    <Download size={20} className="sm:w-6 sm:h-6 group-hover:rotate-12 transition-transform" />
                 </button>
             </div>
 
@@ -27,7 +27,7 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                         Available for projects
                     </span>
 
-                    <h1 className="text-7xl md:text-[10rem] font-black leading-[0.8] tracking-tighter mb-12 italic">
+                    <h1 className="text-5xl sm:text-7xl md:text-[10rem] font-black leading-[0.8] tracking-tighter mb-8 sm:mb-12 italic">
                         {data.fullName.split(' ').map((name, i) => (
                             <React.Fragment key={i}>
                                 <span className={i === 0 ? "text-transparent stroke-rose-500 stroke-2" : "text-rose-600 dark:text-rose-500"}>
@@ -39,12 +39,12 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                     </h1>
 
                     <div className="flex flex-col md:flex-row items-end gap-12">
-                        <p className="text-2xl md:text-4xl text-zinc-600 dark:text-zinc-400 font-medium leading-tight max-w-3xl">
+                        <p className="text-xl sm:text-2xl md:text-4xl text-zinc-600 dark:text-zinc-400 font-medium leading-tight max-w-3xl">
                             {data.summary}
                         </p>
 
                         {data.profilePhotoUrl && (
-                            <div className="shrink-0 w-64 h-64 md:w-80 md:h-80 grayscale hover:grayscale-0 transition-all duration-700 rounded-full overflow-hidden border-8 border-rose-200 dark:border-rose-900/20 shadow-2xl">
+                            <div className="shrink-0 w-40 h-40 sm:w-64 sm:h-64 md:w-80 md:h-80 grayscale hover:grayscale-0 transition-all duration-700 rounded-full overflow-hidden border-4 sm:border-8 border-rose-200 dark:border-rose-900/20 shadow-2xl">
                                 <img src={data.profilePhotoUrl} alt={data.fullName} className="w-full h-full object-cover" />
                             </div>
                         )}
@@ -57,9 +57,9 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
             </section>
 
             {/* Work */}
-            <section className="px-6 md:px-20 py-40 bg-zinc-900 text-white rounded-[4rem] md:rounded-[8rem] mx-4 md:mx-8">
+            <section className="px-4 sm:px-6 md:px-20 py-20 sm:py-40 bg-zinc-900 text-white rounded-[2rem] sm:rounded-[4rem] md:rounded-[8rem] mx-2 sm:mx-4 md:mx-8">
                 <div className="max-w-6xl mx-auto">
-                    <h2 className="text-5xl md:text-8xl font-black mb-32 tracking-tighter">Selected<br /><span className="text-rose-500">Exp.</span></h2>
+                    <h2 className="text-3xl sm:text-5xl md:text-8xl font-black mb-16 sm:mb-32 tracking-tighter">Selected<br /><span className="text-rose-500">Exp.</span></h2>
 
                     <div className="space-y-40">
                         {data.experience?.map((exp, idx) => (
@@ -69,7 +69,7 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                                     <h3 className="text-3xl font-bold uppercase">{exp.company}</h3>
                                 </div>
                                 <div className="md:col-span-8">
-                                    <h4 className="text-4xl md:text-6xl font-light mb-8 italic">{exp.role}</h4>
+                                    <h4 className="text-2xl sm:text-4xl md:text-6xl font-light mb-4 sm:mb-8 italic">{exp.role}</h4>
                                     <ul className="space-y-6">
                                         {exp.description?.map((bullet, bIdx) => (
                                             <li key={bIdx} className="text-xl md:text-2xl text-zinc-400 group-hover:text-white transition-colors leading-snug">
@@ -85,11 +85,11 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
             </section>
 
             {/* Skills / Grid */}
-            <section className="px-6 md:px-20 py-40">
+            <section className="px-4 sm:px-6 md:px-20 py-16 sm:py-40">
                 <div className="max-w-6xl mx-auto">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="col-span-2 md:row-span-2 bg-rose-500 p-12 rounded-[3rem] flex flex-col justify-between aspect-square md:aspect-auto">
-                            <h2 className="text-5xl font-black text-white">Skills<br />Matrix</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                        <div className="col-span-2 md:row-span-2 bg-rose-500 p-8 sm:p-12 rounded-[2rem] sm:rounded-[3rem] flex flex-col justify-between aspect-square md:aspect-auto">
+                            <h2 className="text-3xl sm:text-5xl font-black text-white">Skills<br />Matrix</h2>
                             <div className="flex flex-wrap gap-2">
                                 {data.skills?.slice(0, 5).map((skill, idx) => (
                                     <span key={idx} className="px-3 py-1 bg-white/20 text-white rounded-full text-sm backdrop-blur-md">
@@ -110,10 +110,10 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
             {/* Contact / Footer */}
             <footer className="px-6 md:px-20 py-40 text-center relative overflow-hidden">
                 <div className="max-w-4xl mx-auto relative z-10">
-                    <h2 className="text-6xl md:text-9xl font-black mb-12 tracking-tighter">Let's <span className="text-transparent stroke-zinc-900 dark:stroke-white stroke-2 italic">Talk</span></h2>
+                    <h2 className="text-4xl sm:text-6xl md:text-9xl font-black mb-8 sm:mb-12 tracking-tighter">Let's <span className="text-transparent stroke-zinc-900 dark:stroke-white stroke-2 italic">Talk</span></h2>
                     <a
                         href={`mailto:${data.email}`}
-                        className="text-2xl md:text-4xl font-bold hover:text-rose-500 transition-colors border-b-4 border-rose-500 pb-2"
+                        className="text-lg sm:text-2xl md:text-4xl font-bold hover:text-rose-500 transition-colors border-b-2 sm:border-b-4 border-rose-500 pb-1 sm:pb-2 break-all sm:break-normal"
                     >
                         {data.email}
                     </a>

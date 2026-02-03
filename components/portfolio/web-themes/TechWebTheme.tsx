@@ -11,7 +11,31 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
             {/* Scanline Effect */}
             <div className={`${isPreview ? 'absolute' : 'fixed'} inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-[length:100%_4px,3px_100%]`} />
 
-            {/* Sidebar Navigation */}
+            {/* Mobile Header - Visible below lg */}
+            <header className={`lg:hidden ${isPreview ? 'absolute' : 'fixed'} top-0 left-0 right-0 z-40 bg-[#0d0d0e] border-b border-emerald-900/30 px-4 sm:px-6 py-3 flex items-center justify-between`}>
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center text-[#0a0a0b]">
+                        <Terminal size={20} />
+                    </div>
+                    <span className="text-white font-bold text-sm truncate max-w-[120px] sm:max-w-[180px]">{data.fullName}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    {data.links?.map((link, idx) => {
+                        const Icon = link.platform.toLowerCase() === 'github' ? Github :
+                            link.platform.toLowerCase() === 'linkedin' ? Linkedin : ExternalLink;
+                        return (
+                            <a key={idx} href={ensureAbsoluteUrl(link.url)} target="_blank" rel="noopener noreferrer" className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-emerald-700 hover:text-emerald-500 transition-colors">
+                                <Icon size={18} />
+                            </a>
+                        );
+                    })}
+                    <button onClick={onDownloadResume} className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-emerald-700 hover:text-emerald-500 transition-colors" title="Download Resume">
+                        <Download size={18} />
+                    </button>
+                </div>
+            </header>
+
+            {/* Sidebar Navigation - Desktop only */}
             <nav className={`${isPreview ? 'absolute' : 'fixed'} left-0 top-0 h-full w-20 border-r border-emerald-900/30 bg-[#0d0d0e] hidden lg:flex flex-col items-center py-8 gap-8 z-40`}>
                 <div className="w-12 h-12 bg-emerald-500 rounded-lg flex items-center justify-center text-[#0a0a0b]">
                     <Terminal size={24} />
@@ -36,7 +60,7 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                 </button>
             </nav>
 
-            <main className="lg:ml-20 p-6 md:p-12 lg:p-24 max-w-7xl mx-auto space-y-32">
+            <main className="lg:ml-20 pt-20 lg:pt-0 p-6 md:p-12 lg:p-24 max-w-7xl mx-auto space-y-16 sm:space-y-24 lg:space-y-32">
                 {/* Hero / Terminal Prompt */}
                 <section className="space-y-8 animate-in fade-in slide-in-from-left duration-1000">
                     <div className="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded text-xs uppercase tracking-tighter">
@@ -118,9 +142,9 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                         <div className="h-px flex-1 bg-emerald-900/30" />
                     </div>
 
-                    <div className="border-l border-emerald-900/30 ml-4 space-y-16">
+                    <div className="border-l border-emerald-900/30 ml-2 sm:ml-4 space-y-10 sm:space-y-16">
                         {data.experience?.map((exp, idx) => (
-                            <div key={idx} className="relative pl-12 group">
+                            <div key={idx} className="relative pl-6 sm:pl-12 group">
                                 <div className="absolute left-[-5px] top-2 w-2 h-2 bg-[#0a0a0b] border border-emerald-500 rounded-full group-hover:bg-emerald-500 transition-colors" />
                                 <div className="space-y-4">
                                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-2">
@@ -131,7 +155,7 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                                         @ {exp.company}
                                         <div className="h-px w-8 bg-emerald-900/50" />
                                     </div>
-                                    <div className="p-6 bg-[#0d0d0e] border border-emerald-900/20 rounded-xl group-hover:border-emerald-500/20 transition-colors">
+                                    <div className="p-4 sm:p-6 bg-[#0d0d0e] border border-emerald-900/20 rounded-xl group-hover:border-emerald-500/20 transition-colors">
                                         <ul className="grid grid-cols-1 gap-4">
                                             {exp.description?.map((bullet, bIdx) => (
                                                 <li key={bIdx} className="text-sm leading-relaxed text-emerald-500/70 before:content-['>_'] before:text-emerald-700">
@@ -147,7 +171,7 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                 </section>
 
                 {/* Footer */}
-                <footer className="pt-32 pb-12 border-t border-emerald-900/20 text-center opacity-40 hover:opacity-100 transition-opacity">
+                <footer className="pt-16 sm:pt-32 pb-12 border-t border-emerald-900/20 text-center opacity-40 hover:opacity-100 transition-opacity">
                     <p className="text-xs tracking-[0.3em] uppercase">SYSTEM.HALT – {new Date().getFullYear()} – {data.fullName}</p>
                     <div className="mt-4 flex justify-center gap-2">
                         <div className="w-1 h-1 bg-emerald-500 rounded-full animate-ping" />

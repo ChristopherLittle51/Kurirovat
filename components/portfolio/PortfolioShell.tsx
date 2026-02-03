@@ -32,7 +32,7 @@ const PortfolioShell: React.FC<PortfolioShellProps> = ({ data, children }) => {
                                 </p>
                             </div>
 
-                            <div className="flex flex-wrap gap-4 text-sm font-medium">
+                            <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm font-medium">
                                 {data.location && (
                                     <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
                                         <MapPin size={14} className="text-blue-600 dark:text-blue-400" />
@@ -40,7 +40,7 @@ const PortfolioShell: React.FC<PortfolioShellProps> = ({ data, children }) => {
                                     </span>
                                 )}
                                 {data.email && (
-                                    <a href={`mailto:${data.email}`} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                    <a href={`mailto:${data.email}`} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate max-w-[200px] sm:max-w-none">
                                         <Mail size={14} className="text-blue-600 dark:text-blue-400" />
                                         {data.email}
                                     </a>
@@ -62,7 +62,7 @@ const PortfolioShell: React.FC<PortfolioShellProps> = ({ data, children }) => {
                                             href={ensureAbsoluteUrl(link.url)}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="p-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl hover:scale-110 active:scale-95 transition"
+                                            className="p-3 min-w-[44px] min-h-[44px] bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl hover:scale-110 active:scale-95 transition flex items-center justify-center"
                                             aria-label={link.platform}
                                         >
                                             <Icon size={20} />

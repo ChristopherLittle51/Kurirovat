@@ -13,17 +13,17 @@ const ModernWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPre
                 <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12 relative z-10">
                     {/* Avatar */}
                     {data.profilePhotoUrl ? (
-                        <div className="w-48 h-48 rounded-3xl overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800 rotate-3">
+                        <div className="w-32 h-32 sm:w-48 sm:h-48 rounded-3xl overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800 rotate-3">
                             <img src={data.profilePhotoUrl} alt={data.fullName} className="w-full h-full object-cover" />
                         </div>
                     ) : (
-                        <div className="w-48 h-48 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-2xl rotate-3">
-                            <span className="text-7xl font-bold text-white uppercase">{data.fullName.charAt(0)}</span>
+                        <div className="w-32 h-32 sm:w-48 sm:h-48 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-2xl rotate-3">
+                            <span className="text-5xl sm:text-7xl font-bold text-white uppercase">{data.fullName.charAt(0)}</span>
                         </div>
                     )}
 
                     <div className="flex-1 text-center md:text-left">
-                        <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-4">
+                        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight mb-4">
                             {data.fullName}
                         </h1>
                         <p className="text-xl md:text-2xl text-slate-600 dark:text-slate-400 font-medium max-w-2xl leading-relaxed">
@@ -67,14 +67,14 @@ const ModernWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPre
             {/* Main Content */}
             <main className="max-w-5xl mx-auto px-6 py-20 space-y-24">
                 {/* Contact Section */}
-                <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                     <div className="flex items-center gap-4 p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-transform hover:scale-[1.02]">
                         <div className="p-3 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg">
                             <Mail size={24} />
                         </div>
                         <div>
                             <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Email</p>
-                            <a href={`mailto:${data.email}`} className="font-medium hover:text-blue-600 transition-colors">{data.email}</a>
+                            <a href={`mailto:${data.email}`} className="font-medium hover:text-blue-600 transition-colors truncate max-w-[180px] sm:max-w-none">{data.email}</a>
                         </div>
                     </div>
                     <div className="flex items-center gap-4 p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-transform hover:scale-[1.02]">
@@ -107,12 +107,12 @@ const ModernWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPre
                         {data.experience?.map((exp, idx) => (
                             <div key={idx} className="group flex flex-col md:flex-row gap-8 relative">
                                 <div className="md:w-1/4">
-                                    <div className="sticky top-24">
+                                    <div className="md:sticky md:top-24">
                                         <p className="text-lg font-bold text-slate-400 group-hover:text-blue-500 transition-colors">{exp.startDate} — {exp.endDate}</p>
                                         <p className="text-sm font-bold uppercase tracking-widest text-slate-500 mt-1">{exp.company}</p>
                                     </div>
                                 </div>
-                                <div className="md:w-3/4 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl group-hover:-translate-y-1">
+                                <div className="md:w-3/4 bg-white dark:bg-slate-900 p-5 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl group-hover:-translate-y-1">
                                     <h3 className="text-2xl font-bold mb-4">{exp.role}</h3>
                                     <ul className="space-y-3">
                                         {exp.description?.map((bullet, bIdx) => (

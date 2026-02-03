@@ -18,6 +18,7 @@ const styles = StyleSheet.create({
     },
     header: {
         backgroundColor: '#1f2937',
+        marginTop: -24, // Pull header up into page padding on first page
         padding: 24,
         borderBottomWidth: 1,
         borderBottomColor: '#374151',
@@ -62,6 +63,11 @@ const styles = StyleSheet.create({
         fontSize: 8,
         textTransform: 'uppercase',
         letterSpacing: 1,
+        gap: 4,
+    },
+    sectionIcon: {
+        fontSize: 10,
+        color: '#9ca3af',
     },
     codeBlock: {
         backgroundColor: '#1f2937',
@@ -231,7 +237,10 @@ const TechFocusedPDF: React.FC<Props> = ({ data, slug }) => {
                     {/* Summary */}
                     {data.summary && (
                         <View style={styles.section}>
-                            <Text style={styles.sectionHeader}>$ cat about.md</Text>
+                            <View style={styles.sectionHeader}>
+                                <Text style={styles.sectionIcon}>&gt;</Text>
+                                <Text>$ cat about.md</Text>
+                            </View>
                             <View style={styles.codeBlock}>
                                 <Text style={styles.text}>{data.summary}</Text>
                             </View>
@@ -241,7 +250,10 @@ const TechFocusedPDF: React.FC<Props> = ({ data, slug }) => {
                     {/* Skills */}
                     {data.skills && data.skills.length > 0 && (
                         <View style={styles.section}>
-                            <Text style={styles.sectionHeader}>$ echo $SKILLS</Text>
+                            <View style={styles.sectionHeader}>
+                                <Text style={styles.sectionIcon}>#</Text>
+                                <Text>$ echo $SKILLS</Text>
+                            </View>
                             <View style={styles.skillsRow}>
                                 {data.skills.map((skill, index) => (
                                     <View key={index} style={styles.skillTag}>
@@ -255,7 +267,10 @@ const TechFocusedPDF: React.FC<Props> = ({ data, slug }) => {
                     {/* Experience */}
                     {data.experience && data.experience.length > 0 && (
                         <View style={styles.section}>
-                            <Text style={styles.sectionHeader}>$ ls -la ./experience</Text>
+                            <View style={styles.sectionHeader}>
+                                <Text style={styles.sectionIcon}>~</Text>
+                                <Text>$ ls -la ./experience</Text>
+                            </View>
                             {data.experience.map((exp) => (
                                 <View key={exp.id} style={styles.expCard} wrap={false}>
                                     <View style={styles.expHeader}>
@@ -277,7 +292,10 @@ const TechFocusedPDF: React.FC<Props> = ({ data, slug }) => {
                     {/* Other Experience */}
                     {data.otherExperience && data.otherExperience.length > 0 && (
                         <View style={styles.section}>
-                            <Text style={styles.sectionHeader}>$ ls ./other</Text>
+                            <View style={styles.sectionHeader}>
+                                <Text style={styles.sectionIcon}>~</Text>
+                                <Text>$ ls ./other</Text>
+                            </View>
                             {data.otherExperience.map((exp) => (
                                 <View key={exp.id} style={styles.eduRow} wrap={false}>
                                     <View>
@@ -293,7 +311,10 @@ const TechFocusedPDF: React.FC<Props> = ({ data, slug }) => {
                     {/* Education */}
                     {data.education && data.education.length > 0 && (
                         <View style={styles.section}>
-                            <Text style={styles.sectionHeader}>$ cat education.log</Text>
+                            <View style={styles.sectionHeader}>
+                                <Text style={styles.sectionIcon}>&gt;</Text>
+                                <Text>$ cat education.log</Text>
+                            </View>
                             {data.education.map((edu) => (
                                 <View key={edu.id} style={styles.eduRow}>
                                     <View>

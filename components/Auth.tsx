@@ -84,7 +84,7 @@ const Auth: React.FC = () => {
                                         name="fullName"
                                         type="text"
                                         required
-                                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-md p-2 border transition-colors"
+                                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 text-base sm:text-sm border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-md p-2 border transition-colors"
                                         placeholder="John Doe"
                                         value={fullName}
                                         onChange={(e) => setFullName(e.target.value)}
@@ -107,7 +107,7 @@ const Auth: React.FC = () => {
                                     type="email"
                                     autoComplete="email"
                                     required
-                                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-md p-2 border transition-colors"
+                                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 text-base sm:text-sm border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-md p-2 border transition-colors"
                                     placeholder="you@example.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
@@ -129,7 +129,7 @@ const Auth: React.FC = () => {
                                     type="password"
                                     autoComplete="current-password"
                                     required
-                                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-md p-2 border transition-colors"
+                                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 text-base sm:text-sm border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-md p-2 border transition-colors"
                                     placeholder="********"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}

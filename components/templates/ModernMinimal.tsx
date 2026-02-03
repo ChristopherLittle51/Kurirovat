@@ -1,7 +1,7 @@
 import React from 'react';
 import { EditableTemplateProps } from './index';
 import { UserProfile } from '../../types';
-import { Mail, Phone, MapPin, Globe, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import InlineEdit from '../InlineEdit';
 
 /**
@@ -34,74 +34,71 @@ const ModernMinimal: React.FC<EditableTemplateProps> = ({
 
     return (
         <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-gray-900 p-10 md:p-14 shadow-2xl dark:shadow-none border border-gray-100 dark:border-gray-800 print:shadow-none print:border-none text-gray-800 dark:text-gray-100 font-sans transition-colors">
-            {/* Header */}
-            <header className="mb-8">
-                <h1 className="text-4xl font-light tracking-wide text-gray-900 dark:text-white mb-2">
-                    {editable && onUpdate ? (
-                        <InlineEdit
-                            value={data.fullName || ''}
-                            onSave={(v) => handleFieldUpdate('fullName', v)}
-                            className="text-4xl font-light tracking-wide text-gray-900 dark:text-white"
-                        />
-                    ) : (
-                        data.fullName
-                    )}
-                </h1>
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                    {(data.location || editable) && (
-                        <span className="flex items-center gap-1.5">
-                            <MapPin size={14} className="text-blue-500 dark:text-blue-400" />
-                            {editable && onUpdate ? (
-                                <InlineEdit
-                                    value={data.location || ''}
-                                    onSave={(v) => handleFieldUpdate('location', v)}
-                                    placeholder="Location"
-                                    className="text-sm text-gray-500 dark:text-gray-400"
-                                />
-                            ) : (
-                                data.location
-                            )}
-                        </span>
-                    )}
+            {/* Header - Two Column Layout matching PDF */}
+            <header className="mb-6 flex flex-col md:flex-row justify-between items-start border-b-2 border-blue-600 dark:border-blue-500 pb-3 border-l-4 pl-4">
+                {/* Left - Name */}
+                <div className="flex-1">
+                    <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+                        {editable && onUpdate ? (
+                            <InlineEdit
+                                value={data.fullName || ''}
+                                onSave={(v) => handleFieldUpdate('fullName', v)}
+                                className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white"
+                            />
+                        ) : (
+                            data.fullName
+                        )}
+                    </h1>
+                </div>
+                {/* Right - Contact Info Stacked */}
+                <div className="flex flex-col items-start md:items-end gap-0.5 text-sm mt-2 md:mt-0">
                     {(data.email || editable) && (
-                        <span className="flex items-center gap-1.5">
-                            <Mail size={14} className="text-blue-500 dark:text-blue-400" />
-                            {editable && onUpdate ? (
-                                <InlineEdit
-                                    value={data.email || ''}
-                                    onSave={(v) => handleFieldUpdate('email', v)}
-                                    placeholder="Email"
-                                    className="text-sm text-gray-500 dark:text-gray-400"
-                                />
-                            ) : (
-                                data.email
-                            )}
-                        </span>
+                        editable && onUpdate ? (
+                            <InlineEdit
+                                value={data.email || ''}
+                                onSave={(v) => handleFieldUpdate('email', v)}
+                                placeholder="Email"
+                                className="text-sm text-gray-600 dark:text-gray-400"
+                            />
+                        ) : (
+                            <a href={`mailto:${data.email}`} className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+                                {data.email}
+                            </a>
+                        )
                     )}
                     {(data.phone || editable) && (
-                        <span className="flex items-center gap-1.5">
-                            <Phone size={14} className="text-blue-500 dark:text-blue-400" />
-                            {editable && onUpdate ? (
-                                <InlineEdit
-                                    value={data.phone || ''}
-                                    onSave={(v) => handleFieldUpdate('phone', v)}
-                                    placeholder="Phone"
-                                    className="text-sm text-gray-500 dark:text-gray-400"
-                                />
-                            ) : (
-                                data.phone
-                            )}
-                        </span>
+                        editable && onUpdate ? (
+                            <InlineEdit
+                                value={data.phone || ''}
+                                onSave={(v) => handleFieldUpdate('phone', v)}
+                                placeholder="Phone"
+                                className="text-sm text-gray-600 dark:text-gray-400"
+                            />
+                        ) : (
+                            <a href={`tel:${data.phone?.replace(/\D/g, '')}`} className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+                                {data.phone}
+                            </a>
+                        )
+                    )}
+                    {(data.location || editable) && (
+                        editable && onUpdate ? (
+                            <InlineEdit
+                                value={data.location || ''}
+                                onSave={(v) => handleFieldUpdate('location', v)}
+                                placeholder="Location"
+                                className="text-sm text-gray-600 dark:text-gray-400"
+                            />
+                        ) : (
+                            <span className="text-gray-600 dark:text-gray-400">{data.location}</span>
+                        )
                     )}
                     {portfolioUrl && (
-                        <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:underline">
-                            <Globe size={14} />
+                        <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
                             {portfolioUrl.replace(/^https?:\/\//, '')}
                         </a>
                     )}
                     {data.links?.map((link, idx) => (
-                        <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:underline">
-                            <Globe size={14} />
+                        <a key={idx} href={link.url.startsWith('http') ? link.url : `https://${link.url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
                             {link.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
                         </a>
                     ))}
@@ -110,8 +107,8 @@ const ModernMinimal: React.FC<EditableTemplateProps> = ({
 
             {/* Summary */}
             {(data.summary || editable) && (
-                <section className="mb-8">
-                    <h2 className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">
+                <section className="mb-6">
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2 border-b-2 border-blue-600 dark:border-blue-500 pb-1">
                         About
                     </h2>
                     {editable && onUpdate ? (
@@ -131,13 +128,13 @@ const ModernMinimal: React.FC<EditableTemplateProps> = ({
             )}
 
             {/* Two Column Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="flex flex-col md:flex-row gap-6">
                 {/* Left Column - Skills & Education */}
-                <div className="space-y-8">
+                <div className="md:w-[30%] space-y-6 md:pr-5">
                     {/* Skills */}
                     {(data.skills && data.skills.length > 0) || editable ? (
-                        <section>
-                            <h2 className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">
+                        <section className="mb-4">
+                            <h2 className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2 border-b-2 border-blue-600 dark:border-blue-500 pb-1">
                                 Skills
                             </h2>
                             <div className="flex flex-wrap gap-2">
@@ -171,8 +168,8 @@ const ModernMinimal: React.FC<EditableTemplateProps> = ({
 
                     {/* Education */}
                     {(data.education && data.education.length > 0) || editable ? (
-                        <section>
-                            <h2 className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">
+                        <section className="mb-4">
+                            <h2 className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2 border-b-2 border-blue-600 dark:border-blue-500 pb-1">
                                 Education
                             </h2>
                             <div className="space-y-3">
@@ -227,17 +224,17 @@ const ModernMinimal: React.FC<EditableTemplateProps> = ({
                 </div>
 
                 {/* Right Column - Experience */}
-                <div className="md:col-span-2">
+                <div className="md:w-[70%]">
                     {/* Professional Experience */}
                     {(data.experience && data.experience.length > 0) || editable ? (
-                        <section className="mb-8">
-                            <h2 className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-4">
+                        <section className="mb-6">
+                            <h2 className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2 border-b-2 border-blue-600 dark:border-blue-500 pb-1">
                                 Experience
                             </h2>
-                            <div className="space-y-6">
+                            <div className="space-y-4">
                                 {data.experience?.map((exp) => (
-                                    <div key={exp.id} className="relative pl-4 border-l-2 border-gray-200 dark:border-gray-800 group">
-                                        <div className="absolute -left-[5px] top-1 w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full"></div>
+                                    <div key={exp.id} className="relative pl-3 border-l-2 border-blue-100 dark:border-blue-900/50 group">
+
                                         {editable && onRemoveExperience && (
                                             <button
                                                 onClick={() => onRemoveExperience(exp.id)}
@@ -338,13 +335,13 @@ const ModernMinimal: React.FC<EditableTemplateProps> = ({
 
                     {/* Other Experience */}
                     {data.otherExperience && data.otherExperience.length > 0 && (
-                        <section>
-                            <h2 className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-4">
+                        <section className="mb-6">
+                            <h2 className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2 border-b-2 border-blue-600 dark:border-blue-500 pb-1">
                                 Other Experience
                             </h2>
                             <div className="space-y-4">
                                 {data.otherExperience.map((exp) => (
-                                    <div key={exp.id} className="relative pl-4 border-l-2 border-gray-100 dark:border-gray-800">
+                                    <div key={exp.id} className="relative pl-3 border-l-2 border-blue-100 dark:border-blue-900/50">
                                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1 mb-1">
                                             <h3 className="font-medium text-sm text-gray-800 dark:text-gray-200">{exp.role}</h3>
                                             <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">

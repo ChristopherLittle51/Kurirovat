@@ -1,6 +1,6 @@
 import React from 'react';
 import { EditableTemplateProps } from './index';
-import { Briefcase, GraduationCap, Sparkles, User, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import InlineEdit from '../InlineEdit';
 
 /**
@@ -29,85 +29,88 @@ const CreativeBold: React.FC<EditableTemplateProps> = ({
 
     return (
         <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-gray-900 shadow-2xl dark:shadow-none print:shadow-none border border-gray-100 dark:border-gray-800 print:border-none overflow-hidden transition-colors">
-            {/* Gradient Header */}
-            <header className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white p-10 md:p-12">
-                <h1 className="text-4xl md:text-5xl font-bold mb-3">
-                    {editable && onUpdate ? (
-                        <InlineEdit
-                            value={data.fullName || ''}
-                            onSave={(v) => onUpdate('fullName', v)}
-                            className="text-4xl md:text-5xl font-bold text-white"
-                        />
-                    ) : (
-                        data.fullName
-                    )}
-                </h1>
-                <div className="flex flex-wrap gap-3 text-sm text-white/90">
-                    {(data.location || editable) && (
-                        <span className="bg-white/20 px-3 py-1 rounded-full">
+            {/* Header - Solid Purple matching PDF */}
+            <header className="bg-purple-600 text-white p-8 md:p-10">
+                <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                    {/* Left - Name */}
+                    <div className="flex-1">
+                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
                             {editable && onUpdate ? (
                                 <InlineEdit
-                                    value={data.location || ''}
-                                    onSave={(v) => onUpdate('location', v)}
-                                    placeholder="Location"
-                                    className="text-sm text-white/90 bg-transparent"
+                                    value={data.fullName || ''}
+                                    onSave={(v) => onUpdate('fullName', v)}
+                                    className="text-3xl md:text-4xl font-bold text-white"
                                 />
                             ) : (
-                                data.location
+                                data.fullName
                             )}
-                        </span>
-                    )}
-                    {(data.email || editable) && (
-                        <span className="bg-white/20 px-3 py-1 rounded-full">
-                            {editable && onUpdate ? (
+                        </h1>
+                    </div>
+                    {/* Right - Contact Info Stacked */}
+                    <div className="flex flex-col items-start md:items-end gap-1 text-sm">
+                        {(data.email || editable) && (
+                            editable && onUpdate ? (
                                 <InlineEdit
                                     value={data.email || ''}
                                     onSave={(v) => onUpdate('email', v)}
                                     placeholder="Email"
-                                    className="text-sm text-white/90 bg-transparent"
+                                    className="text-sm text-purple-200 bg-transparent"
                                 />
                             ) : (
-                                data.email
-                            )}
-                        </span>
-                    )}
-                    {(data.phone || editable) && (
-                        <span className="bg-white/20 px-3 py-1 rounded-full">
-                            {editable && onUpdate ? (
+                                <a href={`mailto:${data.email}`} className="text-purple-200 hover:text-white transition-colors">
+                                    {data.email}
+                                </a>
+                            )
+                        )}
+                        {(data.phone || editable) && (
+                            editable && onUpdate ? (
                                 <InlineEdit
                                     value={data.phone || ''}
                                     onSave={(v) => onUpdate('phone', v)}
                                     placeholder="Phone"
-                                    className="text-sm text-white/90 bg-transparent"
+                                    className="text-sm text-purple-200 bg-transparent"
                                 />
                             ) : (
-                                data.phone
-                            )}
-                        </span>
-                    )}
-                    {portfolioUrl && (
-                        <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="bg-white/20 px-3 py-1 rounded-full hover:bg-white/30 transition-colors">
-                            {portfolioUrl.replace(/^https?:\/\//, '')}
-                        </a>
-                    )}
-                    {data.links?.map((link, idx) => (
-                        <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="bg-white/20 px-3 py-1 rounded-full hover:bg-white/30 transition-colors">
-                            {link.platform || link.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
-                        </a>
-                    ))}
+                                <a href={`tel:${data.phone?.replace(/\D/g, '')}`} className="text-purple-200 hover:text-white transition-colors">
+                                    {data.phone}
+                                </a>
+                            )
+                        )}
+                        {(data.location || editable) && (
+                            editable && onUpdate ? (
+                                <InlineEdit
+                                    value={data.location || ''}
+                                    onSave={(v) => onUpdate('location', v)}
+                                    placeholder="Location"
+                                    className="text-sm text-purple-200 bg-transparent"
+                                />
+                            ) : (
+                                <span className="text-purple-200">{data.location}</span>
+                            )
+                        )}
+                        {portfolioUrl && (
+                            <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-purple-200 transition-colors">
+                                {portfolioUrl.replace(/^https?:\/\//, '')}
+                            </a>
+                        )}
+                        {data.links?.map((link, idx) => (
+                            <a key={idx} href={link.url.startsWith('http') ? link.url : `https://${link.url}`} target="_blank" rel="noopener noreferrer" className="text-white hover:text-purple-200 transition-colors">
+                                {link.platform || link.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                            </a>
+                        ))}
+                    </div>
                 </div>
             </header>
 
             <div className="p-8 md:p-10">
                 {/* Summary */}
                 {(data.summary || editable) && (
-                    <section className="mb-8">
-                        <div className="flex items-center gap-2 mb-3">
-                            <User size={18} className="text-purple-600 dark:text-purple-400" />
-                            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">About Me</h2>
+                    <section className="mb-6">
+                        <div className="border-l-4 border-purple-600 dark:border-purple-500 pl-3 mb-3">
+                            <h2 className="text-xs font-bold uppercase tracking-[0.1em] text-gray-900 dark:text-gray-100">About Me</h2>
                         </div>
                         {editable && onUpdate ? (
-                            <div className="pl-7">
+                            <div className="pl-4">
                                 <InlineEdit
                                     value={data.summary || ''}
                                     onSave={(v) => onUpdate('summary', v)}
@@ -117,7 +120,7 @@ const CreativeBold: React.FC<EditableTemplateProps> = ({
                                 />
                             </div>
                         ) : (
-                            <p className="text-gray-600 dark:text-gray-300 leading-relaxed pl-7">
+                            <p className="text-gray-600 dark:text-gray-300 leading-relaxed pl-4 text-sm">
                                 {data.summary}
                             </p>
                         )}
@@ -126,17 +129,15 @@ const CreativeBold: React.FC<EditableTemplateProps> = ({
 
                 {/* Skills */}
                 {((data.skills && data.skills.length > 0) || editable) && (
-                    <section className="mb-8">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Sparkles size={18} className="text-purple-600 dark:text-purple-400" />
-                            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Skills</h2>
+                    <section className="mb-6">
+                        <div className="border-l-4 border-purple-600 dark:border-purple-500 pl-3 mb-3">
+                            <h2 className="text-xs font-bold uppercase tracking-[0.1em] text-gray-900 dark:text-gray-100">Skills</h2>
                         </div>
-                        <div className="flex flex-wrap gap-2 pl-7">
+                        <div className="flex flex-wrap gap-2 pl-4">
                             {data.skills?.map((skill, index) => (
                                 <span
                                     key={index}
-                                    className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 text-purple-800 dark:text-purple-300 text-sm px-4 py-1.5 rounded-full border border-purple-200 dark:border-purple-800 font-medium group relative transition-colors"
-                                >
+                                    className="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 text-sm px-3 py-1 rounded-full border border-purple-400 dark:border-purple-700 font-bold group relative transition-colors">
                                     {skill}
                                     {editable && onRemoveSkill && (
                                         <button
@@ -165,16 +166,15 @@ const CreativeBold: React.FC<EditableTemplateProps> = ({
 
                 {/* Experience */}
                 {((data.experience && data.experience.length > 0) || editable) && (
-                    <section className="mb-8">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Briefcase size={18} className="text-purple-600 dark:text-purple-400" />
-                            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Experience</h2>
+                    <section className="mb-6">
+                        <div className="border-l-4 border-purple-600 dark:border-purple-500 pl-3 mb-3">
+                            <h2 className="text-xs font-bold uppercase tracking-[0.1em] text-gray-900 dark:text-gray-100">Experience</h2>
                         </div>
-                        <div className="space-y-6 pl-7">
+                        <div className="space-y-4 pl-4">
                             {data.experience?.map((exp) => (
                                 <div
                                     key={exp.id}
-                                    className="relative bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 group transition-colors"
+                                    className="relative bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800 group transition-colors"
                                 >
                                     <div className="absolute -left-3 top-6 w-2 h-2 bg-purple-500 dark:bg-purple-400 rounded-full"></div>
                                     {editable && onRemoveExperience && (
@@ -190,12 +190,12 @@ const CreativeBold: React.FC<EditableTemplateProps> = ({
                                             <InlineEdit
                                                 value={exp.role}
                                                 onSave={(v) => onExperienceUpdate(exp.id, 'role', v)}
-                                                className="font-bold text-gray-900 dark:text-white text-lg"
+                                                className="font-bold text-gray-900 dark:text-white text-base"
                                             />
                                         ) : (
-                                            <h3 className="font-bold text-gray-900 dark:text-white text-lg">{exp.role}</h3>
+                                            <h3 className="font-bold text-gray-900 dark:text-white text-base">{exp.role}</h3>
                                         )}
-                                        <span className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-medium whitespace-nowrap flex items-center gap-1">
+                                        <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 px-2 py-0.5 rounded-full font-bold whitespace-nowrap flex items-center gap-1">
                                             {editable && onExperienceUpdate ? (
                                                 <>
                                                     <InlineEdit
@@ -211,7 +211,7 @@ const CreativeBold: React.FC<EditableTemplateProps> = ({
                                                     />
                                                 </>
                                             ) : (
-                                                <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-3 py-1 rounded-full font-medium whitespace-nowrap">{exp.startDate} – {exp.endDate}</span>
+                                                <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">{exp.startDate} – {exp.endDate}</span>
                                             )}
                                         </span>
                                     </div>
@@ -219,10 +219,10 @@ const CreativeBold: React.FC<EditableTemplateProps> = ({
                                         <InlineEdit
                                             value={exp.company}
                                             onSave={(v) => onExperienceUpdate(exp.id, 'company', v)}
-                                            className="text-purple-600 dark:text-purple-400 font-semibold mb-3"
+                                            className="text-purple-600 dark:text-purple-400 font-bold mb-2 text-sm"
                                         />
                                     ) : (
-                                        <p className="text-purple-600 dark:text-purple-400 font-semibold mb-3">{exp.company}</p>
+                                        <p className="text-purple-600 dark:text-purple-400 font-bold mb-2 text-sm">{exp.company}</p>
                                     )}
                                     <ul className="space-y-2">
                                         {exp.description?.map((point, pIdx) => (
@@ -277,19 +277,18 @@ const CreativeBold: React.FC<EditableTemplateProps> = ({
 
                 {/* Other Experience */}
                 {data.otherExperience && data.otherExperience.length > 0 && (
-                    <section className="mb-8">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Briefcase size={18} className="text-purple-400 dark:text-purple-500" />
-                            <h2 className="text-lg font-bold text-gray-600 dark:text-gray-300">Other Experience</h2>
+                    <section className="mb-6">
+                        <div className="border-l-4 border-purple-600 dark:border-purple-500 pl-3 mb-3">
+                            <h2 className="text-xs font-bold uppercase tracking-[0.1em] text-gray-900 dark:text-gray-100">Other Experience</h2>
                         </div>
-                        <div className="space-y-3 pl-7">
+                        <div className="space-y-3 pl-4">
                             {data.otherExperience.map((exp) => (
                                 <div key={exp.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1 py-2 border-b border-gray-100 dark:border-gray-800 transition-colors">
                                     <div>
                                         <h3 className="font-semibold text-gray-800 dark:text-gray-100">{exp.role}</h3>
                                         <p className="text-sm text-gray-500 dark:text-gray-400">{exp.company}</p>
                                     </div>
-                                    <span className="text-xs text-gray-400 dark:text-gray-500">{exp.startDate} – {exp.endDate}</span>
+                                    <span className="text-xs text-purple-600 dark:text-purple-400 font-bold">{exp.startDate} – {exp.endDate}</span>
                                 </div>
                             ))}
                         </div>
@@ -299,11 +298,10 @@ const CreativeBold: React.FC<EditableTemplateProps> = ({
                 {/* Education */}
                 {((data.education && data.education.length > 0) || editable) && (
                     <section>
-                        <div className="flex items-center gap-2 mb-4">
-                            <GraduationCap size={18} className="text-purple-600 dark:text-purple-400" />
-                            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Education</h2>
+                        <div className="border-l-4 border-purple-600 dark:border-purple-500 pl-3 mb-3">
+                            <h2 className="text-xs font-bold uppercase tracking-[0.1em] text-gray-900 dark:text-gray-100">Education</h2>
                         </div>
-                        <div className="space-y-3 pl-7">
+                        <div className="space-y-3 pl-4">
                             {data.education?.map((edu) => (
                                 <div key={edu.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1 group relative">
                                     {editable && onRemoveEducation && (
