@@ -40,6 +40,7 @@ import {
     MessageSquare,
     Sliders
 } from 'lucide-react';
+import CoverLetterPDF from '../components/CoverLetterPDF';
 
 const STATUS_COLORS: Record<ApplicationStatus, string> = {
     'Pending': 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200',
@@ -680,6 +681,28 @@ const ApplicationDetails: React.FC = () => {
                                         key={`${selectedTemplate}-${JSON.stringify(application.resume)}`}
                                         document={getPDFDocument()!}
                                         fileName={`${application.resume.fullName.replace(/\s+/g, '_')}_Resume.pdf`}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-900 dark:bg-gray-700 text-white hover:bg-gray-800 dark:hover:bg-gray-600 transition"
+                                    >
+                                        {({ loading: pdfLoading }) => (
+                                            <>
+                                                {pdfLoading ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />}
+                                                <span className="hidden sm:inline">{pdfLoading ? 'Preparing...' : 'Download'}</span>
+                                            </>
+                                        )}
+                                    </PDFDownloadLink>
+                                )}
+
+                                {view === 'COVER_LETTER' && application && (
+                                    <PDFDownloadLink
+                                        key={`cover-letter-${JSON.stringify(application.coverLetter)}`}
+                                        document={
+                                            <CoverLetterPDF
+                                                resume={application.resume}
+                                                jobDescription={application.jobDescription}
+                                                coverLetterContent={application.coverLetter}
+                                            />
+                                        }
+                                        fileName={`${application.resume.fullName.replace(/\s+/g, '_')}_CoverLetter.pdf`}
                                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-900 dark:bg-gray-700 text-white hover:bg-gray-800 dark:hover:bg-gray-600 transition"
                                     >
                                         {({ loading: pdfLoading }) => (
