@@ -34,6 +34,7 @@ const TemplateSwitcher: React.FC<Props> = ({ title = "Choose Template", currentT
             case 'professional-classic': return 'bg-gradient-to-br from-gray-100 to-white';
             case 'creative-bold': return 'bg-gradient-to-br from-purple-500 to-pink-500';
             case 'tech-focused': return 'bg-gradient-to-br from-gray-900 to-gray-800';
+            case 'ats-optimized': return 'bg-gradient-to-br from-slate-100 to-white';
             default: return 'bg-gray-100';
         }
     };

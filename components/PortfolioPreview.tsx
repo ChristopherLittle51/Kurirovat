@@ -5,6 +5,7 @@ import ModernMinimal from './templates/ModernMinimal';
 import ProfessionalClassic from './templates/ProfessionalClassic';
 import CreativeBold from './templates/CreativeBold';
 import TechFocused from './templates/TechFocused';
+import ATSOptimized from './templates/ATSOptimized';
 
 import { WEB_THEMES, WebThemeId } from './portfolio/web-themes';
 
@@ -58,6 +59,7 @@ const PortfolioPreview: React.FC<Props> = ({
       case 'professional-classic': return <ProfessionalClassic {...props} />;
       case 'creative-bold': return <CreativeBold {...props} />;
       case 'tech-focused': return <TechFocused {...props} />;
+      case 'ats-optimized': return <ATSOptimized {...props} />;
       default: return <ModernMinimal {...props} />;
     }
   };

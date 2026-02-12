@@ -33,6 +33,12 @@ export const TEMPLATES: TemplateMetadata[] = [
         description: 'Developer-friendly layout with skills emphasis',
         category: 'tech',
     },
+    {
+        id: 'ats-optimized',
+        name: 'ATS Optimized',
+        description: 'Maximum parseability for automated screening systems',
+        category: 'professional',
+    },
 ];
 
 export type TemplateId = typeof TEMPLATES[number]['id'];
@@ -67,3 +73,5 @@ export { default as CreativeBold } from './CreativeBold';
 export { default as CreativeBoldPDF } from './CreativeBoldPDF';
 export { default as TechFocused } from './TechFocused';
 export { default as TechFocusedPDF } from './TechFocusedPDF';
+export { default as ATSOptimized } from './ATSOptimized';
+export { default as ATSOptimizedPDF } from './ATSOptimizedPDF';

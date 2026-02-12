@@ -14,10 +14,12 @@ import {
     ProfessionalClassic,
     CreativeBold,
     TechFocused,
+    ATSOptimized,
     ModernMinimalPDF,
     ProfessionalClassicPDF,
     CreativeBoldPDF,
-    TechFocusedPDF
+    TechFocusedPDF,
+    ATSOptimizedPDF
 } from '../components/templates';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import {
@@ -480,6 +482,7 @@ const ApplicationDetails: React.FC = () => {
             case 'professional-classic': return <ProfessionalClassic {...combinedProps} />;
             case 'creative-bold': return <CreativeBold {...combinedProps} />;
             case 'tech-focused': return <TechFocused {...combinedProps} />;
+            case 'ats-optimized': return <ATSOptimized {...combinedProps} />;
             default: return <ModernMinimal {...combinedProps} />;
         }
     };
@@ -493,6 +496,7 @@ const ApplicationDetails: React.FC = () => {
             case 'professional-classic': return <ProfessionalClassicPDF {...props} />;
             case 'creative-bold': return <CreativeBoldPDF {...props} />;
             case 'tech-focused': return <TechFocusedPDF {...props} />;
+            case 'ats-optimized': return <ATSOptimizedPDF {...props} />;
             default: return <ModernMinimalPDF {...props} />;
         }
     };

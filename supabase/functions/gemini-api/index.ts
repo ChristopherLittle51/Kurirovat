@@ -251,8 +251,13 @@ async function handleParseResume(ai: any, payload: { base64Pdf: string }) {
 async function researchCompany(ai: any, companyName: string): Promise<{ summary: string, sources: any[] }> {
     const prompt = `
     Research the company "${companyName}". 
-    Find their mission statement, core values, recent significant news, and description of their corporate culture.
-    Summarize these findings into a concise paragraph.
+    Find:
+    1. Their mission statement and core values.
+    2. Recent significant news, product launches, or strategic initiatives.
+    3. Description of their corporate culture and work environment.
+    4. Key business challenges they face or industry pain points they are solving.
+    
+    Summarize these findings into a concise paragraph that covers culture, values, AND business challenges.
     Do not use trademarked or branded terms specific to the company.
   `;
 
@@ -313,24 +318,28 @@ async function handleTailorResume(ai: any, payload: {
     const focusInstruction = options?.focusSkill ? `FOCUS: Emphasize experience and achievements related to "${options.focusSkill}".` : '';
 
     const prompt = `
-    You are an elite Resume Writer and Career Strategist.
+    You are an elite Resume Strategist specializing in Applicant Tracking System (ATS) optimization.
     
-    Task: Tailor the candidate's profile to match the Job Description (JD), incorporating the provided company research.
+    OBJECTIVE: Tailor the candidate's profile to achieve maximum algorithmic match score against the Job Description (JD), using company research for cultural alignment. Your output must survive automated ATS parsing AND impress a human recruiter.
     
-    CRITICAL RULE: Sort experience by Start Date in descending order (newest first).
-    Do NOT reorder based on relevance. The chronological order must be preserved.
-
-    LINGO RULE: STRICTLY AVOID company-specific jargon, internal proprietary terminology, or non-standard shorthand from the candidate's original resume or the company research. 
-    Translate all achievements and responsibilities into professional, industry-standard language that is universally understood by recruiters and ATS systems. Do not use trademarked or branded terms specific to the company.
+    ===== CORE RULES =====
+    
+    CHRONOLOGICAL RULE: Sort experience by Start Date in descending order (newest first). Do NOT reorder based on relevance.
+    
+    LINGO RULE: STRICTLY AVOID company-specific jargon, internal proprietary terminology, or non-standard shorthand. Translate all content into professional, industry-standard language universally understood by recruiters and ATS systems.
+    
+    PARSEABILITY RULE: Do not use special characters (bullets like •, arrows, emojis), tables, or unusual formatting in text output. Use plain alphanumeric text only. This ensures OCR and layout parsers extract all data correctly.
     
     ${toneInstruction}
     ${lengthInstruction}
     ${focusInstruction}
     
+    ===== INPUT DATA =====
+    
     Candidate Profile:
     ${JSON.stringify(baseProfile)}
 
-    Selected GitHub Projects (Highlight these if relevant to technical skills):
+    Selected GitHub Projects (Highlight if relevant to technical skills):
     ${JSON.stringify(githubProjects)}
 
     Target Job Description:
@@ -338,20 +347,50 @@ async function handleTailorResume(ai: any, payload: {
     Role: ${jd.roleTitle}
     Raw Description: ${jd.rawText}
 
-    Company Research (Use this to align values and culture):
+    Company Research:
     ${research.summary}
 
-    Requirements:
-    1. **Summary**: Rewrite as an "Elevator Pitch" aligning with the JD and Company Culture (Max 3 lines).
-    2. **Skills**: Select top 6-8 skills relevant to the JD.
-    3. **Experience**: 
-       - Include ALL provided experience roles.
-       - Maintain strict reverse chronological order (newest start date first).
-       - Rewrite bullets for these roles to STAR method (max ${targetPageCount === 1 ? '3' : '4'} bullets per role).
-    4. **Cover Letter**: 3 paragraphs (Hook + Company alignment, Achievements, Call to Action), Do NOT include any greeting(Dear...) or sign - off(Sincerely...) - those are added separately.
-    5. **Match Score**: ${includeScore ? '0-100 semantic match.' : 'Set to 0 (user opted out).'}
-    6. **Keywords**: 5 critical hard keywords from JD.
-    7. **Length Constraint**: Optimize content density to fit within ${targetPageCount} page(s), but DO NOT omit any experience entries. Reduce bullet points per role if necessary.
+    ===== OUTPUT REQUIREMENTS =====
+    
+    1. **Summary (tailoredSummary)**:
+       - Write a compelling 2-3 sentence elevator pitch.
+       - Embed the top 2-3 keywords from the JD naturally into the summary.
+       - Demonstrate alignment with the company's mission and the role's core function.
+       - Include at least one quantifiable career highlight (e.g., "driving 40% revenue growth").
+    
+    2. **Skills (tailoredSkills)**:
+       - Select 6-8 skills that are the strongest semantic match to the JD requirements.
+       - Prioritize skills the candidate has used within the last 24 months (high recency weight).
+       - Use EXACT terminology from the JD where the candidate possesses the skill.
+       - For technical terms, include both the spelled-out form and acronym where appropriate (e.g., "Search Engine Optimization (SEO)", "Key Performance Indicators (KPIs)", "Continuous Integration/Continuous Deployment (CI/CD)").
+       - Also include 1-2 semantically adjacent skills the ATS ontology would recognize (e.g., if JD says "React", and candidate knows it, also include "Front-End Development").
+    
+    3. **Experience (tailoredExperience)**:
+       - Include ALL provided experience roles. Do not omit any.
+       - Maintain strict reverse chronological order.
+       - Rewrite bullets using the STAR-K methodology (Situation, Task, Action, Result + Keywords):
+         * Every bullet MUST contain a quantifiable metric (percentage, dollar amount, time saved, team size, etc.).
+         * Every bullet MUST embed at least one keyword from the JD naturally in context.
+         * BAD example: "Responsible for digital marketing, SEO, and increasing web traffic."
+         * GOOD example: "Directed comprehensive digital marketing initiatives, leveraging advanced Search Engine Optimization (SEO) to increase organic web traffic by 42% within six months, generating $1.2M in new pipeline."
+       - Maximum ${targetPageCount === 1 ? '3' : '4'} bullets per role.
+       - For acronyms, spell out the term first followed by the abbreviation in parentheses on first use.
+       - Ensure employment dates use consistent "Month YYYY" format (e.g., "March 2023 - January 2026"). If the original data has ambiguous dates, normalize them.
+    
+    4. **Cover Letter (coverLetter)**:
+       - Use the Problem-Solution framework optimized for ATS semantic scoring:
+         * Paragraph 1 (Problem): Open by identifying a specific business challenge or strategic priority inferred from the JD or company research. Demonstrate that you understand their pain point. Then connect your background as the solution.
+         * Paragraph 2 (Solution): Map 2-3 of the candidate's most impactful, quantifiable achievements directly to the role's core requirements. Use STAR-K format for at least one achievement.
+         * Paragraph 3 (Call to Action): Express enthusiasm for contributing to the company's specific goals. Include a confident, forward-looking closing.
+       - Keep under 350 words total.
+       - Do NOT include any greeting (Dear...) or sign-off (Sincerely...) — those are added separately.
+       - Naturally embed 3-5 critical keywords from the JD throughout the letter.
+    
+    5. **Match Score (matchScore)**: ${includeScore ? 'Provide a 0-100 semantic match score evaluating: keyword overlap, skills alignment, experience relevance, and quantifiable achievement density.' : 'Set to 0 (user opted out).'}
+    
+    6. **Keywords (keyKeywords)**: Extract the 5 most critical hard-skill keywords from the JD that the candidate should ensure appear on their resume. These should be the terms most likely to trigger ATS filtering.
+    
+    7. **Length Constraint**: Optimize content density to fit within ${targetPageCount} page(s). Do NOT omit any experience entries — reduce bullet count per role if necessary.
   `;
 
     try {
@@ -449,7 +488,9 @@ async function handleCondenseResume(ai: any, payload: { profile: UserProfile }) 
     }));
 
     const prompt = `
-    You are an expert resume editor. Condense this resume to fit on 1-2 pages.
+    You are an expert resume editor specializing in ATS-optimized content density.
+    
+    Condense this resume to fit on 1-2 pages while MAXIMIZING algorithmic signal density.
     
     Current Data:
     - Summary: ${profile.summary}
@@ -458,11 +499,14 @@ async function handleCondenseResume(ai: any, payload: { profile: UserProfile }) 
     - Education count: ${profile.education.length}
     
     Return ONLY:
-    1. condensedSummary: Shorten to 2-3 sentences max
-    2. selectedSkillIndices: Array of indices (0-based) of top 6-8 skills to keep
+    1. condensedSummary: Shorten to 2-3 impactful sentences. Retain quantifiable highlights and core keywords.
+    2. selectedSkillIndices: Array of indices (0-based) of top 6-8 skills to keep. Prioritize recently used, high-demand skills.
     3. condensedExperience: Array of {id, condensedBullets} for ALL roles.
-       - condensedBullets should have 2-3 items max, each made more concise
-    4. keepEducationIds: Array of education IDs to keep (usually all)
+       - Condense to 2-3 bullets max per role.
+       - Every bullet MUST retain at least one quantifiable metric (%, $, time, team size).
+       - Use STAR-K format: embed the key action, the measurable result, and a relevant skill keyword in each bullet.
+       - Preserve acronym formatting: spell out the term first, then abbreviation in parentheses on first use.
+    4. keepEducationIds: Array of education IDs to keep (usually all).
     
     CRITICAL: Only return the delta/changes, not full data. Use exact IDs from input.
     
@@ -552,7 +596,9 @@ async function handleCondenseResume(ai: any, payload: { profile: UserProfile }) 
 async function handleCondenseCoverLetter(ai: any, payload: { content: string, candidateName: string, companyName: string }) {
     const { content, candidateName, companyName } = payload;
     const prompt = `
-    You are an expert cover letter editor.Condense this cover letter to fit on a single page while maintaining its persuasive impact.
+    You are an expert cover letter editor specializing in ATS-optimized content.
+    
+    Condense this cover letter to fit on a single page while maximizing its persuasive impact and ATS semantic relevance.
     
     Current Cover Letter:
     ${content}
@@ -561,14 +607,16 @@ async function handleCondenseCoverLetter(ai: any, payload: { content: string, ca
     Company: ${companyName}
     
     Condensing Rules:
-    1. Create exactly 3 short paragraphs:
-       - Paragraph 1: Strong opening hook + why this company
-       - Paragraph 2: Key achievements and value proposition(most impactful points only)
-       - Paragraph 3: Brief call to action and closing
-    2. Each paragraph should be 2 - 4 sentences maximum.
-    3. Preserve the professional tone and key selling points.
-    4. Remove any redundant or filler content.
-    5. Do NOT include any greeting(Dear...) or sign - off(Sincerely...) - those are added separately.
+    1. Use the Problem-Solution framework in exactly 3 short paragraphs:
+       - Paragraph 1 (Problem): Identify a specific business challenge the company faces. Connect the candidate's background as the ideal solution. This replaces a generic "why this company" opener.
+       - Paragraph 2 (Solution): Present the 2-3 most impactful, quantifiable achievements that directly address the role's requirements. At least one achievement should follow STAR-K format (Situation, Task, Action, Result + Keyword).
+       - Paragraph 3 (Call to Action): Express enthusiasm for contributing to specific company goals. Confident, forward-looking close.
+    2. Each paragraph should be 2-4 sentences maximum.
+    3. Naturally embed critical hard-skill keywords from the original letter throughout.
+    4. Preserve quantifiable metrics — never remove a number, percentage, or dollar amount.
+    5. Remove any redundant, filler, or generic content that does not add signal density.
+    6. Keep under 350 words total.
+    7. Do NOT include any greeting (Dear...) or sign-off (Sincerely...) — those are added separately.
     
     LINGO RULE: Avoid company-specific jargon or internal lingo. Use professional language that demonstrates alignment with the company's public-facing values and culture without using "insider" buzzwords.
 
