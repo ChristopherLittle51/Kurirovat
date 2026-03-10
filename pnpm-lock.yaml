@@ -32,6 +32,9 @@ importers:
       react-router-dom:
         specifier: ^7.12.0
         version: 7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      yaml:
+        specifier: ^2.8.2
+        version: 2.8.2
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4.1.18
@@ -41,7 +44,7 @@ importers:
         version: 22.19.5
       '@vitejs/plugin-react':
         specifier: ^5.0.0
-        version: 5.1.2(vite@6.4.1(@types/node@22.19.5)(jiti@2.6.1)(lightningcss@1.30.2))
+        version: 5.1.2(vite@6.4.1(@types/node@22.19.5)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2))
       postcss:
         specifier: ^8.5.6
         version: 8.5.6
@@ -56,7 +59,7 @@ importers:
         version: 5.8.3
       vite:
         specifier: ^6.2.0
-        version: 6.4.1(@types/node@22.19.5)(jiti@2.6.1)(lightningcss@1.30.2)
+        version: 6.4.1(@types/node@22.19.5)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2)
 
 packages:
 
@@ -1403,6 +1406,11 @@ packages:
     resolution: {integrity: sha512-YgvUTfwqyc7UXVMrB+SImsVYSmTS8X/tSrtdNZMImM+n7+QTriRXyXim0mBrTXNeqzVF0KWGgHPeiyViFFrNDw==}
     engines: {node: '>=18'}
 
+  yaml@2.8.2:
+    resolution: {integrity: sha512-mplynKqc1C2hTVYxd0PU2xQAc22TI1vShAYGksCCfxbn/dFwnHTNi1bvYsBTkhdUNtGIf5xNOg938rrSSYvS9A==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
   yoga-layout@3.2.1:
     resolution: {integrity: sha512-0LPOt3AxKqMdFBZA3HBAt/t/8vIKq7VaQYbuA8WxCgung+p9TVyKRYdpvCb80HcdTN2NkbIKbhNwKUfm3tQywQ==}
 
@@ -1972,7 +1980,7 @@ snapshots:
     optionalDependencies:
       react: 19.2.3
 
-  '@vitejs/plugin-react@5.1.2(vite@6.4.1(@types/node@22.19.5)(jiti@2.6.1)(lightningcss@1.30.2))':
+  '@vitejs/plugin-react@5.1.2(vite@6.4.1(@types/node@22.19.5)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2))':
     dependencies:
       '@babel/core': 7.28.6
       '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.28.6)
@@ -1980,7 +1988,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.53
       '@types/babel__core': 7.20.5
       react-refresh: 0.18.0
-      vite: 6.4.1(@types/node@22.19.5)(jiti@2.6.1)(lightningcss@1.30.2)
+      vite: 6.4.1(@types/node@22.19.5)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -2604,7 +2612,7 @@ snapshots:
       string_decoder: 1.3.0
       util-deprecate: 1.0.2
 
-  vite@6.4.1(@types/node@22.19.5)(jiti@2.6.1)(lightningcss@1.30.2):
+  vite@6.4.1(@types/node@22.19.5)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2):
     dependencies:
       esbuild: 0.25.12
       fdir: 6.5.0(picomatch@4.0.3)
@@ -2617,6 +2625,7 @@ snapshots:
       fsevents: 2.3.3
       jiti: 2.6.1
       lightningcss: 1.30.2
+      yaml: 2.8.2
 
   web-streams-polyfill@3.3.3: {}
 
@@ -2646,5 +2655,7 @@ snapshots:
   yallist@3.1.1: {}
 
   yallist@5.0.0: {}
+
+  yaml@2.8.2: {}
 
   yoga-layout@3.2.1: {}

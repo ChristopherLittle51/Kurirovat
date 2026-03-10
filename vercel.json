@@ -1,6 +1,50 @@
 {
     "rewrites": [
         {
+            "source": "/p/:slug",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "Accept",
+                    "value": "(?i).*(application/json).*"
+                }
+            ],
+            "destination": "/p/:slug/json"
+        },
+        {
+            "source": "/p/:slug",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "User-Agent",
+                    "value": "(?i).*(GPTBot|ChatGPT|Google-Extended|Anthropic-ai|ClaudeBot|Bytespider|CCBot|facebookexternalhit|Twitterbot).*"
+                }
+            ],
+            "destination": "/p/:slug/json"
+        },
+        {
+            "source": "/",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "Accept",
+                    "value": "(?i).*(application/json).*"
+                }
+            ],
+            "destination": "/json"
+        },
+        {
+            "source": "/",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "User-Agent",
+                    "value": "(?i).*(GPTBot|ChatGPT|Google-Extended|Anthropic-ai|ClaudeBot|Bytespider|CCBot|facebookexternalhit|Twitterbot).*"
+                }
+            ],
+            "destination": "/json"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }

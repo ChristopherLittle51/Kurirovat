@@ -78,12 +78,16 @@ const App: React.FC = () => {
 
             {/* Public Home - User's portfolio at root */}
             <Route path="/" element={<PublicHome />} />
+            <Route path="/json" element={<PublicHome format="json" />} />
+            <Route path="/yaml" element={<PublicHome format="yaml" />} />
 
             {/* Login page */}
             <Route path="/login" element={<Auth />} />
 
             {/* Public portfolio by slug (for tailored applications) */}
             <Route path="/p/:slug" element={<PublicPortfolio />} />
+            <Route path="/p/:slug/json" element={<PublicPortfolio format="json" />} />
+            <Route path="/p/:slug/yaml" element={<PublicPortfolio format="yaml" />} />
 
             {/* ========== PROTECTED ADMIN ROUTES ========== */}
 

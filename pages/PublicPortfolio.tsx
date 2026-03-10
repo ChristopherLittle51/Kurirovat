@@ -8,8 +8,13 @@ import { Loader2 } from 'lucide-react';
 import { TemplateId, ModernMinimalPDF, ProfessionalClassicPDF, CreativeBoldPDF, TechFocusedPDF } from '../components/templates';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { WebThemeId } from '../components/portfolio/web-themes';
+import yaml from 'yaml';
 
-const PublicPortfolio: React.FC = () => {
+interface PublicPortfolioProps {
+    format?: 'json' | 'yaml';
+}
+
+const PublicPortfolio: React.FC<PublicPortfolioProps> = ({ format }) => {
     const { slug } = useParams<{ slug: string }>();
     const [application, setApplication] = useState<TailoredApplication | null>(null);
     const [loading, setLoading] = useState(true);
@@ -32,6 +37,28 @@ const PublicPortfolio: React.FC = () => {
                 : summary;
 
             document.title = `${application.resume.fullName} | ${tagline}`;
+
+            // Add alternate links for agents
+            const jsonLink = document.createElement('link');
+            jsonLink.rel = 'alternate';
+            jsonLink.type = 'application/json';
+            jsonLink.href = `/p/${slug}/json`;
+            jsonLink.title = 'JSON Resume';
+            
+            const yamlLink = document.createElement('link');
+            yamlLink.rel = 'alternate';
+            yamlLink.type = 'application/yaml';
+            yamlLink.href = `/p/${slug}/yaml`;
+            yamlLink.title = 'YAML Resume';
+
+            document.head.appendChild(jsonLink);
+            document.head.appendChild(yamlLink);
+
+            return () => {
+                document.head.removeChild(jsonLink);
+                document.head.removeChild(yamlLink);
+                document.title = 'Kurirovat';
+            };
         } else {
             document.title = 'Portfolio';
         }
@@ -85,6 +112,24 @@ const PublicPortfolio: React.FC = () => {
             default: return <ModernMinimalPDF {...props} />;
         }
     };
+
+
+
+    if (format === 'json') {
+        return (
+            <pre className="p-4 bg-white dark:bg-gray-950 text-black dark:text-white overflow-auto font-mono text-sm whitespace-pre-wrap">
+                {JSON.stringify(application.resume, null, 2)}
+            </pre>
+        );
+    }
+
+    if (format === 'yaml') {
+        return (
+            <pre className="p-4 bg-white dark:bg-gray-950 text-black dark:text-white overflow-auto font-mono text-sm whitespace-pre-wrap">
+                {yaml.stringify(application.resume)}
+            </pre>
+        );
+    }
 
     // Use the application's saved template/theme, or default to modern-minimal
     const template = (application.template as TemplateId) || 'modern-minimal';

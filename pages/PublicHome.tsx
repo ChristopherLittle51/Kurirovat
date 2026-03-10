@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar';
 import { Loader2, User } from 'lucide-react';
 import { WEB_THEMES, WebThemeId } from '../components/portfolio/web-themes';
 import { PDFDownloadLink } from '@react-pdf/renderer';
+import yaml from 'yaml';
 import {
     ModernMinimalPDF,
     ProfessionalClassicPDF,
@@ -17,7 +18,11 @@ import {
  * Public Home Page - Shows the user's portfolio using their selected theme.
  * This is the public-facing page at the root URL.
  */
-const PublicHome: React.FC = () => {
+interface PublicHomeProps {
+    format?: 'json' | 'yaml';
+}
+
+const PublicHome: React.FC<PublicHomeProps> = ({ format }) => {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -33,6 +38,28 @@ const PublicHome: React.FC = () => {
                 ? `${profile.summary.substring(0, 50)}...`
                 : profile.summary;
             document.title = `${profile.fullName} | ${tagline}`;
+
+            // Add alternate links for agents
+            const jsonLink = document.createElement('link');
+            jsonLink.rel = 'alternate';
+            jsonLink.type = 'application/json';
+            jsonLink.href = '/json';
+            jsonLink.title = 'JSON Resume';
+            
+            const yamlLink = document.createElement('link');
+            yamlLink.rel = 'alternate';
+            yamlLink.type = 'application/yaml';
+            yamlLink.href = '/yaml';
+            yamlLink.title = 'YAML Resume';
+
+            document.head.appendChild(jsonLink);
+            document.head.appendChild(yamlLink);
+
+            return () => {
+                document.head.removeChild(jsonLink);
+                document.head.removeChild(yamlLink);
+                document.title = 'Kurirovat';
+            };
         } else {
             document.title = 'Portfolio';
         }
@@ -166,6 +193,22 @@ const PublicHome: React.FC = () => {
                     </div>
                 </div>
             </div>
+        );
+    }
+
+    if (format === 'json') {
+        return (
+            <pre className="p-4 bg-white dark:bg-gray-950 text-black dark:text-white overflow-auto font-mono text-sm whitespace-pre-wrap">
+                {JSON.stringify(profile, null, 2)}
+            </pre>
+        );
+    }
+
+    if (format === 'yaml') {
+        return (
+            <pre className="p-4 bg-white dark:bg-gray-950 text-black dark:text-white overflow-auto font-mono text-sm whitespace-pre-wrap">
+                {yaml.stringify(profile)}
+            </pre>
         );
     }
 
