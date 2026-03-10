@@ -1,6 +1,10 @@
 {
     "rewrites": [
         {
+            "source": "/p/:slug/json",
+            "destination": "/api/resume"
+        },
+        {
             "source": "/p/:slug",
             "has": [
                 {
@@ -9,7 +13,7 @@
                     "value": "(?i).*(application/json).*"
                 }
             ],
-            "destination": "/p/:slug/json"
+            "destination": "/api/resume"
         },
         {
             "source": "/p/:slug",
@@ -20,7 +24,11 @@
                     "value": "(?i).*(GPTBot|ChatGPT|Google-Extended|Anthropic-ai|ClaudeBot|Bytespider|CCBot|facebookexternalhit|Twitterbot|curl).*"
                 }
             ],
-            "destination": "/p/:slug/json"
+            "destination": "/api/resume"
+        },
+        {
+            "source": "/json",
+            "destination": "/api/resume"
         },
         {
             "source": "/",
@@ -31,7 +39,7 @@
                     "value": "(?i).*(application/json).*"
                 }
             ],
-            "destination": "/json"
+            "destination": "/api/resume"
         },
         {
             "source": "/",
@@ -42,7 +50,7 @@
                     "value": "(?i).*(GPTBot|ChatGPT|Google-Extended|Anthropic-ai|ClaudeBot|Bytespider|CCBot|facebookexternalhit|Twitterbot|curl).*"
                 }
             ],
-            "destination": "/json"
+            "destination": "/api/resume"
         },
         {
             "source": "/(.*)",
