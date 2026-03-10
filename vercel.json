@@ -1,30 +1,4 @@
 {
-    "redirects": [
-        {
-            "source": "/",
-            "has": [
-                {
-                    "type": "header",
-                    "key": "Accept",
-                    "value": "(?i).*(application/json).*"
-                }
-            ],
-            "destination": "/json",
-            "permanent": false
-        },
-        {
-            "source": "/",
-            "has": [
-                {
-                    "type": "header",
-                    "key": "User-Agent",
-                    "value": "(?i).*(GPTBot|ChatGPT|Google-Extended|Anthropic-ai|ClaudeBot|Bytespider|CCBot|facebookexternalhit|Twitterbot|curl).*"
-                }
-            ],
-            "destination": "/json",
-            "permanent": false
-        }
-    ],
     "rewrites": [
         {
             "source": "/p/:slug/json",
@@ -57,8 +31,30 @@
             "destination": "/api/resume"
         },
         {
+            "source": "/",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "Accept",
+                    "value": "(?i).*(application/json).*"
+                }
+            ],
+            "destination": "/api/resume"
+        },
+        {
+            "source": "/",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "User-Agent",
+                    "value": "(?i).*(GPTBot|ChatGPT|Google-Extended|Anthropic-ai|ClaudeBot|Bytespider|CCBot|facebookexternalhit|Twitterbot|curl).*"
+                }
+            ],
+            "destination": "/api/resume"
+        },
+        {
             "source": "/(.*)",
-            "destination": "/index.html"
+            "destination": "/app.html"
         }
     ]
 }
