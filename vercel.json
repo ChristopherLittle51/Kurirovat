@@ -17,7 +17,7 @@
                 {
                     "type": "header",
                     "key": "User-Agent",
-                    "value": "(?i).*(GPTBot|ChatGPT|Google-Extended|Anthropic-ai|ClaudeBot|Bytespider|CCBot|facebookexternalhit|Twitterbot).*"
+                    "value": "(?i).*(GPTBot|ChatGPT|Google-Extended|Anthropic-ai|ClaudeBot|Bytespider|CCBot|facebookexternalhit|Twitterbot|curl).*"
                 }
             ],
             "destination": "/p/:slug/json"
@@ -39,7 +39,7 @@
                 {
                     "type": "header",
                     "key": "User-Agent",
-                    "value": "(?i).*(GPTBot|ChatGPT|Google-Extended|Anthropic-ai|ClaudeBot|Bytespider|CCBot|facebookexternalhit|Twitterbot).*"
+                    "value": "(?i).*(GPTBot|ChatGPT|Google-Extended|Anthropic-ai|ClaudeBot|Bytespider|CCBot|facebookexternalhit|Twitterbot|curl).*"
                 }
             ],
             "destination": "/json"
