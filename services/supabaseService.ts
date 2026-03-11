@@ -31,8 +31,9 @@ export const getProfile = async (userId: string): Promise<UserProfile | null> =>
         portfolioTheme: data.portfolio_theme,
         profilePhotoUrl: data.profile_photo_url,
         githubProjects: data.github_projects || [],
+        githubLastSyncedAt: data.github_last_synced_at,
     };
-};
+}
 
 export const saveProfile = async (userId: string, profile: UserProfile): Promise<void> => {
     const { error } = await supabase
@@ -54,6 +55,7 @@ export const saveProfile = async (userId: string, profile: UserProfile): Promise
             portfolio_theme: profile.portfolioTheme,
             profile_photo_url: profile.profilePhotoUrl,
             github_projects: profile.githubProjects,
+            github_last_synced_at: profile.githubLastSyncedAt,
             updated_at: new Date().toISOString(),
         });
 
@@ -94,6 +96,7 @@ export const getApplications = async (userId: string): Promise<TailoredApplicati
         showMatchScore: app.show_match_score,
         template: app.template,
         portfolioTheme: app.portfolio_theme,
+        githubLastSyncedAt: app.github_last_synced_at,
     }));
 };
 
@@ -186,6 +189,7 @@ export const getApplicationBySlug = async (slug: string): Promise<TailoredApplic
         template: data.template,
         portfolioTheme: data.portfolio_theme,
         profilePhotoUrl: data.profile_photo_url,
+        githubLastSyncedAt: data.github_last_synced_at,
     };
 }
 

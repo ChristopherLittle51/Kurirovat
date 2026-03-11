@@ -44,6 +44,7 @@ export interface UserProfile {
   portfolioTheme?: string;    // Theme ID for public-facing portfolio website
   profilePhotoUrl?: string;   // URL to profile photo in Supabase Storage
   githubProjects?: GithubProject[];
+  githubLastSyncedAt?: string;
 }
 
 export interface JobDescription {
@@ -75,6 +76,7 @@ export interface TailoredApplication {
   template?: string; // Template ID for resume rendering
   portfolioTheme?: string; // Theme ID for portfolio rendering
   profilePhotoUrl?: string; // URL to profile photo
+  githubLastSyncedAt?: string;
 }
 
 export type ViewState =

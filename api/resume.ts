@@ -50,6 +50,7 @@ export default async function handler(req: any, res: any) {
                 template: data.template,
                 portfolioTheme: data.portfolio_theme,
                 profilePhotoUrl: data.profile_photo_url,
+                githubLastSyncedAt: data.github_last_synced_at,
             };
 
             return res.status(200).json(tailoredProfile);
@@ -82,6 +83,7 @@ export default async function handler(req: any, res: any) {
                 portfolioTheme: data.portfolio_theme,
                 profilePhotoUrl: data.profile_photo_url,
                 githubProjects: data.github_projects || [],
+                githubLastSyncedAt: data.github_last_synced_at,
             };
 
             return res.status(200).json(userProfile);

@@ -66,6 +66,34 @@ const LandingPage: React.FC = () => {
         return () => clearTimeout(timeoutId);
     }, [profile, hasUnsavedChanges]);
 
+    // Background GitHub sync
+    useEffect(() => {
+        if (profile && profile.githubUsername) {
+            const lastSync = profile.githubLastSyncedAt ? new Date(profile.githubLastSyncedAt).getTime() : 0;
+            const sixHours = 6 * 60 * 60 * 1000;
+
+            if (Date.now() - lastSync > sixHours) {
+                syncGithub();
+            }
+        }
+    }, [profile?.githubUsername]);
+
+    const syncGithub = async () => {
+        try {
+            const response = await fetch('/api/sync-github');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    console.log('GitHub stars synced successfully');
+                    // Reload data to show fresh counts in the UI
+                    loadData();
+                }
+            }
+        } catch (err) {
+            console.error('Background sync failed:', err);
+        }
+    };
+
     const loadData = async () => {
         if (!user) return;
         setLoading(true);

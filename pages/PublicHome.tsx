@@ -32,6 +32,33 @@ const PublicHome: React.FC<PublicHomeProps> = ({ format }) => {
     }, []);
 
     useEffect(() => {
+        if (profile && profile.githubUsername) {
+            const lastSync = profile.githubLastSyncedAt ? new Date(profile.githubLastSyncedAt).getTime() : 0;
+            const sixHours = 6 * 60 * 60 * 1000;
+            
+            if (Date.now() - lastSync > sixHours) {
+                syncGithub();
+            }
+        }
+    }, [profile?.githubUsername]);
+
+    const syncGithub = async () => {
+        try {
+            const response = await fetch('/api/sync-github');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    console.log('GitHub stars synced successfully');
+                    // We don't necessarily need to reload here as the next visitor will get it,
+                    // but we could silently update the local state if we wanted to be super fresh.
+                }
+            }
+        } catch (err) {
+            console.error('Background sync failed:', err);
+        }
+    };
+
+    useEffect(() => {
         if (profile) {
             // Use summary as tagline, truncating if necessary for the tab title
             const tagline = profile.summary.length > 50

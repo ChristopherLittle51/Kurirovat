@@ -27,6 +27,32 @@ const PublicPortfolio: React.FC<PublicPortfolioProps> = ({ format }) => {
     }, [slug]);
 
     useEffect(() => {
+        if (application && application.resume?.githubUsername && slug) {
+            const lastSync = application.githubLastSyncedAt ? new Date(application.githubLastSyncedAt).getTime() : 0;
+            const sixHours = 6 * 60 * 60 * 1000;
+
+            if (Date.now() - lastSync > sixHours) {
+                syncGithub();
+            }
+        }
+    }, [application?.resume?.githubUsername, slug]);
+
+    const syncGithub = async () => {
+        if (!slug) return;
+        try {
+            const response = await fetch(`/api/sync-github?type=application&slug=${slug}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    console.log('GitHub stars for application synced successfully');
+                }
+            }
+        } catch (err) {
+            console.error('Background application sync failed:', err);
+        }
+    };
+
+    useEffect(() => {
         if (application && application.resume) {
             // Use summary as tagline, truncating if necessary
             // For tailored applications, we could also consider using the Role Title 
