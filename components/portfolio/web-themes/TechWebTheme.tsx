@@ -67,7 +67,7 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                     </div>
 
                     <div className="grid grid-cols-[1fr_auto] md:grid-cols-[1fr_auto] gap-x-4 gap-y-6 md:gap-12 items-start">
-                        <h1 className="col-span-1 text-2xl sm:text-4xl md:text-7xl font-bold tracking-tighter text-white break-words">
+                        <h1 className="col-span-1 text-2xl sm:text-4xl md:text-7xl font-bold tracking-tighter text-white">
                             <span className="text-emerald-500 font-light">$ whoami</span><br />
                             {data.fullName}
                         </h1>
