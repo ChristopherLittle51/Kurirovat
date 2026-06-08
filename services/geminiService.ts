@@ -1,48 +1,36 @@
-
 import { supabase } from './supabaseClient';
-import { UserProfile, JobDescription, TailoredApplication } from '../types';
+import {
+  UserProfile,
+  JobDescription,
+  TailoredApplication,
+  TailoringOptions,
+  JobAnalysis,
+} from '../types';
 
-/**
- * Helper to invoke the 'gemini-api' Edge Function with explicit Auth headers.
- * This ensures the session token is passed correctly to avoid 401 errors.
- */
 const callGeminiFunction = async (action: string, payload: any) => {
-  // Refresh session to ensure the token is valid
   const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
 
   if (sessionError) {
-    console.warn("[GeminiService] Failed to refresh session:", sessionError);
+    console.warn('[GeminiService] Failed to refresh session:', sessionError);
   }
 
-  // Explicitly attach the session token if available
   const headers = session?.access_token
     ? { Authorization: `Bearer ${session.access_token}` }
     : undefined;
-
-  console.log(`[GeminiService] Invoking ${action}. Session exists: ${!!session}, Token length: ${session?.access_token?.length || 0}`);
-
-  if (!session) {
-    console.warn("[GeminiService] No active session found. Request will likely fail with 401.");
-  }
 
   const { data, error } = await supabase.functions.invoke('gemini-api', {
     body: {
       action,
       payload,
-      access_token: session?.access_token // Fallback: Send token in body
+      access_token: session?.access_token,
     },
-    headers
+    headers,
   });
 
   if (error) {
-    // Enhanced error logging
     console.error(`Edge Function Error (${action}):`, error);
-    if (error instanceof Error) {
-      console.error("Error Details:", error.message, error.stack);
-    }
-    // Check if it's a 401 specifically
     if (typeof error === 'object' && error !== null && 'status' in error && (error as any).status === 401) {
-      throw new Error(`Authentication failed (401). Please try logging out and back in.`);
+      throw new Error('Authentication failed (401). Please try logging out and back in.');
     }
     throw new Error(`Failed to execute ${action} via backend: ${error.message || 'Unknown error'}`);
   }
@@ -50,30 +38,46 @@ const callGeminiFunction = async (action: string, payload: any) => {
   return data;
 };
 
-/**
- * Extracts structured profile data from a PDF Resume using the 'gemini-api' Edge Function.
- */
 export const parseResumeFromPdf = async (base64Pdf: string): Promise<UserProfile> => {
   try {
     return await callGeminiFunction('parseResume', { base64Pdf });
   } catch (error: any) {
-    console.error("Gemini PDF Parse Error:", error);
-    throw new Error(error.message || "Failed to parse PDF. Ensure the file is a readable PDF.");
+    console.error('Gemini PDF Parse Error:', error);
+    throw new Error(error.message || 'Failed to parse PDF. Ensure the file is a readable PDF.');
   }
 };
 
-/**
- * Tailors the resume and generates a cover letter based on the Job Description.
- * Delegates logic to 'gemini-api' Edge Function to protect API keys.
- */
+export const analyzeJobDescription = async (jd: JobDescription): Promise<JobAnalysis> => {
+  try {
+    return await callGeminiFunction('analyzeJobDescription', { jd });
+  } catch (error: any) {
+    console.error('Gemini JD Analysis Error:', error);
+    throw new Error(error.message || 'Failed to analyze job description.');
+  }
+};
+
+export const importProfileSource = async (payload: {
+  url: string;
+  label?: string;
+  sourceType?: 'linkedin' | 'portfolio' | 'other';
+  rawText?: string;
+}) => {
+  try {
+    return await callGeminiFunction('importProfileSource', payload);
+  } catch (error: any) {
+    console.error('Gemini Profile Import Error:', error);
+    throw new Error(error.message || 'Failed to import profile source.');
+  }
+};
+
 export const tailorResume = async (
   baseProfile: UserProfile,
   jd: JobDescription,
   githubProjects: any[] = [],
   includeScore: boolean = true,
   pageCount: number = 1,
-  options?: { tone?: string, conciseness?: string, focusSkill?: string }
-): Promise<{ application: Partial<TailoredApplication>, rawResponse: string }> => {
+  options?: TailoringOptions
+): Promise<{ application: Partial<TailoredApplication>; rawResponse: string }> => {
   try {
     return await callGeminiFunction('tailorResume', {
       baseProfile,
@@ -81,44 +85,36 @@ export const tailorResume = async (
       githubProjects,
       includeScore,
       targetPageCount: pageCount,
-      options
+      options,
     });
   } catch (error: any) {
-    console.error("Gemini API Error:", error);
-    throw new Error(error.message || "Failed to generate tailored resume. Please check your connection.");
+    console.error('Gemini API Error:', error);
+    throw new Error(error.message || 'Failed to generate tailored resume. Please check your connection.');
   }
 };
 
-/**
- * Condenses a resume to fit within 1-2 pages.
- * Delegates to 'gemini-api' Edge Function.
- */
-export const condenseResume = async (profile: UserProfile): Promise<{ profile: UserProfile, rawResponse: string }> => {
+export const condenseResume = async (profile: UserProfile): Promise<{ profile: UserProfile; rawResponse: string }> => {
   try {
     return await callGeminiFunction('condenseResume', { profile });
   } catch (error: any) {
-    console.error("Condense Resume Error:", error);
-    throw new Error(error.message || "Failed to condense resume. Please try again.");
+    console.error('Condense Resume Error:', error);
+    throw new Error(error.message || 'Failed to condense resume. Please try again.');
   }
 };
 
-/**
- * Condenses a cover letter to fit on a single page.
- * Delegates to 'gemini-api' Edge Function.
- */
 export const condenseCoverLetter = async (
   content: string,
   candidateName: string,
   companyName: string
-): Promise<{ content: string, rawResponse: string }> => {
+): Promise<{ content: string; rawResponse: string }> => {
   try {
     return await callGeminiFunction('condenseCoverLetter', {
       content,
       candidateName,
-      companyName
+      companyName,
     });
   } catch (error: any) {
-    console.error("Condense Cover Letter Error:", error);
-    throw new Error(error.message || "Failed to condense cover letter. Please try again.");
+    console.error('Condense Cover Letter Error:', error);
+    throw new Error(error.message || 'Failed to condense cover letter. Please try again.');
   }
 };

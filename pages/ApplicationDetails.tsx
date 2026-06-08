@@ -69,9 +69,21 @@ const ApplicationDetails: React.FC = () => {
 
     // Regeneration Options State
     const [genOptions, setGenOptions] = useState({
+        strategyPreset: 'Balanced',
+        careerMode: 'Standard',
+        critiqueMode: 'Blunt',
         tone: 'professional',
         conciseness: 'standard',
-        focusSkill: ''
+        focusSkill: '',
+        promptPreviewOverride: '',
+        regenerationInstructions: '',
+        weights: {
+            leadership: 0.5,
+            technicalDepth: 0.5,
+            measurableImpact: 0.7,
+            recency: 0.7,
+            domainMatch: 0.6
+        }
     });
     const [showRegenMenu, setShowRegenMenu] = useState(false);
     const [showJDEditor, setShowJDEditor] = useState(false);
@@ -95,6 +107,10 @@ const ApplicationDetails: React.FC = () => {
             setSelectedTheme(application.portfolioTheme as TemplateId);
         }
     }, [application]);
+
+    useEffect(() => {
+        setApplication(prev => prev ? ({ ...prev, generationOptions: genOptions }) : prev);
+    }, [genOptions]);
 
     const lastSavedData = useRef<string>('');
 
@@ -131,8 +147,15 @@ const ApplicationDetails: React.FC = () => {
                 resume: app.resume,
                 coverLetter: app.coverLetter,
                 template: app.template,
-                portfolioTheme: app.portfolioTheme
+                portfolioTheme: app.portfolioTheme,
+                jobDescription: app.jobDescription,
+                jobAnalysis: app.jobAnalysis,
+                diagnostics: app.diagnostics,
+                promptPreview: app.promptPreview
             });
+            if (app.generationOptions) {
+                setGenOptions(prev => ({ ...prev, ...app.generationOptions }));
+            }
         }
         if (app?.template) {
             setSelectedTemplate(app.template as TemplateId);
@@ -162,7 +185,11 @@ const ApplicationDetails: React.FC = () => {
             coverLetter: application.coverLetter,
             template: selectedTemplate,
             portfolioTheme: selectedTheme,
-            jobDescription: application.jobDescription // Track JD changes
+            jobDescription: application.jobDescription,
+            jobAnalysis: application.jobAnalysis,
+            diagnostics: application.diagnostics,
+            promptPreview: application.promptPreview,
+            generationOptions: application.generationOptions
         });
 
         // Don't save if it matches the last saved data
@@ -179,7 +206,16 @@ const ApplicationDetails: React.FC = () => {
                 coverLetter: application.coverLetter,
                 template: selectedTemplate,
                 portfolioTheme: selectedTheme,
-                jobDescription: application.jobDescription, // Save updated JD
+                jobDescription: application.jobDescription,
+                jobAnalysis: application.jobAnalysis,
+                evidenceResolution: application.evidenceResolution,
+                diagnostics: application.diagnostics,
+                rewriteInsights: application.rewriteInsights,
+                promptPreview: application.promptPreview,
+                selectedPlaybookId: application.selectedPlaybookId,
+                generationOptions: application.generationOptions,
+                editSuggestions: application.editSuggestions,
+                regenerationHistory: application.regenerationHistory,
             });
             console.log("Application saved successfully");
             lastSavedData.current = snapshot;
@@ -190,7 +226,11 @@ const ApplicationDetails: React.FC = () => {
                 coverLetter: application.coverLetter,
                 template: selectedTemplate,
                 portfolioTheme: selectedTheme,
-                jobDescription: application.jobDescription
+                jobDescription: application.jobDescription,
+                jobAnalysis: application.jobAnalysis,
+                diagnostics: application.diagnostics,
+                promptPreview: application.promptPreview,
+                generationOptions: application.generationOptions
             });
 
             if (currentSnapshot === snapshot) {
@@ -428,6 +468,15 @@ const ApplicationDetails: React.FC = () => {
                 coverLetter: regenerated.coverLetter || prev.coverLetter,
                 matchScore: regenerated.matchScore ?? prev.matchScore,
                 keyKeywords: regenerated.keyKeywords || prev.keyKeywords,
+                jobAnalysis: regenerated.jobAnalysis || prev.jobAnalysis,
+                evidenceResolution: regenerated.evidenceResolution || prev.evidenceResolution,
+                diagnostics: regenerated.diagnostics || prev.diagnostics,
+                rewriteInsights: regenerated.rewriteInsights || prev.rewriteInsights,
+                promptPreview: regenerated.promptPreview || prev.promptPreview,
+                selectedPlaybookId: regenerated.selectedPlaybookId || prev.selectedPlaybookId,
+                generationOptions: regenerated.generationOptions || genOptions,
+                editSuggestions: regenerated.editSuggestions || prev.editSuggestions,
+                regenerationHistory: regenerated.regenerationHistory || prev.regenerationHistory,
             }) : null);
             setHasUnsavedChanges(true);
         } catch (error) {
@@ -451,6 +500,21 @@ const ApplicationDetails: React.FC = () => {
         }) : null);
         setHasUnsavedChanges(true);
         setShowJDEditor(false);
+    };
+
+    const applyEditSuggestion = (suggestionId: string, instruction: string) => {
+        setGenOptions(prev => ({
+            ...prev,
+            regenerationInstructions: instruction
+        }));
+        setApplication(prev => prev ? ({
+            ...prev,
+            editSuggestions: (prev.editSuggestions || []).map(item =>
+                item.id === suggestionId ? { ...item, accepted: true } : item
+            )
+        }) : prev);
+        setHasUnsavedChanges(true);
+        setShowOptionsModal(true);
     };
 
     // Render the selected template with optional editing support
@@ -810,6 +874,106 @@ const ApplicationDetails: React.FC = () => {
                         />
                     </div>
                 )}
+
+                {(application.jobAnalysis || application.diagnostics || application.promptPreview || application.editSuggestions?.length) && (
+                    <section className="max-w-5xl mx-auto mt-8 grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        {application.jobAnalysis && (
+                            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Job Analysis</h3>
+                                <div className="space-y-3 text-sm">
+                                    <div><span className="font-semibold">Seniority:</span> {application.jobAnalysis.seniority || 'Unknown'}</div>
+                                    <div><span className="font-semibold">Domain:</span> {application.jobAnalysis.domain || 'Unknown'}</div>
+                                    <div><span className="font-semibold">Role family:</span> {application.jobAnalysis.roleFamily || 'general'}</div>
+                                    <div>
+                                        <span className="font-semibold">Keywords:</span>
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {(application.jobAnalysis.keywords || []).map((keyword) => (
+                                                <span key={keyword} className="px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200">{keyword}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span className="font-semibold">Pain points:</span>
+                                        <ul className="mt-2 space-y-1 text-gray-600 dark:text-gray-300">
+                                            {(application.jobAnalysis.painPoints || []).map((item) => <li key={item}>• {item}</li>)}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {application.diagnostics && (
+                            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Grounded Critique</h3>
+                                <div className="space-y-4 text-sm">
+                                    <div>
+                                        <div className="font-semibold text-gray-900 dark:text-white">Recruiter concerns</div>
+                                        <ul className="mt-2 space-y-1 text-gray-600 dark:text-gray-300">
+                                            {(application.diagnostics.recruiterConcerns || []).map((item) => <li key={item}>• {item}</li>)}
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <div className="font-semibold text-gray-900 dark:text-white">Overused phrasing</div>
+                                        <ul className="mt-2 space-y-1 text-gray-600 dark:text-gray-300">
+                                            {(application.diagnostics.overusedPhrasing || []).map((item) => <li key={item}>• {item}</li>)}
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <div className="font-semibold text-gray-900 dark:text-white">Manual fixes</div>
+                                        <ul className="mt-2 space-y-1 text-gray-600 dark:text-gray-300">
+                                            {(application.diagnostics.manualActionItems || []).map((item) => <li key={item}>• {item}</li>)}
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <div className="font-semibold text-gray-900 dark:text-white">Unsupported claims avoided</div>
+                                        <ul className="mt-2 space-y-1 text-gray-600 dark:text-gray-300">
+                                            {(application.diagnostics.unsupportedClaimsAvoided || []).map((item) => <li key={item}>• {item}</li>)}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {application.promptPreview && (
+                            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 xl:col-span-2">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Prompt Preview</h3>
+                                <textarea
+                                    value={application.promptPreview}
+                                    onChange={(e) => {
+                                        setApplication(prev => prev ? ({ ...prev, promptPreview: e.target.value }) : prev);
+                                        setGenOptions(prev => ({ ...prev, promptPreviewOverride: e.target.value }));
+                                        setHasUnsavedChanges(true);
+                                    }}
+                                    rows={10}
+                                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-950 p-3 font-mono text-xs"
+                                />
+                            </div>
+                        )}
+
+                        {!!application.editSuggestions?.length && (
+                            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 xl:col-span-2">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Redo Suggestions</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {application.editSuggestions?.map((suggestion) => (
+                                        <div key={suggestion.id} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-950/60">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="font-semibold text-gray-900 dark:text-white">{suggestion.label}</div>
+                                                {suggestion.accepted && <span className="text-xs text-green-600 dark:text-green-400">Applied</span>}
+                                            </div>
+                                            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{suggestion.rationale}</p>
+                                            <button
+                                                onClick={() => applyEditSuggestion(suggestion.id, suggestion.instruction)}
+                                                className="mt-3 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
+                                            >
+                                                Use For Regenerate
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </section>
+                )}
             </main>
             {/* Job Description Editor Modal */}
             {showJDEditor && (
@@ -882,6 +1046,42 @@ const ApplicationDetails: React.FC = () => {
                             </button>
                         </div>
                         <div className="p-6 space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preset</label>
+                                    <select
+                                        value={genOptions.strategyPreset}
+                                        onChange={e => setGenOptions({ ...genOptions, strategyPreset: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
+                                    >
+                                        <option value="Balanced">Balanced</option>
+                                        <option value="ATS">ATS</option>
+                                        <option value="Recruiter">Recruiter</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Career Mode</label>
+                                    <select
+                                        value={genOptions.careerMode}
+                                        onChange={e => setGenOptions({ ...genOptions, careerMode: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
+                                    >
+                                        <option value="Standard">Standard</option>
+                                        <option value="Transferable Skills">Transferable Skills</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Critique</label>
+                                    <select
+                                        value={genOptions.critiqueMode}
+                                        onChange={e => setGenOptions({ ...genOptions, critiqueMode: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
+                                    >
+                                        <option value="Blunt">Blunt</option>
+                                        <option value="Supportive">Supportive</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Writing Tone</label>
                                 <select
@@ -918,6 +1118,50 @@ const ApplicationDetails: React.FC = () => {
                                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">If set, the AI will prioritize experience related to this skill.</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Regeneration Instructions</label>
+                                <textarea
+                                    value={genOptions.regenerationInstructions}
+                                    onChange={e => setGenOptions({ ...genOptions, regenerationInstructions: e.target.value })}
+                                    rows={4}
+                                    placeholder="Example: make the summary less senior, reduce buzzwords, and highlight platform migration work."
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Weighting</label>
+                                <div className="space-y-3">
+                                    {[
+                                        ['leadership', 'Leadership'],
+                                        ['technicalDepth', 'Technical depth'],
+                                        ['measurableImpact', 'Impact'],
+                                        ['recency', 'Recency'],
+                                        ['domainMatch', 'Domain match']
+                                    ].map(([key, label]) => (
+                                        <div key={key}>
+                                            <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                                <span>{label}</span>
+                                                <span>{genOptions.weights[key as keyof typeof genOptions.weights].toFixed(2)}</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min={0}
+                                                max={1}
+                                                step={0.05}
+                                                value={genOptions.weights[key as keyof typeof genOptions.weights]}
+                                                onChange={e => setGenOptions({
+                                                    ...genOptions,
+                                                    weights: {
+                                                        ...genOptions.weights,
+                                                        [key]: Number(e.target.value)
+                                                    }
+                                                })}
+                                                className="w-full"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                         <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex justify-end gap-3 bg-gray-50 dark:bg-gray-900/50">

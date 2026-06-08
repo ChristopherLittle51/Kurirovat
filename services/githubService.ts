@@ -20,7 +20,9 @@ export const fetchGithubRepos = async (username: string): Promise<GithubProject[
             description: repo.description,
             html_url: repo.html_url,
             language: repo.language,
-            stargazers_count: repo.stargazers_count
+            stargazers_count: repo.stargazers_count,
+            pushed_at: repo.pushed_at,
+            topics: repo.topics || []
         }));
 
     } catch (error) {

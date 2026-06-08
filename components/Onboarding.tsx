@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, Experience, Education, GithubProject } from '../types';
+import { UserProfile, Experience, Education, GithubProject, AchievementBankEntry, TargetRegion } from '../types';
 import { Plus, Trash2, ChevronRight, Check, UploadCloud, Loader2, FileText, Save, Github, Star } from 'lucide-react';
-import { parseResumeFromPdf } from '../services/geminiService';
+import { parseResumeFromPdf, importProfileSource } from '../services/geminiService';
 import { fetchGithubRepos } from '../services/githubService';
 import PhotoUpload from './PhotoUpload';
 
@@ -25,7 +25,15 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
     education: [],
     links: [],
     githubUsername: '',
-    githubProjects: []
+    githubProjects: [],
+    achievementBank: [],
+    tailoringPlaybooks: [],
+    importedProfileSources: [],
+    targetRoles: [],
+    preferredIndustries: [],
+    targetRegions: [],
+    antiClaims: [],
+    learnedPreferenceSuggestions: []
   });
 
   useEffect(() => {
@@ -37,6 +45,12 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
 
   const [availableRepos, setAvailableRepos] = useState<GithubProject[]>([]);
   const [isFetchingRepos, setIsFetchingRepos] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
+  const [isImportingSource, setIsImportingSource] = useState(false);
+  const [tempTargetRole, setTempTargetRole] = useState('');
+  const [tempIndustry, setTempIndustry] = useState('');
+  const [tempAntiClaim, setTempAntiClaim] = useState('');
+  const [tempRegion, setTempRegion] = useState('');
 
   const handleFetchRepos = async () => {
     if (!profile.githubUsername) return;
@@ -155,6 +169,103 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
     if (tempSkill.trim()) {
       setProfile(prev => ({ ...prev, skills: [...prev.skills, tempSkill.trim()] }));
       setTempSkill('');
+    }
+  };
+
+  const addAchievement = () => {
+    const newEntry: AchievementBankEntry = {
+      id: crypto.randomUUID(),
+      title: '',
+      situation: '',
+      action: '',
+      result: '',
+      metric: '',
+      scope: '',
+      tools: [],
+      teamSize: '',
+      domain: '',
+      tags: [],
+      sourceType: 'manual',
+      confidence: 'medium',
+      roleIds: [],
+      mustInclude: false,
+      niceToUse: true,
+      neverUse: false,
+      roleFamilyConstraints: []
+    };
+
+    setProfile(prev => ({
+      ...prev,
+      achievementBank: [...(prev.achievementBank || []), newEntry]
+    }));
+  };
+
+  const updateAchievement = (achievementId: string, field: keyof AchievementBankEntry, value: any) => {
+    setProfile(prev => ({
+      ...prev,
+      achievementBank: (prev.achievementBank || []).map(entry =>
+        entry.id === achievementId ? { ...entry, [field]: value } : entry
+      )
+    }));
+  };
+
+  const addTargetRegion = () => {
+    if (!tempRegion.trim()) return;
+    const region: TargetRegion = {
+      id: crypto.randomUUID(),
+      label: tempRegion.trim(),
+      remotePreference: 'flexible'
+    };
+    setProfile(prev => ({
+      ...prev,
+      targetRegions: [...(prev.targetRegions || []), region]
+    }));
+    setTempRegion('');
+  };
+
+  const handleImportSource = async () => {
+    if (!importUrl.trim()) return;
+    setIsImportingSource(true);
+    try {
+      const imported = await importProfileSource({
+        url: importUrl.trim(),
+        sourceType: 'linkedin'
+      });
+
+      setProfile(prev => ({
+        ...prev,
+        importedProfileSources: [...(prev.importedProfileSources || []), imported],
+        skills: Array.from(new Set([...(prev.skills || []), ...(imported.skills || [])])),
+        achievementBank: [
+          ...(prev.achievementBank || []),
+          ...((imported.achievements || []).map((achievement: string) => ({
+            id: crypto.randomUUID(),
+            title: achievement.slice(0, 60),
+            situation: '',
+            action: achievement,
+            result: '',
+            metric: '',
+            scope: '',
+            tools: [],
+            teamSize: '',
+            domain: '',
+            tags: ['imported'],
+            sourceType: 'linkedin',
+            confidence: 'low',
+            roleIds: [],
+            mustInclude: false,
+            niceToUse: true,
+            neverUse: false,
+            roleFamilyConstraints: []
+          } satisfies AchievementBankEntry)))
+        ]
+      }));
+      setImportUrl('');
+    } catch (error) {
+      console.error(error);
+      alert('Failed to import profile source.');
+    } finally {
+      setIsImportingSource(false);
     }
   };
 
@@ -332,6 +443,40 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
           <input className="w-full border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="City, State" value={profile.location} onChange={e => setProfile({ ...profile, location: e.target.value })} />
           <textarea className="w-full border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 h-32 transition-colors" placeholder="Professional Summary (General)" value={profile.summary} onChange={e => setProfile({ ...profile, summary: e.target.value })} />
 
+          <div className="border dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-800/40 space-y-3">
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Import Profile Source</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Bring in a LinkedIn or portfolio URL as extra evidence without overwriting your validated profile.</p>
+            </div>
+            <div className="flex gap-2">
+              <input
+                className="flex-1 border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                placeholder="https://www.linkedin.com/in/your-profile"
+                value={importUrl}
+                onChange={e => setImportUrl(e.target.value)}
+              />
+              <button
+                onClick={handleImportSource}
+                disabled={isImportingSource || !importUrl.trim()}
+                className="bg-blue-600 text-white px-4 rounded-lg hover:bg-blue-700 disabled:opacity-60 flex items-center gap-2"
+              >
+                {isImportingSource ? <Loader2 className="animate-spin" size={16} /> : null}
+                Import
+              </button>
+            </div>
+            {(profile.importedProfileSources || []).length > 0 && (
+              <div className="space-y-2">
+                {profile.importedProfileSources?.map(source => (
+                  <div key={source.id} className="text-sm border dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900">
+                    <div className="font-medium text-gray-900 dark:text-white">{source.label}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 break-all">{source.url}</div>
+                    {source.summary && <div className="text-xs text-gray-600 dark:text-gray-300 mt-1">{source.summary}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="space-y-2">
             <h3 className="font-semibold text-gray-700 dark:text-gray-300 transition-colors">Social Links</h3>
             {profile.links.map((link, idx) => (
@@ -444,11 +589,203 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
               </span>
             ))}
           </div>
-          <div className="flex justify-between pt-8">
+          <div className="flex justify-start pt-8">
             <button onClick={() => setStep(3)} className="text-gray-600 px-6 py-2">Back</button>
-            <button onClick={() => onComplete(profile)} className="bg-green-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 shadow-lg shadow-green-200">
-              {initialData ? "Save Changes" : "Finish Setup"} {initialData ? <Save size={18} /> : <Check size={18} />}
-            </button>
+          </div>
+
+          <div className="space-y-6 pt-10 border-t border-gray-200 dark:border-gray-800">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Targeting & Guardrails</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">These settings shape tailoring and give the model explicit red lines.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-800 dark:text-gray-200">Target Roles</h4>
+                <div className="flex gap-2">
+                  <input
+                    value={tempTargetRole}
+                    onChange={e => setTempTargetRole(e.target.value)}
+                    className="flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
+                    placeholder="Senior Frontend Engineer"
+                  />
+                  <button
+                    onClick={() => {
+                      if (!tempTargetRole.trim()) return;
+                      setProfile(prev => ({ ...prev, targetRoles: [...(prev.targetRoles || []), tempTargetRole.trim()] }));
+                      setTempTargetRole('');
+                    }}
+                    className="px-3 rounded bg-gray-900 dark:bg-gray-700 text-white"
+                  >
+                    Add
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(profile.targetRoles || []).map((role, index) => (
+                    <span key={`${role}-${index}`} className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                      {role}
+                      <button onClick={() => setProfile(prev => ({ ...prev, targetRoles: (prev.targetRoles || []).filter((_, i) => i !== index) }))}>×</button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-800 dark:text-gray-200">Preferred Industries</h4>
+                <div className="flex gap-2">
+                  <input
+                    value={tempIndustry}
+                    onChange={e => setTempIndustry(e.target.value)}
+                    className="flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
+                    placeholder="Developer tools"
+                  />
+                  <button
+                    onClick={() => {
+                      if (!tempIndustry.trim()) return;
+                      setProfile(prev => ({ ...prev, preferredIndustries: [...(prev.preferredIndustries || []), tempIndustry.trim()] }));
+                      setTempIndustry('');
+                    }}
+                    className="px-3 rounded bg-gray-900 dark:bg-gray-700 text-white"
+                  >
+                    Add
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(profile.preferredIndustries || []).map((industry, index) => (
+                    <span key={`${industry}-${index}`} className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                      {industry}
+                      <button onClick={() => setProfile(prev => ({ ...prev, preferredIndustries: (prev.preferredIndustries || []).filter((_, i) => i !== index) }))}>×</button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-800 dark:text-gray-200">Target Regions</h4>
+                <div className="flex gap-2">
+                  <input
+                    value={tempRegion}
+                    onChange={e => setTempRegion(e.target.value)}
+                    className="flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
+                    placeholder="Boston metro"
+                  />
+                  <button onClick={addTargetRegion} className="px-3 rounded bg-gray-900 dark:bg-gray-700 text-white">Add</button>
+                </div>
+                <div className="space-y-2">
+                  {(profile.targetRegions || []).map(region => (
+                    <div key={region.id} className="flex gap-2 items-center">
+                      <input
+                        value={region.label}
+                        onChange={e => setProfile(prev => ({
+                          ...prev,
+                          targetRegions: (prev.targetRegions || []).map(item => item.id === region.id ? { ...item, label: e.target.value } : item)
+                        }))}
+                        className="flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
+                      />
+                      <select
+                        value={region.remotePreference}
+                        onChange={e => setProfile(prev => ({
+                          ...prev,
+                          targetRegions: (prev.targetRegions || []).map(item => item.id === region.id ? { ...item, remotePreference: e.target.value as TargetRegion['remotePreference'] } : item)
+                        }))}
+                        className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
+                      >
+                        <option value="flexible">Flexible</option>
+                        <option value="remote">Remote</option>
+                        <option value="hybrid">Hybrid</option>
+                        <option value="onsite">Onsite</option>
+                      </select>
+                      <button onClick={() => setProfile(prev => ({ ...prev, targetRegions: (prev.targetRegions || []).filter(item => item.id !== region.id) }))} className="text-red-500">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-800 dark:text-gray-200">Anti-Claims</h4>
+                <div className="flex gap-2">
+                  <input
+                    value={tempAntiClaim}
+                    onChange={e => setTempAntiClaim(e.target.value)}
+                    className="flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
+                    placeholder="Do not imply direct people management"
+                  />
+                  <button
+                    onClick={() => {
+                      if (!tempAntiClaim.trim()) return;
+                      setProfile(prev => ({ ...prev, antiClaims: [...(prev.antiClaims || []), tempAntiClaim.trim()] }));
+                      setTempAntiClaim('');
+                    }}
+                    className="px-3 rounded bg-gray-900 dark:bg-gray-700 text-white"
+                  >
+                    Add
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {(profile.antiClaims || []).map((claim, index) => (
+                    <div key={`${claim}-${index}`} className="flex items-center justify-between text-sm border dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900">
+                      <span>{claim}</span>
+                      <button onClick={() => setProfile(prev => ({ ...prev, antiClaims: (prev.antiClaims || []).filter((_, i) => i !== index) }))} className="text-red-500">×</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium text-gray-800 dark:text-gray-200">Achievement Bank</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Reusable evidence the generator can safely pull from.</p>
+                </div>
+                <button onClick={addAchievement} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                  <Plus size={16} /> Add Achievement
+                </button>
+              </div>
+
+              {(profile.achievementBank || []).map(entry => (
+                <div key={entry.id} className="border dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-900/40 space-y-3">
+                  <div className="flex justify-between items-center gap-3">
+                    <input
+                      value={entry.title}
+                      onChange={e => updateAchievement(entry.id, 'title', e.target.value)}
+                      placeholder="Achievement title"
+                      className="flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
+                    />
+                    <button onClick={() => setProfile(prev => ({ ...prev, achievementBank: (prev.achievementBank || []).filter(item => item.id !== entry.id) }))} className="text-red-500">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <textarea value={entry.situation} onChange={e => updateAchievement(entry.id, 'situation', e.target.value)} placeholder="Situation" className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 min-h-24" />
+                    <textarea value={entry.action} onChange={e => updateAchievement(entry.id, 'action', e.target.value)} placeholder="Action" className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 min-h-24" />
+                    <textarea value={entry.result} onChange={e => updateAchievement(entry.id, 'result', e.target.value)} placeholder="Result" className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 min-h-24" />
+                    <textarea value={entry.metric} onChange={e => updateAchievement(entry.id, 'metric', e.target.value)} placeholder="Metric or measurable proof" className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 min-h-24" />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <input value={entry.scope} onChange={e => updateAchievement(entry.id, 'scope', e.target.value)} placeholder="Scope" className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800" />
+                    <input value={entry.teamSize} onChange={e => updateAchievement(entry.id, 'teamSize', e.target.value)} placeholder="Team size" className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800" />
+                    <input value={entry.domain} onChange={e => updateAchievement(entry.id, 'domain', e.target.value)} placeholder="Domain" className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800" />
+                    <input value={entry.tools.join(', ')} onChange={e => updateAchievement(entry.id, 'tools', e.target.value.split(',').map(item => item.trim()).filter(Boolean))} placeholder="Tools (comma-separated)" className="border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800" />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                    <label className="flex items-center gap-2"><input type="checkbox" checked={entry.mustInclude} onChange={e => updateAchievement(entry.id, 'mustInclude', e.target.checked)} /> Must include</label>
+                    <label className="flex items-center gap-2"><input type="checkbox" checked={entry.niceToUse} onChange={e => updateAchievement(entry.id, 'niceToUse', e.target.checked)} /> Nice to use</label>
+                    <label className="flex items-center gap-2"><input type="checkbox" checked={entry.neverUse} onChange={e => updateAchievement(entry.id, 'neverUse', e.target.checked)} /> Never use</label>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button onClick={() => onComplete(profile)} className="bg-green-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 shadow-lg shadow-green-200">
+                {initialData ? "Save Changes" : "Finish Setup"} {initialData ? <Save size={18} /> : <Check size={18} />}
+              </button>
+            </div>
           </div>
         </div>
       )}

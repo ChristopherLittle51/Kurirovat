@@ -1,5 +1,78 @@
 import { supabase } from './supabaseClient';
-import { UserProfile, TailoredApplication, JobDescription } from '../types';
+import {
+    UserProfile,
+    TailoredApplication,
+    TargetRegion,
+    TailoringPlaybook,
+    LeadSource,
+    LeadSourceCheck,
+    JobLead,
+} from '../types';
+
+const defaultRegion = (region?: Partial<TargetRegion>): TargetRegion => ({
+    id: region?.id || crypto.randomUUID(),
+    label: region?.label || '',
+    remotePreference: region?.remotePreference || 'flexible',
+});
+
+const normalizeProfile = (data: any): UserProfile => ({
+    fullName: data.full_name || '',
+    email: data.email || '',
+    location: data.location || '',
+    phone: data.phone || '',
+    summary: data.summary || '',
+    skills: data.skills || [],
+    experience: data.experience || [],
+    education: data.education || [],
+    links: data.links || [],
+    githubUsername: data.github_username,
+    otherExperience: data.other_experience || [],
+    portfolioTemplate: data.portfolio_template,
+    portfolioTheme: data.portfolio_theme,
+    profilePhotoUrl: data.profile_photo_url,
+    githubProjects: data.github_projects || [],
+    githubLastSyncedAt: data.github_last_synced_at,
+    achievementBank: data.achievement_bank || [],
+    tailoringPlaybooks: data.tailoring_playbooks || [],
+    importedProfileSources: data.imported_profile_sources || [],
+    targetRoles: data.target_roles || [],
+    preferredIndustries: data.preferred_industries || [],
+    targetRegions: (data.target_regions || []).map(defaultRegion),
+    antiClaims: data.anti_claims || [],
+    learnedPreferenceSuggestions: data.learned_preference_suggestions || [],
+});
+
+const normalizeApplication = (app: any): TailoredApplication => ({
+    id: app.id,
+    createdAt: new Date(app.created_at).getTime(),
+    jobDescription: {
+        companyName: app.company_name,
+        roleTitle: app.role_title,
+        rawText: app.raw_job_description,
+    },
+    resume: app.resume_data,
+    coverLetter: app.cover_letter,
+    matchScore: app.match_score,
+    keyKeywords: app.key_keywords,
+    searchSources: app.search_sources,
+    status: app.status,
+    slug: app.slug,
+    githubProjects: app.github_projects,
+    showMatchScore: app.show_match_score,
+    template: app.template,
+    portfolioTheme: app.portfolio_theme,
+    profilePhotoUrl: app.profile_photo_url,
+    githubLastSyncedAt: app.github_last_synced_at,
+    jobAnalysis: app.job_analysis,
+    evidenceResolution: app.evidence_resolution,
+    diagnostics: app.diagnostics,
+    rewriteInsights: app.rewrite_insights,
+    promptPreview: app.prompt_preview,
+    selectedPlaybookId: app.selected_playbook_id,
+    generationOptions: app.generation_options,
+    editSuggestions: app.edit_suggestions,
+    regenerationHistory: app.regeneration_history || [],
+});
 
 export const getProfile = async (userId: string): Promise<UserProfile | null> => {
     const { data, error } = await supabase
@@ -9,31 +82,13 @@ export const getProfile = async (userId: string): Promise<UserProfile | null> =>
         .single();
 
     if (error) {
-        if (error.code === 'PGRST116') return null; // Not found
+        if (error.code === 'PGRST116') return null;
         console.error('Error fetching profile:', error);
         return null;
     }
 
-    // Convert snake_case from DB to camelCase for app
-    return {
-        fullName: data.full_name,
-        email: data.email,
-        location: data.location,
-        phone: data.phone,
-        summary: data.summary,
-        skills: data.skills || [],
-        experience: data.experience || [],
-        education: data.education || [],
-        links: data.links || [],
-        githubUsername: data.github_username,
-        otherExperience: data.other_experience || [],
-        portfolioTemplate: data.portfolio_template,
-        portfolioTheme: data.portfolio_theme,
-        profilePhotoUrl: data.profile_photo_url,
-        githubProjects: data.github_projects || [],
-        githubLastSyncedAt: data.github_last_synced_at,
-    };
-}
+    return normalizeProfile(data);
+};
 
 export const saveProfile = async (userId: string, profile: UserProfile): Promise<void> => {
     const { error } = await supabase
@@ -56,6 +111,14 @@ export const saveProfile = async (userId: string, profile: UserProfile): Promise
             profile_photo_url: profile.profilePhotoUrl,
             github_projects: profile.githubProjects,
             github_last_synced_at: profile.githubLastSyncedAt,
+            achievement_bank: profile.achievementBank,
+            tailoring_playbooks: profile.tailoringPlaybooks,
+            imported_profile_sources: profile.importedProfileSources,
+            target_roles: profile.targetRoles,
+            preferred_industries: profile.preferredIndustries,
+            target_regions: profile.targetRegions,
+            anti_claims: profile.antiClaims,
+            learned_preference_suggestions: profile.learnedPreferenceSuggestions,
             updated_at: new Date().toISOString(),
         });
 
@@ -77,32 +140,10 @@ export const getApplications = async (userId: string): Promise<TailoredApplicati
         return [];
     }
 
-    return data.map((app: any) => ({
-        id: app.id,
-        createdAt: new Date(app.created_at).getTime(),
-        jobDescription: {
-            companyName: app.company_name,
-            roleTitle: app.role_title,
-            rawText: app.raw_job_description,
-        },
-        resume: app.resume_data,
-        coverLetter: app.cover_letter,
-        matchScore: app.match_score,
-        keyKeywords: app.key_keywords,
-        searchSources: app.search_sources,
-        status: app.status,
-        slug: app.slug,
-        githubProjects: app.github_projects,
-        showMatchScore: app.show_match_score,
-        template: app.template,
-        portfolioTheme: app.portfolio_theme,
-        githubLastSyncedAt: app.github_last_synced_at,
-    }));
+    return data.map(normalizeApplication);
 };
 
 export const saveApplication = async (userId: string, application: TailoredApplication): Promise<void> => {
-    // Slug is now handled by DB trigger if not present
-
     const { error } = await supabase
         .from('applications')
         .insert({
@@ -120,7 +161,16 @@ export const saveApplication = async (userId: string, application: TailoredAppli
             show_match_score: application.showMatchScore,
             profile_photo_url: application.profilePhotoUrl,
             template: application.template,
-            portfolio_theme: application.portfolioTheme
+            portfolio_theme: application.portfolioTheme,
+            job_analysis: application.jobAnalysis,
+            evidence_resolution: application.evidenceResolution,
+            diagnostics: application.diagnostics,
+            rewrite_insights: application.rewriteInsights,
+            prompt_preview: application.promptPreview,
+            selected_playbook_id: application.selectedPlaybookId,
+            generation_options: application.generationOptions,
+            edit_suggestions: application.editSuggestions,
+            regeneration_history: application.regenerationHistory,
         });
 
     if (error) {
@@ -133,12 +183,25 @@ export const updateApplication = async (appId: string, updates: Partial<Tailored
     const updatePayload: any = {};
 
     if (updates.resume) updatePayload.resume_data = updates.resume;
-    if (updates.coverLetter) updatePayload.cover_letter = updates.coverLetter;
+    if (updates.coverLetter !== undefined) updatePayload.cover_letter = updates.coverLetter;
     if (updates.status) updatePayload.status = updates.status;
     if (updates.template) updatePayload.template = updates.template;
     if (updates.portfolioTheme) updatePayload.portfolio_theme = updates.portfolioTheme;
     if (updates.profilePhotoUrl) updatePayload.profile_photo_url = updates.profilePhotoUrl;
-    // Add other fields as necessary, but these are the main editable ones
+    if (updates.jobDescription) {
+        updatePayload.company_name = updates.jobDescription.companyName;
+        updatePayload.role_title = updates.jobDescription.roleTitle;
+        updatePayload.raw_job_description = updates.jobDescription.rawText;
+    }
+    if (updates.jobAnalysis) updatePayload.job_analysis = updates.jobAnalysis;
+    if (updates.evidenceResolution) updatePayload.evidence_resolution = updates.evidenceResolution;
+    if (updates.diagnostics) updatePayload.diagnostics = updates.diagnostics;
+    if (updates.rewriteInsights) updatePayload.rewrite_insights = updates.rewriteInsights;
+    if (updates.promptPreview !== undefined) updatePayload.prompt_preview = updates.promptPreview;
+    if (updates.selectedPlaybookId !== undefined) updatePayload.selected_playbook_id = updates.selectedPlaybookId;
+    if (updates.generationOptions) updatePayload.generation_options = updates.generationOptions;
+    if (updates.editSuggestions) updatePayload.edit_suggestions = updates.editSuggestions;
+    if (updates.regenerationHistory) updatePayload.regeneration_history = updates.regenerationHistory;
 
     if (Object.keys(updatePayload).length === 0) return;
 
@@ -169,29 +232,8 @@ export const getApplicationBySlug = async (slug: string): Promise<TailoredApplic
         return null;
     }
 
-    return {
-        id: data.id,
-        createdAt: new Date(data.created_at).getTime(),
-        jobDescription: {
-            companyName: data.company_name,
-            roleTitle: data.role_title,
-            rawText: data.raw_job_description,
-        },
-        resume: data.resume_data,
-        coverLetter: data.cover_letter,
-        matchScore: data.match_score,
-        keyKeywords: data.key_keywords,
-        searchSources: data.search_sources,
-        status: data.status,
-        slug: data.slug,
-        githubProjects: data.github_projects,
-        showMatchScore: data.show_match_score,
-        template: data.template,
-        portfolioTheme: data.portfolio_theme,
-        profilePhotoUrl: data.profile_photo_url,
-        githubLastSyncedAt: data.github_last_synced_at,
-    };
-}
+    return normalizeApplication(data);
+};
 
 export const deleteApplication = async (appId: string): Promise<void> => {
     const { error } = await supabase
@@ -203,4 +245,137 @@ export const deleteApplication = async (appId: string): Promise<void> => {
         console.error('Error deleting application:', error);
         throw error;
     }
-}
+};
+
+export const saveTailoringPlaybook = async (userId: string, playbook: TailoringPlaybook): Promise<void> => {
+    const profile = await getProfile(userId);
+    if (!profile) {
+        throw new Error('Profile not found');
+    }
+
+    const playbooks = profile.tailoringPlaybooks || [];
+    const nextPlaybooks = playbooks.some((existing) => existing.id === playbook.id)
+        ? playbooks.map((existing) => existing.id === playbook.id ? playbook : existing)
+        : [...playbooks, playbook];
+
+    await saveProfile(userId, { ...profile, tailoringPlaybooks: nextPlaybooks });
+};
+
+export const saveLeadSource = async (userId: string, source: LeadSource): Promise<void> => {
+    const { error } = await supabase
+        .from('lead_sources')
+        .upsert({
+            id: source.id,
+            user_id: userId,
+            label: source.label,
+            url: source.url,
+            source_type: source.sourceType,
+            regions: source.regions,
+            notes: source.notes,
+            last_checked_at: source.lastCheckedAt,
+        });
+
+    if (error) {
+        console.error('Error saving lead source:', error);
+        throw error;
+    }
+};
+
+export const getLeadSources = async (userId: string): Promise<LeadSource[]> => {
+    const { data, error } = await supabase
+        .from('lead_sources')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching lead sources:', error);
+        return [];
+    }
+
+    return data.map((item: any) => ({
+        id: item.id,
+        label: item.label,
+        url: item.url,
+        sourceType: item.source_type,
+        regions: (item.regions || []).map(defaultRegion),
+        notes: item.notes,
+        createdAt: item.created_at,
+        lastCheckedAt: item.last_checked_at,
+    }));
+};
+
+export const getLeadSourceChecks = async (userId: string): Promise<LeadSourceCheck[]> => {
+    const { data, error } = await supabase
+        .from('lead_source_checks')
+        .select('id, lead_source_id, status, checked_at, notes, discovered_count, lead_sources!inner(user_id)')
+        .eq('lead_sources.user_id', userId)
+        .order('checked_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching lead source checks:', error);
+        return [];
+    }
+
+    return data.map((item: any) => ({
+        id: item.id,
+        leadSourceId: item.lead_source_id,
+        status: item.status,
+        checkedAt: item.checked_at,
+        notes: item.notes,
+        discoveredCount: item.discovered_count,
+    }));
+};
+
+export const saveJobLead = async (userId: string, lead: JobLead): Promise<void> => {
+    const { error } = await supabase
+        .from('job_leads')
+        .upsert({
+            id: lead.id,
+            user_id: userId,
+            lead_source_id: lead.leadSourceId,
+            title: lead.title,
+            company_name: lead.companyName,
+            location: lead.location,
+            url: lead.url,
+            summary: lead.summary,
+            raw_description: lead.rawDescription,
+            provenance: lead.provenance,
+            regions: lead.regions,
+            match: lead.match,
+            status: lead.status,
+        });
+
+    if (error) {
+        console.error('Error saving job lead:', error);
+        throw error;
+    }
+};
+
+export const getJobLeads = async (userId: string): Promise<JobLead[]> => {
+    const { data, error } = await supabase
+        .from('job_leads')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching job leads:', error);
+        return [];
+    }
+
+    return data.map((lead: any) => ({
+        id: lead.id,
+        leadSourceId: lead.lead_source_id,
+        title: lead.title,
+        companyName: lead.company_name,
+        location: lead.location,
+        url: lead.url,
+        summary: lead.summary,
+        rawDescription: lead.raw_description,
+        provenance: lead.provenance,
+        regions: (lead.regions || []).map(defaultRegion),
+        match: lead.match,
+        status: lead.status,
+    }));
+};

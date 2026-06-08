@@ -8,13 +8,13 @@ export default async function handler(req: any, res: any) {
     const { slug } = req.query;
 
     const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-    const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+    const supabasePublishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 
-    if (!supabaseUrl || !supabaseAnonKey) {
+    if (!supabaseUrl || !supabasePublishableKey) {
         return res.status(500).json({ error: 'Database configuration missing on server.' });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createClient(supabaseUrl, supabasePublishableKey);
 
     try {
         if (slug) {
@@ -51,6 +51,15 @@ export default async function handler(req: any, res: any) {
                 portfolioTheme: data.portfolio_theme,
                 profilePhotoUrl: data.profile_photo_url,
                 githubLastSyncedAt: data.github_last_synced_at,
+                jobAnalysis: data.job_analysis,
+                evidenceResolution: data.evidence_resolution,
+                diagnostics: data.diagnostics,
+                rewriteInsights: data.rewrite_insights,
+                promptPreview: data.prompt_preview,
+                selectedPlaybookId: data.selected_playbook_id,
+                generationOptions: data.generation_options,
+                editSuggestions: data.edit_suggestions,
+                regenerationHistory: data.regeneration_history,
             };
 
             return res.status(200).json(tailoredProfile);
@@ -84,6 +93,14 @@ export default async function handler(req: any, res: any) {
                 profilePhotoUrl: data.profile_photo_url,
                 githubProjects: data.github_projects || [],
                 githubLastSyncedAt: data.github_last_synced_at,
+                achievementBank: data.achievement_bank || [],
+                tailoringPlaybooks: data.tailoring_playbooks || [],
+                importedProfileSources: data.imported_profile_sources || [],
+                targetRoles: data.target_roles || [],
+                preferredIndustries: data.preferred_industries || [],
+                targetRegions: data.target_regions || [],
+                antiClaims: data.anti_claims || [],
+                learnedPreferenceSuggestions: data.learned_preference_suggestions || [],
             };
 
             return res.status(200).json(userProfile);
