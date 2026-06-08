@@ -33,7 +33,10 @@ const normalizeProfile = (data: any): UserProfile => ({
     githubProjects: data.github_projects || [],
     githubLastSyncedAt: data.github_last_synced_at,
     achievementBank: data.achievement_bank || [],
-    tailoringPlaybooks: data.tailoring_playbooks || [],
+    tailoringPlaybooks: (data.tailoring_playbooks || []).map((playbook: any) => ({
+        ...playbook,
+        promptOverride: playbook.promptOverride || playbook.promptOverrides || '',
+    })),
     importedProfileSources: data.imported_profile_sources || [],
     targetRoles: data.target_roles || [],
     preferredIndustries: data.preferred_industries || [],
@@ -67,7 +70,8 @@ const normalizeApplication = (app: any): TailoredApplication => ({
     evidenceResolution: app.evidence_resolution,
     diagnostics: app.diagnostics,
     rewriteInsights: app.rewrite_insights,
-    promptPreview: app.prompt_preview,
+    assembledPromptPreview: app.prompt_preview,
+    promptOverride: app.generation_options?.promptOverride || app.generation_options?.promptPreviewOverride || '',
     selectedPlaybookId: app.selected_playbook_id,
     generationOptions: app.generation_options,
     editSuggestions: app.edit_suggestions,
@@ -166,9 +170,12 @@ export const saveApplication = async (userId: string, application: TailoredAppli
             evidence_resolution: application.evidenceResolution,
             diagnostics: application.diagnostics,
             rewrite_insights: application.rewriteInsights,
-            prompt_preview: application.promptPreview,
+            prompt_preview: application.assembledPromptPreview,
             selected_playbook_id: application.selectedPlaybookId,
-            generation_options: application.generationOptions,
+            generation_options: {
+                ...(application.generationOptions || {}),
+                promptOverride: application.promptOverride ?? application.generationOptions?.promptOverride,
+            },
             edit_suggestions: application.editSuggestions,
             regeneration_history: application.regenerationHistory,
         });
@@ -197,9 +204,14 @@ export const updateApplication = async (appId: string, updates: Partial<Tailored
     if (updates.evidenceResolution) updatePayload.evidence_resolution = updates.evidenceResolution;
     if (updates.diagnostics) updatePayload.diagnostics = updates.diagnostics;
     if (updates.rewriteInsights) updatePayload.rewrite_insights = updates.rewriteInsights;
-    if (updates.promptPreview !== undefined) updatePayload.prompt_preview = updates.promptPreview;
+    if (updates.assembledPromptPreview !== undefined) updatePayload.prompt_preview = updates.assembledPromptPreview;
     if (updates.selectedPlaybookId !== undefined) updatePayload.selected_playbook_id = updates.selectedPlaybookId;
-    if (updates.generationOptions) updatePayload.generation_options = updates.generationOptions;
+    if (updates.generationOptions || updates.promptOverride !== undefined) {
+        updatePayload.generation_options = {
+            ...(updates.generationOptions || {}),
+            promptOverride: updates.promptOverride ?? updates.generationOptions?.promptOverride,
+        };
+    }
     if (updates.editSuggestions) updatePayload.edit_suggestions = updates.editSuggestions;
     if (updates.regenerationHistory) updatePayload.regeneration_history = updates.regenerationHistory;
 
@@ -308,7 +320,7 @@ export const getLeadSources = async (userId: string): Promise<LeadSource[]> => {
 export const getLeadSourceChecks = async (userId: string): Promise<LeadSourceCheck[]> => {
     const { data, error } = await supabase
         .from('lead_source_checks')
-        .select('id, lead_source_id, status, checked_at, notes, discovered_count, lead_sources!inner(user_id)')
+        .select('id, lead_source_id, status, checked_at, notes, discovered_count, lead_sources!inner(user_id, label)')
         .eq('lead_sources.user_id', userId)
         .order('checked_at', { ascending: false });
 
@@ -324,7 +336,54 @@ export const getLeadSourceChecks = async (userId: string): Promise<LeadSourceChe
         checkedAt: item.checked_at,
         notes: item.notes,
         discoveredCount: item.discovered_count,
+        leadSourceLabel: item.lead_sources?.label,
     }));
+};
+
+export const recordLeadSourceCheck = async (
+    userId: string,
+    check: {
+        leadSourceId: string;
+        status: LeadSourceCheck['status'];
+        notes?: string;
+        discoveredCount?: number;
+    }
+): Promise<LeadSourceCheck> => {
+    const { data, error } = await supabase
+        .from('lead_source_checks')
+        .insert({
+            lead_source_id: check.leadSourceId,
+            status: check.status,
+            notes: check.notes || '',
+            discovered_count: check.discoveredCount || 0,
+        })
+        .select('id, lead_source_id, status, checked_at, notes, discovered_count')
+        .single();
+
+    if (error) {
+        console.error('Error recording lead source check:', error);
+        throw error;
+    }
+
+    const { error: updateError } = await supabase
+        .from('lead_sources')
+        .update({ last_checked_at: data.checked_at })
+        .eq('id', check.leadSourceId)
+        .eq('user_id', userId);
+
+    if (updateError) {
+        console.error('Error updating lead source last_checked_at:', updateError);
+        throw updateError;
+    }
+
+    return {
+        id: data.id,
+        leadSourceId: data.lead_source_id,
+        status: data.status,
+        checkedAt: data.checked_at,
+        notes: data.notes,
+        discoveredCount: data.discovered_count,
+    };
 };
 
 export const saveJobLead = async (userId: string, lead: JobLead): Promise<void> => {
@@ -355,7 +414,7 @@ export const saveJobLead = async (userId: string, lead: JobLead): Promise<void> 
 export const getJobLeads = async (userId: string): Promise<JobLead[]> => {
     const { data, error } = await supabase
         .from('job_leads')
-        .select('*')
+        .select('*, lead_sources(label)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -367,6 +426,7 @@ export const getJobLeads = async (userId: string): Promise<JobLead[]> => {
     return data.map((lead: any) => ({
         id: lead.id,
         leadSourceId: lead.lead_source_id,
+        leadSourceLabel: lead.lead_sources?.label,
         title: lead.title,
         companyName: lead.company_name,
         location: lead.location,

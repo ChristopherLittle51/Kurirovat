@@ -49,7 +49,7 @@ export default async function handler(req: any, res: any) {
     if (req.method === 'GET') {
       const { data, error } = await supabase
         .from('job_leads')
-        .select('*')
+        .select('*, lead_sources(label)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 

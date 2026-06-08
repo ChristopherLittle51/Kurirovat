@@ -54,7 +54,16 @@ export default async function handler(req: any, res: any) {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return json(res, 200, { sources: data });
+
+      const { data: checks, error: checksError } = await supabase
+        .from('lead_source_checks')
+        .select('id, lead_source_id, status, checked_at, notes, discovered_count, lead_sources!inner(user_id, label)')
+        .eq('lead_sources.user_id', user.id)
+        .order('checked_at', { ascending: false });
+
+      if (checksError) throw checksError;
+
+      return json(res, 200, { sources: data, checks });
     }
 
     if (req.method === 'POST') {
@@ -91,6 +100,13 @@ export default async function handler(req: any, res: any) {
         .single();
 
       if (error) throw error;
+      const { error: updateError } = await supabase
+        .from('lead_sources')
+        .update({ last_checked_at: new Date().toISOString() })
+        .eq('id', leadSourceId)
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
       return json(res, 200, { check: data });
     }
 

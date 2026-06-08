@@ -92,7 +92,7 @@ export interface TailoringPlaybook {
   preferredRoleFamilies: string[];
   antiClaims: string[];
   weights: TailoringWeights;
-  promptOverrides?: string;
+  promptOverride?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -218,7 +218,7 @@ export interface TailoringOptions {
   weights?: TailoringWeights;
   preferredRoleFamilies?: string[];
   antiClaims?: string[];
-  promptPreviewOverride?: string;
+  promptOverride?: string;
   regenerationInstructions?: string;
   selectedPlaybookId?: string;
   jobAnalysisOverride?: Partial<JobAnalysis>;
@@ -252,7 +252,8 @@ export interface TailoredApplication {
   evidenceResolution?: EvidenceResolution;
   diagnostics?: TailoringDiagnostics;
   rewriteInsights?: ResumeRewriteInsights;
-  promptPreview?: string;
+  assembledPromptPreview?: string;
+  promptOverride?: string;
   selectedPlaybookId?: string;
   generationOptions?: TailoringOptions;
   editSuggestions?: EditSuggestion[];
@@ -286,6 +287,7 @@ export interface LeadSourceCheck {
   checkedAt: string;
   notes?: string;
   discoveredCount?: number;
+  leadSourceLabel?: string;
 }
 
 export interface JobLeadMatch {
@@ -312,6 +314,15 @@ export interface JobLead {
   regions: TargetRegion[];
   match?: JobLeadMatch;
   status?: 'new' | 'saved' | 'dismissed';
+  leadSourceLabel?: string;
+}
+
+export interface ApplicationLeadContext {
+  leadId: string;
+  leadSourceId: string;
+  leadSourceLabel?: string;
+  leadUrl: string;
+  leadSummary?: string;
 }
 
 export type ViewState =

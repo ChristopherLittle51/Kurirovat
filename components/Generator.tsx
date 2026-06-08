@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
-import { Sparkles, ArrowRight, Loader2, ScanSearch, Save } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Sparkles, ArrowRight, Loader2, ScanSearch, Save, X, MapPin, Briefcase } from 'lucide-react';
 import {
+  ApplicationLeadContext,
   GithubProject,
   JobAnalysis,
   JobDescription,
@@ -11,10 +12,12 @@ import { analyzeJobDescription } from '../services/geminiService';
 
 interface Props {
   onGenerate: (jd: JobDescription, projects: GithubProject[], showScore: boolean, options?: TailoringOptions) => void;
-  onSavePlaybook?: (name: string, options: TailoringOptions) => void;
+  onSavePlaybook?: (name: string, options: TailoringOptions) => Promise<void>;
   isLoading: boolean;
   availableGithubProjects?: GithubProject[];
   availablePlaybooks?: TailoringPlaybook[];
+  initialJobDescription?: Partial<JobDescription>;
+  initialLeadContext?: ApplicationLeadContext | null;
 }
 
 const roleFamilyOptions = ['engineering', 'product', 'design', 'marketing', 'operations', 'sales', 'general'];
@@ -35,20 +38,53 @@ const splitLines = (value: string) =>
 
 const joinLines = (items?: string[]) => (items || []).join('\n');
 
+const buildAssembledPreview = (args: {
+  strategyPreset: string;
+  careerMode: string;
+  critiqueMode: string;
+  tone: string;
+  conciseness: string;
+  focusSkill: string;
+  preferredRoleFamilies: string[];
+  antiClaims: string;
+  weights: typeof defaultWeights;
+  jobAnalysis: JobAnalysis | null;
+  regenerationInstructions: string;
+}) =>
+  [
+    `Preset: ${args.strategyPreset}`,
+    `Career mode: ${args.careerMode}`,
+    `Critique: ${args.critiqueMode}`,
+    `Tone: ${args.tone}`,
+    `Conciseness: ${args.conciseness}`,
+    `Focus skill: ${args.focusSkill || 'None'}`,
+    `Role families: ${args.preferredRoleFamilies.join(', ') || 'None'}`,
+    `Anti-claims: ${args.antiClaims || 'None'}`,
+    `Weights: leadership=${args.weights.leadership.toFixed(2)}, technical=${args.weights.technicalDepth.toFixed(2)}, impact=${args.weights.measurableImpact.toFixed(2)}, recency=${args.weights.recency.toFixed(2)}, domain=${args.weights.domainMatch.toFixed(2)}`,
+    args.jobAnalysis ? `JD keywords: ${args.jobAnalysis.keywords.join(', ')}` : 'JD keywords: analyze to preview',
+    args.regenerationInstructions ? `Generation notes: ${args.regenerationInstructions}` : 'Generation notes: none',
+  ].join('\n');
+
 const Generator: React.FC<Props> = ({
   onGenerate,
   onSavePlaybook,
   isLoading,
   availableGithubProjects = [],
   availablePlaybooks = [],
+  initialJobDescription,
+  initialLeadContext,
 }) => {
-  const [company, setCompany] = useState('');
-  const [role, setRole] = useState('');
-  const [description, setDescription] = useState('');
+  const [company, setCompany] = useState(initialJobDescription?.companyName || '');
+  const [role, setRole] = useState(initialJobDescription?.roleTitle || '');
+  const [description, setDescription] = useState(initialJobDescription?.rawText || '');
   const [selectedProjects, setSelectedProjects] = useState<number[]>([]);
   const [showMatchScore, setShowMatchScore] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(true);
   const [isAnalyzingJD, setIsAnalyzingJD] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [showPlaybookModal, setShowPlaybookModal] = useState(false);
+  const [playbookName, setPlaybookName] = useState('');
 
   const [tone, setTone] = useState('professional');
   const [conciseness, setConciseness] = useState('standard');
@@ -57,29 +93,32 @@ const Generator: React.FC<Props> = ({
   const [careerMode, setCareerMode] = useState<'Standard' | 'Transferable Skills'>('Standard');
   const [critiqueMode, setCritiqueMode] = useState<'Blunt' | 'Supportive'>('Blunt');
   const [selectedPlaybookId, setSelectedPlaybookId] = useState('');
-  const [promptPreviewOverride, setPromptPreviewOverride] = useState('');
+  const [promptOverride, setPromptOverride] = useState('');
   const [antiClaims, setAntiClaims] = useState('');
   const [preferredRoleFamilies, setPreferredRoleFamilies] = useState<string[]>([]);
   const [weights, setWeights] = useState(defaultWeights);
   const [jobAnalysis, setJobAnalysis] = useState<JobAnalysis | null>(null);
   const [regenerationInstructions, setRegenerationInstructions] = useState('');
 
-  const promptPreview = useMemo(() => {
-    return [
-      `Preset: ${strategyPreset}`,
-      `Career mode: ${careerMode}`,
-      `Critique: ${critiqueMode}`,
-      `Tone: ${tone}`,
-      `Conciseness: ${conciseness}`,
-      `Focus skill: ${focusSkill || 'None'}`,
-      `Role families: ${preferredRoleFamilies.join(', ') || 'None'}`,
-      `Anti-claims: ${antiClaims || 'None'}`,
-      `Weights: leadership=${weights.leadership.toFixed(2)}, technical=${weights.technicalDepth.toFixed(2)}, impact=${weights.measurableImpact.toFixed(2)}, recency=${weights.recency.toFixed(2)}, domain=${weights.domainMatch.toFixed(2)}`,
-      jobAnalysis ? `JD keywords: ${jobAnalysis.keywords.join(', ')}` : 'JD keywords: analyze to preview',
-      promptPreviewOverride ? `Prompt adjustment: ${promptPreviewOverride}` : 'Prompt adjustment: none',
-      regenerationInstructions ? `Generation notes: ${regenerationInstructions}` : 'Generation notes: none',
-    ].join('\n');
-  }, [
+  useEffect(() => {
+    setCompany(initialJobDescription?.companyName || '');
+    setRole(initialJobDescription?.roleTitle || '');
+    setDescription(initialJobDescription?.rawText || '');
+  }, [initialJobDescription?.companyName, initialJobDescription?.roleTitle, initialJobDescription?.rawText]);
+
+  const assembledPromptPreview = useMemo(() => buildAssembledPreview({
+    strategyPreset,
+    careerMode,
+    critiqueMode,
+    tone,
+    conciseness,
+    focusSkill,
+    preferredRoleFamilies,
+    antiClaims,
+    weights,
+    jobAnalysis,
+    regenerationInstructions,
+  }), [
     antiClaims,
     careerMode,
     conciseness,
@@ -87,7 +126,6 @@ const Generator: React.FC<Props> = ({
     focusSkill,
     jobAnalysis,
     preferredRoleFamilies,
-    promptPreviewOverride,
     regenerationInstructions,
     strategyPreset,
     tone,
@@ -96,6 +134,8 @@ const Generator: React.FC<Props> = ({
 
   const handleAnalyze = async () => {
     if (!company || !role || !description) return;
+    setErrorMessage('');
+    setSuccessMessage('');
     setIsAnalyzingJD(true);
     try {
       const analysis = await analyzeJobDescription({
@@ -107,9 +147,10 @@ const Generator: React.FC<Props> = ({
       if (analysis.roleFamily && !preferredRoleFamilies.length) {
         setPreferredRoleFamilies([analysis.roleFamily]);
       }
+      setSuccessMessage('Job description analyzed. Review and edit the extracted structure before generating.');
     } catch (error) {
       console.error(error);
-      alert('Failed to analyze job description.');
+      setErrorMessage('Failed to analyze the job description. You can still continue manually.');
     } finally {
       setIsAnalyzingJD(false);
     }
@@ -117,33 +158,38 @@ const Generator: React.FC<Props> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (company && role && description) {
-      const projects = availableGithubProjects.filter((p) => selectedProjects.includes(p.id));
-      onGenerate(
-        {
-          companyName: company,
-          roleTitle: role,
-          rawText: description,
-        },
-        projects,
-        showMatchScore,
-        {
-          tone,
-          conciseness,
-          focusSkill,
-          strategyPreset,
-          careerMode,
-          critiqueMode,
-          preferredRoleFamilies,
-          antiClaims: splitLines(antiClaims),
-          promptPreviewOverride,
-          regenerationInstructions,
-          selectedPlaybookId: selectedPlaybookId || undefined,
-          jobAnalysisOverride: jobAnalysis || undefined,
-          weights,
-        },
-      );
+    setErrorMessage('');
+    setSuccessMessage('');
+    if (!(company && role && description)) {
+      setErrorMessage('Company, role title, and job description are required.');
+      return;
     }
+
+    const projects = availableGithubProjects.filter((p) => selectedProjects.includes(p.id));
+    onGenerate(
+      {
+        companyName: company,
+        roleTitle: role,
+        rawText: description,
+      },
+      projects,
+      showMatchScore,
+      {
+        tone,
+        conciseness,
+        focusSkill,
+        strategyPreset,
+        careerMode,
+        critiqueMode,
+        preferredRoleFamilies,
+        antiClaims: splitLines(antiClaims),
+        promptOverride,
+        regenerationInstructions,
+        selectedPlaybookId: selectedPlaybookId || undefined,
+        jobAnalysisOverride: jobAnalysis || undefined,
+        weights,
+      },
+    );
   };
 
   const toggleProject = (id: number) => {
@@ -152,9 +198,10 @@ const Generator: React.FC<Props> = ({
       return;
     }
     if (selectedProjects.length >= 3) {
-      alert('You can select up to 3 projects.');
+      setErrorMessage('You can select up to 3 GitHub projects.');
       return;
     }
+    setErrorMessage('');
     setSelectedProjects((prev) => [...prev, id]);
   };
 
@@ -169,7 +216,7 @@ const Generator: React.FC<Props> = ({
     setCritiqueMode((playbook.critiqueMode as 'Blunt' | 'Supportive') || 'Blunt');
     setPreferredRoleFamilies(playbook.preferredRoleFamilies || []);
     setAntiClaims((playbook.antiClaims || []).join('\n'));
-    setPromptPreviewOverride(playbook.promptOverrides || '');
+    setPromptOverride(playbook.promptOverride || (playbook as any).promptOverrides || '');
     if (playbook.weights) {
       setWeights({
         leadership: playbook.weights.leadership,
@@ -179,24 +226,32 @@ const Generator: React.FC<Props> = ({
         domainMatch: playbook.weights.domainMatch,
       });
     }
+    setSuccessMessage(`Applied playbook: ${playbook.name}`);
   };
 
-  const saveCurrentPlaybook = () => {
-    if (!onSavePlaybook) return;
-    const name = window.prompt('Playbook name');
-    if (!name?.trim()) return;
-    onSavePlaybook(name.trim(), {
-      tone,
-      conciseness,
-      focusSkill,
-      strategyPreset,
-      careerMode,
-      critiqueMode,
-      preferredRoleFamilies,
-      antiClaims: splitLines(antiClaims),
-      promptPreviewOverride,
-      weights,
-    });
+  const saveCurrentPlaybook = async () => {
+    if (!onSavePlaybook || !playbookName.trim()) return;
+    setErrorMessage('');
+    try {
+      await onSavePlaybook(playbookName.trim(), {
+        tone,
+        conciseness,
+        focusSkill,
+        strategyPreset,
+        careerMode,
+        critiqueMode,
+        preferredRoleFamilies,
+        antiClaims: splitLines(antiClaims),
+        promptOverride,
+        weights,
+      });
+      setShowPlaybookModal(false);
+      setPlaybookName('');
+      setSuccessMessage('Playbook saved to your profile.');
+    } catch (error: any) {
+      console.error(error);
+      setErrorMessage(error.message || 'Failed to save playbook.');
+    }
   };
 
   const updateArrayField = (field: keyof JobAnalysis, value: string) => {
@@ -219,7 +274,32 @@ const Generator: React.FC<Props> = ({
         </p>
       </div>
 
+      {initialLeadContext && (
+        <div className="max-w-4xl mx-auto mb-6 rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-950/20 p-4">
+          <div className="flex flex-wrap items-center gap-3 text-sm text-emerald-900 dark:text-emerald-200">
+            <span className="inline-flex items-center gap-2 font-semibold">
+              <Briefcase size={16} />
+              Draft seeded from a saved job lead
+            </span>
+            {initialLeadContext.leadSourceLabel && <span>Source: {initialLeadContext.leadSourceLabel}</span>}
+            <a href={initialLeadContext.leadUrl} target="_blank" rel="noopener noreferrer" className="underline">
+              Open original listing
+            </a>
+            {initialLeadContext.leadSummary && <span className="inline-flex items-center gap-1"><MapPin size={14} /> {initialLeadContext.leadSummary}</span>}
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+        {(errorMessage || successMessage) && (
+          <div className={`rounded-lg border px-4 py-3 text-sm ${errorMessage
+            ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300'
+            : 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300'
+            }`}>
+            {errorMessage || successMessage}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Company Name</label>
@@ -283,7 +363,10 @@ const Generator: React.FC<Props> = ({
           {onSavePlaybook && (
             <button
               type="button"
-              onClick={saveCurrentPlaybook}
+              onClick={() => {
+                setErrorMessage('');
+                setShowPlaybookModal(true);
+              }}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-900"
             >
               <Save size={16} />
@@ -377,11 +460,7 @@ const Generator: React.FC<Props> = ({
                               selected ? prev.filter((item) => item !== family) : [...prev, family]
                             )
                           }
-                          className={`px-3 py-1 rounded-full text-sm border ${
-                            selected
-                              ? 'bg-blue-600 text-white border-blue-600'
-                              : 'border-gray-300 dark:border-gray-600'
-                          }`}
+                          className={`px-3 py-1 rounded-full text-sm border ${selected ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600'}`}
                         >
                           {family}
                         </button>
@@ -433,12 +512,12 @@ const Generator: React.FC<Props> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Prompt Preview Adjustments</label>
+                  <label className="block text-sm font-medium mb-1">Prompt Override</label>
                   <textarea
-                    value={promptPreviewOverride}
-                    onChange={(e) => setPromptPreviewOverride(e.target.value)}
+                    value={promptOverride}
+                    onChange={(e) => setPromptOverride(e.target.value)}
                     rows={5}
-                    placeholder="Optional extra guardrails or emphasis."
+                    placeholder="Optional extra guardrails or emphasis to apply on top of the generated prompt context."
                     className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 p-3 rounded-lg text-sm"
                   />
                 </div>
@@ -511,14 +590,26 @@ const Generator: React.FC<Props> = ({
             </div>
           )}
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Prompt Preview</label>
-            <textarea
-              readOnly
-              value={promptPreview}
-              rows={8}
-              className="w-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 p-3 rounded-lg font-mono text-xs"
-            />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assembled Prompt Preview</label>
+              <textarea
+                readOnly
+                value={assembledPromptPreview}
+                rows={8}
+                className="w-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 p-3 rounded-lg font-mono text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Prompt Override</label>
+              <textarea
+                value={promptOverride}
+                onChange={(e) => setPromptOverride(e.target.value)}
+                rows={8}
+                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 p-3 rounded-lg text-sm"
+                placeholder="Optional manual delta. This does not replace the assembled prompt preview."
+              />
+            </div>
           </div>
 
           {availableGithubProjects.length > 0 && (
@@ -576,6 +667,45 @@ const Generator: React.FC<Props> = ({
           )}
         </button>
       </form>
+
+      {showPlaybookModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Save Tailoring Playbook</h3>
+              <button onClick={() => setShowPlaybookModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Playbook Name</label>
+                <input
+                  value={playbookName}
+                  onChange={(e) => setPlaybookName(e.target.value)}
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-transparent p-2 rounded-lg"
+                  placeholder="Startup SWE Balanced"
+                />
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                This saves the current strategy, tone, weights, anti-claims, and prompt override for reuse.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
+              <button onClick={() => setShowPlaybookModal(false)} className="px-4 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                Cancel
+              </button>
+              <button
+                onClick={() => { void saveCurrentPlaybook(); }}
+                disabled={!playbookName.trim()}
+                className="px-4 py-2 rounded-lg text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+              >
+                Save Playbook
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

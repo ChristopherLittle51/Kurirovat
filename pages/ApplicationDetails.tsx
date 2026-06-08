@@ -75,7 +75,7 @@ const ApplicationDetails: React.FC = () => {
         tone: 'professional',
         conciseness: 'standard',
         focusSkill: '',
-        promptPreviewOverride: '',
+        promptOverride: '',
         regenerationInstructions: '',
         weights: {
             leadership: 0.5,
@@ -109,7 +109,11 @@ const ApplicationDetails: React.FC = () => {
     }, [application]);
 
     useEffect(() => {
-        setApplication(prev => prev ? ({ ...prev, generationOptions: genOptions }) : prev);
+        setApplication(prev => prev ? ({
+            ...prev,
+            generationOptions: genOptions,
+            promptOverride: genOptions.promptOverride
+        }) : prev);
     }, [genOptions]);
 
     const lastSavedData = useRef<string>('');
@@ -151,10 +155,16 @@ const ApplicationDetails: React.FC = () => {
                 jobDescription: app.jobDescription,
                 jobAnalysis: app.jobAnalysis,
                 diagnostics: app.diagnostics,
-                promptPreview: app.promptPreview
+                assembledPromptPreview: app.assembledPromptPreview,
+                promptOverride: app.promptOverride,
+                generationOptions: app.generationOptions
             });
             if (app.generationOptions) {
-                setGenOptions(prev => ({ ...prev, ...app.generationOptions }));
+                setGenOptions(prev => ({
+                    ...prev,
+                    ...app.generationOptions,
+                    promptOverride: app.generationOptions.promptOverride || (app.generationOptions as any).promptPreviewOverride || app.promptOverride || '',
+                }));
             }
         }
         if (app?.template) {
@@ -188,7 +198,8 @@ const ApplicationDetails: React.FC = () => {
             jobDescription: application.jobDescription,
             jobAnalysis: application.jobAnalysis,
             diagnostics: application.diagnostics,
-            promptPreview: application.promptPreview,
+            assembledPromptPreview: application.assembledPromptPreview,
+            promptOverride: application.promptOverride,
             generationOptions: application.generationOptions
         });
 
@@ -211,7 +222,8 @@ const ApplicationDetails: React.FC = () => {
                 evidenceResolution: application.evidenceResolution,
                 diagnostics: application.diagnostics,
                 rewriteInsights: application.rewriteInsights,
-                promptPreview: application.promptPreview,
+                assembledPromptPreview: application.assembledPromptPreview,
+                promptOverride: application.promptOverride,
                 selectedPlaybookId: application.selectedPlaybookId,
                 generationOptions: application.generationOptions,
                 editSuggestions: application.editSuggestions,
@@ -229,7 +241,8 @@ const ApplicationDetails: React.FC = () => {
                 jobDescription: application.jobDescription,
                 jobAnalysis: application.jobAnalysis,
                 diagnostics: application.diagnostics,
-                promptPreview: application.promptPreview,
+                assembledPromptPreview: application.assembledPromptPreview,
+                promptOverride: application.promptOverride,
                 generationOptions: application.generationOptions
             });
 
@@ -458,7 +471,11 @@ const ApplicationDetails: React.FC = () => {
                 application.githubProjects || [],
                 application.showMatchScore ?? true,
                 1,
-                genOptions // Pass options
+                {
+                    ...genOptions,
+                    promptOverride: genOptions.promptOverride,
+                    jobAnalysisOverride: application.jobAnalysis,
+                }
             );
             const { application: regenerated } = result;
 
@@ -472,11 +489,22 @@ const ApplicationDetails: React.FC = () => {
                 evidenceResolution: regenerated.evidenceResolution || prev.evidenceResolution,
                 diagnostics: regenerated.diagnostics || prev.diagnostics,
                 rewriteInsights: regenerated.rewriteInsights || prev.rewriteInsights,
-                promptPreview: regenerated.promptPreview || prev.promptPreview,
+                assembledPromptPreview: regenerated.assembledPromptPreview || prev.assembledPromptPreview,
+                promptOverride: regenerated.promptOverride || prev.promptOverride,
                 selectedPlaybookId: regenerated.selectedPlaybookId || prev.selectedPlaybookId,
-                generationOptions: regenerated.generationOptions || genOptions,
+                generationOptions: regenerated.generationOptions || {
+                    ...genOptions,
+                    jobAnalysisOverride: prev.jobAnalysis,
+                },
                 editSuggestions: regenerated.editSuggestions || prev.editSuggestions,
-                regenerationHistory: regenerated.regenerationHistory || prev.regenerationHistory,
+                regenerationHistory: [
+                    ...(prev.regenerationHistory || []),
+                    ...((regenerated.regenerationHistory || []).filter((entry) =>
+                        !(prev.regenerationHistory || []).some((existing) =>
+                            existing.timestamp === entry.timestamp && existing.instructions === entry.instructions
+                        )
+                    )),
+                ],
             }) : null);
             setHasUnsavedChanges(true);
         } catch (error) {
@@ -875,8 +903,24 @@ const ApplicationDetails: React.FC = () => {
                     </div>
                 )}
 
-                {(application.jobAnalysis || application.diagnostics || application.promptPreview || application.editSuggestions?.length) && (
+                {(application.jobAnalysis || application.diagnostics || application.assembledPromptPreview || application.promptOverride || application.editSuggestions?.length || application.rewriteInsights || application.evidenceResolution || application.searchSources?.length) && (
                     <section className="max-w-5xl mx-auto mt-8 grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        {!!application.searchSources?.length && (
+                            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 xl:col-span-2">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Application Origin</h3>
+                                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                                    {application.searchSources.map((source) => (
+                                        <div key={`${source.title}-${source.uri}`} className="flex flex-wrap items-center gap-2">
+                                            <span className="font-semibold text-gray-900 dark:text-white">{source.title}</span>
+                                            <a href={source.uri} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline break-all">
+                                                {source.uri}
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {application.jobAnalysis && (
                             <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Job Analysis</h3>
@@ -902,10 +946,42 @@ const ApplicationDetails: React.FC = () => {
                             </div>
                         )}
 
-                        {application.diagnostics && (
+                        {application.evidenceResolution && (
                             <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Grounded Critique</h3>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Evidence Resolution</h3>
                                 <div className="space-y-4 text-sm">
+                                    <div>
+                                        <div className="font-semibold text-gray-900 dark:text-white">Missing evidence</div>
+                                        <ul className="mt-2 space-y-1 text-gray-600 dark:text-gray-300">
+                                            {(application.evidenceResolution.missingEvidence || []).map((item) => <li key={item}>• {item}</li>)}
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <div className="font-semibold text-gray-900 dark:text-white">Blocked claims</div>
+                                        <ul className="mt-2 space-y-1 text-gray-600 dark:text-gray-300">
+                                            {(application.evidenceResolution.blockedClaims || []).map((item) => <li key={item}>• {item}</li>)}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {application.diagnostics && (
+                            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 xl:col-span-2">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Grounded Critique</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm">
+                                    <div>
+                                        <div className="font-semibold text-gray-900 dark:text-white">Matched keywords</div>
+                                        <ul className="mt-2 space-y-1 text-gray-600 dark:text-gray-300">
+                                            {(application.diagnostics.matchedKeywords || []).map((item) => <li key={item}>• {item}</li>)}
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <div className="font-semibold text-gray-900 dark:text-white">Missing keywords</div>
+                                        <ul className="mt-2 space-y-1 text-gray-600 dark:text-gray-300">
+                                            {(application.diagnostics.missingKeywords || []).map((item) => <li key={item}>• {item}</li>)}
+                                        </ul>
+                                    </div>
                                     <div>
                                         <div className="font-semibold text-gray-900 dark:text-white">Recruiter concerns</div>
                                         <ul className="mt-2 space-y-1 text-gray-600 dark:text-gray-300">
@@ -934,19 +1010,70 @@ const ApplicationDetails: React.FC = () => {
                             </div>
                         )}
 
-                        {application.promptPreview && (
+                        {(application.assembledPromptPreview || application.promptOverride) && (
                             <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 xl:col-span-2">
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Prompt Preview</h3>
-                                <textarea
-                                    value={application.promptPreview}
-                                    onChange={(e) => {
-                                        setApplication(prev => prev ? ({ ...prev, promptPreview: e.target.value }) : prev);
-                                        setGenOptions(prev => ({ ...prev, promptPreviewOverride: e.target.value }));
-                                        setHasUnsavedChanges(true);
-                                    }}
-                                    rows={10}
-                                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-950 p-3 font-mono text-xs"
-                                />
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Prompt Controls</h3>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assembled Prompt Preview</label>
+                                        <textarea
+                                            readOnly
+                                            value={application.assembledPromptPreview || ''}
+                                            rows={10}
+                                            className="w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-950 p-3 font-mono text-xs"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Prompt Override</label>
+                                        <textarea
+                                            value={application.promptOverride || ''}
+                                            onChange={(e) => {
+                                                setApplication(prev => prev ? ({ ...prev, promptOverride: e.target.value }) : prev);
+                                                setGenOptions(prev => ({ ...prev, promptOverride: e.target.value }));
+                                                setHasUnsavedChanges(true);
+                                            }}
+                                            rows={10}
+                                            className="w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-950 p-3 text-sm"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {application.rewriteInsights && (
+                            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 xl:col-span-2">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Rewrite Insights</h3>
+                                <div className="space-y-5 text-sm">
+                                    {application.rewriteInsights.summary && (
+                                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-950/50">
+                                            <div className="font-semibold text-gray-900 dark:text-white">Summary</div>
+                                            <div className="mt-2 space-y-2 text-gray-600 dark:text-gray-300">
+                                                <div><span className="font-medium text-gray-900 dark:text-white">Tailored:</span> {application.rewriteInsights.summary.tailored}</div>
+                                                <div><span className="font-medium text-gray-900 dark:text-white">Alternate:</span> {application.rewriteInsights.summary.alternate}</div>
+                                                <div><span className="font-medium text-gray-900 dark:text-white">Why:</span> {application.rewriteInsights.summary.why}</div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {!!application.rewriteInsights.bullets?.length && (
+                                        <div className="space-y-3">
+                                            {application.rewriteInsights.bullets.slice(0, 3).map((group) => (
+                                                <div key={group.experienceId} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-950/50">
+                                                    <div className="font-semibold text-gray-900 dark:text-white mb-2">Role rewrite</div>
+                                                    <div className="space-y-3">
+                                                        {group.rewrites.slice(0, 2).map((rewrite, index) => (
+                                                            <div key={`${group.experienceId}-${index}`} className="space-y-1">
+                                                                <div><span className="font-medium text-gray-900 dark:text-white">Tailored:</span> {rewrite.tailored}</div>
+                                                                <div><span className="font-medium text-gray-900 dark:text-white">Alternate:</span> {rewrite.alternate}</div>
+                                                                <div><span className="font-medium text-gray-900 dark:text-white">Why:</span> {rewrite.why}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
 
@@ -1126,6 +1253,16 @@ const ApplicationDetails: React.FC = () => {
                                     onChange={e => setGenOptions({ ...genOptions, regenerationInstructions: e.target.value })}
                                     rows={4}
                                     placeholder="Example: make the summary less senior, reduce buzzwords, and highlight platform migration work."
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prompt Override</label>
+                                <textarea
+                                    value={genOptions.promptOverride}
+                                    onChange={e => setGenOptions({ ...genOptions, promptOverride: e.target.value })}
+                                    rows={4}
+                                    placeholder="Optional manual delta applied on top of the assembled prompt preview."
                                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent text-sm"
                                 />
                             </div>

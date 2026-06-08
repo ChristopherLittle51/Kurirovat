@@ -89,7 +89,7 @@ interface TailoringPlaybook {
     preferredRoleFamilies: string[];
     antiClaims: string[];
     weights: TailoringWeights;
-    promptOverrides?: string;
+    promptOverride?: string;
 }
 
 interface UserProfile {
@@ -129,7 +129,7 @@ interface TailoringOptions {
     weights?: TailoringWeights;
     preferredRoleFamilies?: string[];
     antiClaims?: string[];
-    promptPreviewOverride?: string;
+    promptOverride?: string;
     regenerationInstructions?: string;
     selectedPlaybookId?: string;
     jobAnalysisOverride?: Record<string, any>;
@@ -327,7 +327,7 @@ function mergeTailoringOptions(profile: UserProfile, options?: TailoringOptions)
             ...(selectedPlaybook?.antiClaims || []),
             ...(options?.antiClaims || []),
         ],
-        promptPreviewOverride: options?.promptPreviewOverride || selectedPlaybook?.promptOverrides || '',
+        promptOverride: options?.promptOverride || selectedPlaybook?.promptOverride || (selectedPlaybook as any)?.promptOverrides || '',
         regenerationInstructions: options?.regenerationInstructions || '',
         selectedPlaybookId: options?.selectedPlaybookId,
         weights: normalizeWeights({
@@ -368,8 +368,8 @@ Rules:
 - Avoid keyword stuffing and repeated action verbs.
 `.trim();
 
-    return context.options.promptPreviewOverride
-        ? `${basePrompt}\n\nUser prompt adjustments:\n${context.options.promptPreviewOverride}`
+    return context.options.promptOverride
+        ? `${basePrompt}\n\nUser prompt adjustments:\n${context.options.promptOverride}`
         : basePrompt;
 }
 
@@ -1081,7 +1081,7 @@ async function handleTailorResume(ai: GoogleGenAI, payload: {
         githubProjects: relevantProjects,
     };
 
-    const promptPreview = buildPromptPreview({
+    const assembledPromptPreview = buildPromptPreview({
         options,
         jobAnalysis,
         evidence: evidenceResolution,
@@ -1109,7 +1109,8 @@ async function handleTailorResume(ai: GoogleGenAI, payload: {
                 manualActionItems: diagnosticsResult.manualActionItems || [],
             },
             rewriteInsights,
-            promptPreview,
+            assembledPromptPreview,
+            promptOverride: options.promptOverride || '',
             selectedPlaybookId: options.selectedPlaybookId,
             generationOptions: options,
             editSuggestions: (diagnosticsResult.editSuggestions || []).map((suggestion: any) => ({

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Generator from '../components/Generator';
 import {
+    ApplicationLeadContext,
     JobDescription,
     TailoredApplication,
     GithubProject,
@@ -12,14 +13,19 @@ import * as GeminiService from '../services/geminiService';
 import * as SupabaseService from '../services/supabaseService';
 import * as GithubService from '../services/githubService';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const GeneratorPage: React.FC = () => {
     const { user } = useAuth();
     const [isGenerating, setIsGenerating] = useState(false);
     const [githubRepos, setGithubRepos] = useState<GithubProject[]>([]);
     const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [pageError, setPageError] = useState('');
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const prefillJobDescription = (location.state as { jobDescription?: Partial<JobDescription> } | null)?.jobDescription;
+    const leadContext = (location.state as { leadContext?: ApplicationLeadContext } | null)?.leadContext || null;
 
     useEffect(() => {
         if (user) {
@@ -49,7 +55,7 @@ const GeneratorPage: React.FC = () => {
         try {
             const latestProfile = await SupabaseService.getProfile(user.id);
             if (!latestProfile) {
-                alert('Profile not found. Please complete onboarding.');
+                setPageError('Profile not found. Please complete onboarding.');
                 navigate('/admin/onboarding');
                 return;
             }
@@ -65,25 +71,32 @@ const GeneratorPage: React.FC = () => {
                 coverLetter: application.coverLetter || '',
                 matchScore: application.matchScore || 0,
                 keyKeywords: application.keyKeywords || [],
-                searchSources: application.searchSources || [],
                 githubProjects: application.githubProjects,
                 showMatchScore: application.showMatchScore,
                 jobAnalysis: application.jobAnalysis,
                 evidenceResolution: application.evidenceResolution,
                 diagnostics: application.diagnostics,
                 rewriteInsights: application.rewriteInsights,
-                promptPreview: application.promptPreview,
+                assembledPromptPreview: application.assembledPromptPreview,
+                promptOverride: application.promptOverride,
                 selectedPlaybookId: application.selectedPlaybookId,
                 generationOptions: application.generationOptions,
                 editSuggestions: application.editSuggestions,
                 regenerationHistory: application.regenerationHistory,
+                searchSources: leadContext ? [
+                    ...(application.searchSources || []),
+                    {
+                        title: leadContext.leadSourceLabel || 'Lead source',
+                        uri: leadContext.leadUrl,
+                    }
+                ] : (application.searchSources || []),
             };
 
             await SupabaseService.saveApplication(user.id, newApp);
             navigate('/admin/dashboard');
         } catch (e) {
             console.error(e);
-            alert('Error generating resume. Please try again.');
+            setPageError('Error generating resume. Please try again.');
         } finally {
             setIsGenerating(false);
         }
@@ -109,7 +122,7 @@ const GeneratorPage: React.FC = () => {
                 recency: 0.7,
                 domainMatch: 0.6,
             },
-            promptOverrides: options.promptPreviewOverride || '',
+            promptOverride: options.promptOverride || '',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
@@ -122,19 +135,27 @@ const GeneratorPage: React.FC = () => {
             }) : prev);
         } catch (error) {
             console.error(error);
-            alert('Failed to save playbook.');
+            setPageError('Failed to save playbook.');
+            throw error;
         }
     };
 
     return (
         <div className="p-8">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 max-w-5xl mx-auto">New Application</h2>
+            {pageError && (
+                <div className="max-w-5xl mx-auto mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+                    {pageError}
+                </div>
+            )}
             <Generator
                 onGenerate={handleGenerate}
                 onSavePlaybook={handleSavePlaybook}
                 isLoading={isGenerating}
                 availableGithubProjects={githubRepos}
                 availablePlaybooks={profile?.tailoringPlaybooks || []}
+                initialJobDescription={prefillJobDescription}
+                initialLeadContext={leadContext}
             />
         </div>
     );
