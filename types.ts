@@ -146,6 +146,11 @@ export interface JobDescription {
   rawText: string;
 }
 
+export interface IdealJobDescription {
+  roleTitle: string;
+  jobDescription: string;
+}
+
 export interface JobAnalysis {
   keywords: string[];
   requirements: string[];

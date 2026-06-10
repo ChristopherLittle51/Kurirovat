@@ -24,6 +24,7 @@ Stop sending generic applications. Kurirovat analyzes your profile against job r
 -   **✍️ Cover Letter Generator**: Create personalized cover letters in seconds.
 -   **🎨 Multiple Themes**: Choose from various professional resume templates (Modern, Classic, Tech-focused).
 -   **📊 Application Tracking**: Keep track of all your job applications in one dashboard.
+-   **🎯 Ideal Role Benchmark**: Generate a theoretical, evidence-backed job title and description that fully matches your saved profile.
 -   **🔒 Secure & Private**: Your data is stored securely using Supabase.
 
 ## 🛠️ Tech Stack

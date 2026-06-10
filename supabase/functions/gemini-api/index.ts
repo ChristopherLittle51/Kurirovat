@@ -204,6 +204,8 @@ serve(async (req) => {
                 return await handleTailorResume(ai, payload);
             case 'analyzeJobDescription':
                 return await handleAnalyzeJobDescription(ai, payload);
+            case 'generateIdealJobDescription':
+                return await handleGenerateIdealJobDescription(ai, payload);
             case 'importProfileSource':
                 return await handleImportProfileSource(ai, payload);
             case 'condenseResume':
@@ -481,6 +483,80 @@ Rules:
 async function handleAnalyzeJobDescription(ai: GoogleGenAI, payload: { jd: JobDescription }) {
     const analysis = await analyzeJobDescription(ai, payload.jd);
     return new Response(JSON.stringify(analysis), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+}
+
+async function handleGenerateIdealJobDescription(ai: GoogleGenAI, payload: {
+    profile: UserProfile;
+    instructions?: string;
+}) {
+    if (!payload.profile) {
+        throw new Error('Profile is required to generate an ideal job description.');
+    }
+
+    const usableAchievements = (payload.profile.achievementBank || [])
+        .filter((entry) => !entry.neverUse);
+
+    const prompt = `
+Create a theoretical job posting that is a 100% evidence-backed match for this candidate.
+
+Candidate evidence:
+${JSON.stringify({
+        summary: payload.profile.summary,
+        skills: payload.profile.skills,
+        experience: payload.profile.experience,
+        otherExperience: payload.profile.otherExperience || [],
+        education: payload.profile.education,
+        achievements: usableAchievements,
+        githubProjects: payload.profile.githubProjects || [],
+        importedProfileSources: payload.profile.importedProfileSources || [],
+        targetRoles: payload.profile.targetRoles || [],
+        preferredIndustries: payload.profile.preferredIndustries || [],
+        antiClaims: payload.profile.antiClaims || [],
+    })}
+
+Optional user direction:
+${payload.instructions || 'None'}
+
+Task:
+- Return one concise, market-recognizable role title.
+- Write a realistic, company-neutral job description between 350 and 600 words.
+- Include clear sections for role overview, responsibilities, required qualifications, and preferred qualifications.
+- Make every responsibility and qualification directly supportable by the candidate evidence above.
+- Treat target roles, preferred industries, and user direction as preferences, not proof of experience.
+- Prefer the candidate's strongest and most recent demonstrated capabilities.
+- Translate candidate evidence into employer language without copying resume bullets verbatim.
+
+Strict grounding rules:
+- Do not invent years of experience, metrics, tools, certifications, degrees, industries, management scope, or responsibilities.
+- Do not include any requirement the candidate cannot already satisfy from the supplied evidence.
+- Do not include the candidate's name, contact details, current employer, or other identifying information.
+- Do not invent a company, compensation range, location, benefits, or hiring process.
+- Do not describe the result as a real open position or promise that such a position exists.
+- Respect all anti-claims and evidence entries marked never-use.
+`;
+
+    const { data } = await generateJson(ai, {
+        prompt,
+        schema: {
+            type: Type.OBJECT,
+            properties: {
+                roleTitle: { type: Type.STRING },
+                jobDescription: { type: Type.STRING },
+            },
+            required: ['roleTitle', 'jobDescription'],
+        }
+    });
+
+    if (!data.roleTitle || !data.jobDescription) {
+        throw new Error('Gemini returned an incomplete ideal job description.');
+    }
+
+    return new Response(JSON.stringify({
+        roleTitle: data.roleTitle,
+        jobDescription: data.jobDescription,
+    }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 }

@@ -5,6 +5,7 @@ import {
   TailoredApplication,
   TailoringOptions,
   JobAnalysis,
+  IdealJobDescription,
 } from '../types';
 
 const callGeminiFunction = async (action: string, payload: any) => {
@@ -53,6 +54,21 @@ export const analyzeJobDescription = async (jd: JobDescription): Promise<JobAnal
   } catch (error: any) {
     console.error('Gemini JD Analysis Error:', error);
     throw new Error(error.message || 'Failed to analyze job description.');
+  }
+};
+
+export const generateIdealJobDescription = async (
+  profile: UserProfile,
+  instructions?: string
+): Promise<IdealJobDescription> => {
+  try {
+    return await callGeminiFunction('generateIdealJobDescription', {
+      profile,
+      instructions: instructions?.trim() || '',
+    });
+  } catch (error: any) {
+    console.error('Gemini Ideal Job Description Error:', error);
+    throw new Error(error.message || 'Failed to generate an ideal job description.');
   }
 };
 
