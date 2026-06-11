@@ -49,7 +49,7 @@ const CoverLetterTemplate: React.FC<Props> = ({ resume, jobDescription, coverLet
                 {onUpdate ? (
                     <InlineEdit
                         value={coverLetterContent}
-                        onChange={handleContentChange}
+                        onSave={handleContentChange}
                         multiline={true}
                         className="min-h-[400px] font-serif leading-7"
                     />
