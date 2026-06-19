@@ -6,19 +6,19 @@ import { WebThemeProps } from './index';
 
 const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPreview }) => {
     return (
-        <div className={`min-h-screen bg-[#0a0a0b] text-emerald-500 font-['Space_Mono',monospace] selection:bg-emerald-500 selection:text-black transition-colors ${isPreview ? 'relative overflow-hidden' : ''}`}>
+        <div className={`min-h-screen min-w-0 overflow-x-hidden bg-[#0a0a0b] text-emerald-500 font-['Space_Mono',monospace] selection:bg-emerald-500 selection:text-black transition-colors ${isPreview ? 'relative' : ''}`}>
             {/* Scanline Effect */}
             <div className={`${isPreview ? 'absolute' : 'fixed'} inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-size-[100%_4px,3px_100%]`} />
 
             {/* Mobile Header - Visible below lg */}
             <header className={`lg:hidden ${isPreview ? 'absolute' : 'fixed'} top-0 left-0 right-0 z-40 bg-[#0d0d0e] border-b border-emerald-900/30 px-4 sm:px-6 py-3 flex items-center justify-between`}>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center text-[#0a0a0b]">
                         <Terminal size={20} />
                     </div>
                     <span className="text-white font-bold text-sm truncate max-w-[120px] sm:max-w-[180px]">{data.fullName}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                     {data.links?.map((link, idx) => {
                         const Icon = link.platform.toLowerCase() === 'github' ? Github :
                             link.platform.toLowerCase() === 'linkedin' ? Linkedin : ExternalLink;
@@ -59,15 +59,15 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                 </button>
             </nav>
 
-            <main className="lg:ml-20 pt-20 lg:pt-0 p-6 md:p-12 lg:p-24 max-w-7xl mx-auto space-y-16 sm:space-y-24 lg:space-y-32">
+            <main className="lg:ml-20 pt-20 lg:pt-0 p-4 sm:p-6 md:p-12 lg:p-24 max-w-7xl mx-auto space-y-16 sm:space-y-24 lg:space-y-32 min-w-0">
                 {/* Hero / Terminal Prompt */}
                 <section className="space-y-8 animate-in fade-in slide-in-from-left duration-1000">
                     <div className="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded text-xs uppercase tracking-tighter">
                         User Profile Loaded: v1.0.4
                     </div>
 
-                    <div className="grid grid-cols-[1fr_auto] md:grid-cols-[1fr_auto] gap-x-4 gap-y-6 md:gap-12 items-start">
-                        <h1 className="col-span-1 text-2xl sm:text-4xl md:text-7xl font-bold tracking-tighter text-white">
+                    <div className="grid grid-cols-1 min-[420px]:grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-6 md:gap-12 items-start min-w-0">
+                        <h1 className="col-span-1 text-2xl sm:text-4xl md:text-7xl font-bold tracking-tighter text-white break-words">
                             <span className="text-emerald-500 font-light">$ whoami</span><br />
                             {data.fullName}
                         </h1>
@@ -83,7 +83,7 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                             </div>
                         )}
 
-                        <div className="col-span-2 md:col-span-1 p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-xl relative overflow-hidden group">
+                        <div className="col-span-1 min-[420px]:col-span-2 md:col-span-1 p-4 sm:p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-xl relative overflow-hidden group min-w-0">
                             <div className="absolute top-0 right-0 p-2 text-[8px] opacity-20 group-hover:opacity-40 transition-opacity">
                                 [SYSTEM_RECAP]
                             </div>
@@ -103,9 +103,9 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                             <div className="absolute top-0 right-0 p-2 text-[8px] opacity-20 group-hover:opacity-40 transition-opacity">
                                 [GIT_LOG :: {new Date().getFullYear()}]
                             </div>
-                            <div className="flex items-center gap-3 mb-4 text-emerald-500/80 text-sm font-mono uppercase tracking-widest">
+                            <div className="flex items-center gap-3 mb-4 text-emerald-500/80 text-sm font-mono uppercase tracking-widest min-w-0">
                                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                git contributions --user {data.githubUsername}
+                                <span className="min-w-0 break-all">git contributions --user {data.githubUsername}</span>
                             </div>
                             <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-emerald-900 scrollbar-track-transparent">
                                 <img
@@ -121,13 +121,13 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                 {/* Core Skills - Hardware/Software metaphor */}
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-12">
                     <div className="space-y-6">
-                        <div className="flex items-center gap-4 text-white">
+                        <div className="flex items-center gap-4 text-white min-w-0">
                             <Code2 size={24} className="text-emerald-500" />
-                            <h2 className="text-2xl font-bold uppercase tracking-widest">Tech Stack</h2>
+                            <h2 className="text-2xl font-bold uppercase tracking-widest break-words">Tech Stack</h2>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             {data.skills?.map((skill, idx) => (
-                                <div key={idx} className="px-4 py-2 bg-emerald-500/5 border border-emerald-500/10 rounded text-sm hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all cursor-default flex items-center gap-2 group">
+                                <div key={idx} className="min-w-0 px-4 py-2 bg-emerald-500/5 border border-emerald-500/10 rounded text-sm hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all cursor-default flex items-center gap-2 group break-words">
                                     <div className="w-1.5 h-1.5 bg-emerald-900 group-hover:bg-emerald-500 rounded-full transition-colors" />
                                     {skill}
                                 </div>
@@ -141,17 +141,17 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                             <h2 className="text-2xl font-bold uppercase tracking-widest">Connect</h2>
                         </div>
                         <div className="space-y-3">
-                            <a href={`mailto:${data.email}`} className="flex items-center gap-4 p-4 bg-[#0d0d0e] border border-emerald-900/20 rounded-lg group hover:border-emerald-500/30 transition-colors">
+                            <a href={`mailto:${data.email}`} className="min-w-0 flex items-center gap-4 p-4 bg-[#0d0d0e] border border-emerald-900/20 rounded-lg group hover:border-emerald-500/30 transition-colors">
                                 <Mail size={18} className="text-emerald-700 group-hover:text-emerald-500 transition-colors" />
                                 <span className="text-xs text-emerald-900 group-hover:text-emerald-700 uppercase">Email:</span>
                                 <span className="text-sm truncate text-emerald-400">{data.email}</span>
                             </a>
-                            <a href={`tel:${data.phone}`} className="flex items-center gap-4 p-4 bg-[#0d0d0e] border border-emerald-900/20 rounded-lg group hover:border-emerald-500/30 transition-colors">
+                            <a href={`tel:${data.phone}`} className="min-w-0 flex items-center gap-4 p-4 bg-[#0d0d0e] border border-emerald-900/20 rounded-lg group hover:border-emerald-500/30 transition-colors">
                                 <Phone size={18} className="text-emerald-700 group-hover:text-emerald-500 transition-colors" />
                                 <span className="text-xs text-emerald-900 group-hover:text-emerald-700 uppercase">Call:</span>
                                 <span className="text-sm truncate text-emerald-400">{data.phone}</span>
                             </a>
-                            <div className="flex items-center gap-4 p-4 bg-[#0d0d0e] border border-emerald-900/20 rounded-lg group hover:border-emerald-500/30 transition-colors">
+                            <div className="min-w-0 flex items-center gap-4 p-4 bg-[#0d0d0e] border border-emerald-900/20 rounded-lg group hover:border-emerald-500/30 transition-colors">
                                 <MapPin size={18} className="text-emerald-700 group-hover:text-emerald-500 transition-colors" />
                                 <span className="text-xs text-emerald-900 group-hover:text-emerald-700 uppercase">Geo:</span>
                                 <span className="text-sm truncate text-emerald-400">{data.location}</span>
@@ -174,14 +174,14 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                                     href={repo.html_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="p-6 bg-[#0d0d0e] border border-emerald-900/20 rounded-xl group hover:border-emerald-500/50 transition-all hover:translate-x-1"
+                                    className="min-w-0 p-5 sm:p-6 bg-[#0d0d0e] border border-emerald-900/20 rounded-xl group hover:border-emerald-500/50 transition-all hover:translate-x-1"
                                 >
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="flex items-center gap-3">
+                                    <div className="flex justify-between items-start gap-3 mb-4 min-w-0">
+                                        <div className="flex items-center gap-3 min-w-0">
                                             <Github size={18} className="text-emerald-600 group-hover:text-emerald-500 transition-colors" />
-                                            <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">{repo.name}</h3>
+                                            <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors truncate">{repo.name}</h3>
                                         </div>
-                                        <ExternalLink size={16} className="text-emerald-800 group-hover:text-emerald-500 transition-colors" />
+                                        <ExternalLink size={16} className="shrink-0 text-emerald-800 group-hover:text-emerald-500 transition-colors" />
                                     </div>
                                     <p className="text-emerald-500/60 text-sm mb-4 line-clamp-10 leading-relaxed">
                                         {repo.description || 'No description provided.'}

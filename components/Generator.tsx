@@ -263,12 +263,12 @@ const Generator: React.FC<Props> = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4">
+    <div className="max-w-4xl mx-auto py-8 sm:py-12 px-0 sm:px-4 min-w-0">
       <div className="text-center mb-10">
         <div className="bg-blue-100 dark:bg-blue-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
           <Sparkles className="text-blue-600 dark:text-blue-400" size={32} />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Create New Application</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Create New Application</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
           Tailor a grounded resume and cover letter with editable strategy, JD analysis, and critique.
         </p>
@@ -290,7 +290,7 @@ const Generator: React.FC<Props> = ({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+      <form onSubmit={handleSubmit} className="min-w-0 space-y-6 bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
         {(errorMessage || successMessage) && (
           <div className={`rounded-lg border px-4 py-3 text-sm ${errorMessage
             ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300'
@@ -334,12 +334,12 @@ const Generator: React.FC<Props> = ({
           />
         </div>
 
-        <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:items-center">
           <button
             type="button"
             onClick={handleAnalyze}
             disabled={isAnalyzingJD || !company || !role || !description}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-60"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-60"
           >
             {isAnalyzingJD ? <Loader2 className="animate-spin" size={16} /> : <ScanSearch size={16} />}
             {isAnalyzingJD ? 'Analyzing JD...' : 'Analyze Job Description'}
@@ -349,7 +349,7 @@ const Generator: React.FC<Props> = ({
             <select
               value={selectedPlaybookId}
               onChange={(e) => applyPlaybook(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent"
+              className="w-full sm:w-auto min-w-0 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent"
             >
               <option value="">Apply saved playbook</option>
               {availablePlaybooks.map((playbook) => (
@@ -367,7 +367,7 @@ const Generator: React.FC<Props> = ({
                 setErrorMessage('');
                 setShowPlaybookModal(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-900"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-900"
             >
               <Save size={16} />
               Save Playbook
@@ -376,12 +376,12 @@ const Generator: React.FC<Props> = ({
         </div>
 
         <div className="border-t border-gray-100 dark:border-gray-700 pt-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Tailoring Controls</h3>
             <button
               type="button"
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+              className="text-left sm:text-right text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
             >
               {showAdvanced ? 'Hide Advanced Settings' : 'Show Advanced Settings'}
             </button>
@@ -460,7 +460,7 @@ const Generator: React.FC<Props> = ({
                               selected ? prev.filter((item) => item !== family) : [...prev, family]
                             )
                           }
-                          className={`px-3 py-1 rounded-full text-sm border ${selected ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600'}`}
+                    className={`max-w-full break-words px-3 py-1 rounded-full text-sm border ${selected ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600'}`}
                         >
                           {family}
                         </button>
@@ -620,16 +620,16 @@ const Generator: React.FC<Props> = ({
                   <div
                     key={repo.id}
                     onClick={() => toggleProject(repo.id)}
-                    className={`p-3 rounded-lg border cursor-pointer transition-all flex items-center justify-between ${selectedProjects.includes(repo.id)
+                    className={`min-w-0 p-3 rounded-lg border cursor-pointer transition-all flex items-center justify-between gap-3 ${selectedProjects.includes(repo.id)
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-500'
                       : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-500 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                   >
-                    <div className="overflow-hidden">
+                    <div className="min-w-0 overflow-hidden">
                       <div className={`font-bold truncate ${selectedProjects.includes(repo.id) ? 'text-blue-700 dark:text-blue-300' : 'text-gray-800 dark:text-gray-200'}`}>{repo.name}</div>
                       <div className={`text-xs truncate ${selectedProjects.includes(repo.id) ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>{repo.description || 'No description'}</div>
                     </div>
-                    {selectedProjects.includes(repo.id) && <div className="text-blue-600 dark:text-blue-400">✓</div>}
+                    {selectedProjects.includes(repo.id) && <div className="shrink-0 text-blue-600 dark:text-blue-400">✓</div>}
                   </div>
                 ))}
               </div>
@@ -653,16 +653,16 @@ const Generator: React.FC<Props> = ({
         <button
           type="submit"
           disabled={isLoading}
-          className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 font-semibold text-white transition-all ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-xl'
+          className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-semibold text-white transition-all ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-xl'
             }`}
         >
           {isLoading ? (
             <>
-              <Loader2 className="animate-spin" /> Analyzing & Generating...
+              <Loader2 className="shrink-0 animate-spin" /> <span className="break-words">Analyzing & Generating...</span>
             </>
           ) : (
             <>
-              Generate Tailored Resume <ArrowRight size={18} />
+              <span className="break-words">Generate Tailored Resume</span> <ArrowRight size={18} className="shrink-0" />
             </>
           )}
         </button>
@@ -670,7 +670,7 @@ const Generator: React.FC<Props> = ({
 
       {showPlaybookModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl">
+          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Save Tailoring Playbook</h3>
               <button onClick={() => setShowPlaybookModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">

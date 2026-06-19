@@ -61,9 +61,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 // Admin Layout with unified navbar
 const AdminLayout: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+    <div className="min-h-screen min-w-0 overflow-x-hidden bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-200">
       <Navbar variant="admin" />
-      <main className="pt-16">
+      <main className="min-w-0 pt-16">
         <Outlet />
       </main>
     </div>

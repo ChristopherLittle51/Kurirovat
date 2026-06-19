@@ -25,6 +25,19 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+html,
+body,
+#root {
+  min-width: 0;
+  max-width: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 /* Smoother transitions for all dark mode changes */
 .dark * {
   transition-property: background-color, border-color, color, fill, stroke;

@@ -43,26 +43,26 @@ const Navbar: React.FC<NavbarProps> = ({ variant = 'admin' }) => {
     if (variant === 'public') {
         return (
             <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 transition-colors duration-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-w-0">
                     <div className="flex items-center justify-between h-16">
                         <Link to="/" className="flex items-center gap-2">
-                            <span className="font-bold text-xl text-gray-900 dark:text-white">Portfolio</span>
+                            <span className="font-bold text-xl text-gray-900 dark:text-white truncate">Portfolio</span>
                         </Link>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                             <ThemeToggle />
                             {user ? (
                                 <Link
                                     to="/admin"
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm"
+                                    className="flex min-w-0 items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm"
                                 >
                                     Dashboard
                                 </Link>
                             ) : (
                                 <Link
                                     to="/login"
-                                    className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-700 text-white rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors text-sm"
+                                    className="flex min-w-0 items-center gap-2 px-3 sm:px-4 py-2 bg-gray-900 dark:bg-gray-700 text-white rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors text-sm"
                                 >
-                                    Admin Login
+                                    <span className="truncate">Admin Login</span>
                                 </Link>
                             )}
                         </div>
@@ -85,10 +85,10 @@ const Navbar: React.FC<NavbarProps> = ({ variant = 'admin' }) => {
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm print:hidden transition-colors duration-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-w-0">
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
-                    <Link to="/admin" className="flex items-center gap-2 flex-shrink-0">
+                    <Link to="/admin" className="flex items-center gap-2 flex-shrink-0 min-w-0">
                         <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">
                             K
                         </div>
@@ -96,12 +96,12 @@ const Navbar: React.FC<NavbarProps> = ({ variant = 'admin' }) => {
                     </Link>
 
                     {/* Desktop Navigation */}
-                    <div className="hidden md:flex items-center gap-1">
+                    <div className="hidden xl:flex items-center gap-1 min-w-0">
                         {navItems.map(({ path, icon: Icon, label }) => (
                             <Link
                                 key={path}
                                 to={path}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${isActive(path)
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors text-sm whitespace-nowrap ${isActive(path)
                                     ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
                                     }`}
@@ -113,14 +113,14 @@ const Navbar: React.FC<NavbarProps> = ({ variant = 'admin' }) => {
                     </div>
 
                     {/* Right side actions */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                         <ThemeToggle />
                         {/* View Public Portfolio */}
                         <a
                             href="/"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+                            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors whitespace-nowrap"
                         >
                             <ExternalLink size={14} />
                             View Site
@@ -129,7 +129,7 @@ const Navbar: React.FC<NavbarProps> = ({ variant = 'admin' }) => {
                         {/* Sign Out */}
                         <button
                             onClick={handleSignOut}
-                            className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                            className="hidden xl:flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                         >
                             <LogOut size={16} />
                             <span className="hidden lg:inline">Sign Out</span>
@@ -138,7 +138,7 @@ const Navbar: React.FC<NavbarProps> = ({ variant = 'admin' }) => {
                         {/* Mobile menu button */}
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            className="md:hidden p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                            className="xl:hidden p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                         >
                             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
@@ -147,7 +147,7 @@ const Navbar: React.FC<NavbarProps> = ({ variant = 'admin' }) => {
 
                 {/* Mobile Navigation */}
                 {mobileMenuOpen && (
-                    <div className="md:hidden border-t border-gray-200 dark:border-gray-800 py-4 space-y-1">
+                    <div className="xl:hidden border-t border-gray-200 dark:border-gray-800 py-4 space-y-1 max-h-[calc(100vh-4rem)] overflow-y-auto">
                         {navItems.map(({ path, icon: Icon, label }) => (
                             <Link
                                 key={path}

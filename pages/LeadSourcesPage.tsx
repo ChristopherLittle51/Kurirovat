@@ -141,18 +141,18 @@ const LeadSourcesPage: React.FC = () => {
     }
 
     return (
-        <div className="max-w-6xl mx-auto p-8 space-y-6">
-            <div className="flex flex-wrap justify-between items-center gap-4">
-                <div>
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Lead Sources</h2>
+        <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-4 min-w-0">
+                <div className="min-w-0">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white break-words">Lead Sources</h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Monitor private and local sources you want to review manually.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button onClick={loadData} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-900 inline-flex items-center gap-2">
+                <div className="flex flex-col min-[420px]:flex-row items-stretch min-[420px]:items-center gap-3 w-full sm:w-auto">
+                    <button onClick={loadData} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-900 inline-flex items-center justify-center gap-2">
                         <RefreshCw size={16} />
                         Refresh
                     </button>
-                    <button onClick={openCreateModal} className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 inline-flex items-center gap-2">
+                    <button onClick={openCreateModal} className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 inline-flex items-center justify-center gap-2">
                         <Plus size={16} />
                         Add Source
                     </button>
@@ -172,13 +172,13 @@ const LeadSourcesPage: React.FC = () => {
                 {sources.map((source) => {
                     const sourceChecks = checksBySource[source.id] || [];
                     return (
-                        <div key={source.id} className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
-                            <div className="flex justify-between gap-4">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{source.label}</h3>
+                        <div key={source.id} className="min-w-0 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 sm:p-5 space-y-4">
+                            <div className="flex flex-col min-[420px]:flex-row min-[420px]:justify-between gap-3 min-w-0">
+                                <div className="min-w-0">
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white break-words">{source.label}</h3>
                                     <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 break-all">{source.url}</div>
                                 </div>
-                                <span className="text-xs font-semibold px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 h-fit">
+                                <span className="w-fit shrink-0 text-xs font-semibold px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 h-fit">
                                     {source.sourceType.replace('_', ' ')}
                                 </span>
                             </div>
@@ -187,7 +187,7 @@ const LeadSourcesPage: React.FC = () => {
                                 <div><span className="font-medium text-gray-900 dark:text-white">Last checked:</span> {source.lastCheckedAt ? new Date(source.lastCheckedAt).toLocaleString() : 'Never'}</div>
                                 {source.notes && <div className="mt-2"><span className="font-medium text-gray-900 dark:text-white">Notes:</span> {source.notes}</div>}
                             </div>
-                            <div className="flex gap-3">
+                            <div className="flex flex-col min-[360px]:flex-row gap-3">
                                 <button onClick={() => openEditModal(source)} className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm">
                                     Edit
                                 </button>
@@ -203,9 +203,9 @@ const LeadSourcesPage: React.FC = () => {
                                     <div className="space-y-2">
                                         {sourceChecks.slice(0, 3).map((check) => (
                                             <div key={check.id} className="rounded-lg bg-gray-50 dark:bg-gray-950/50 px-3 py-2 text-sm">
-                                                <div className="flex justify-between gap-3">
+                                                <div className="flex flex-col min-[420px]:flex-row min-[420px]:justify-between gap-1 min-w-0">
                                                     <span className="font-medium text-gray-900 dark:text-white">{check.status}</span>
-                                                    <span className="text-gray-500 dark:text-gray-400">{new Date(check.checkedAt).toLocaleString()}</span>
+                                                    <span className="text-gray-500 dark:text-gray-400 break-words">{new Date(check.checkedAt).toLocaleString()}</span>
                                                 </div>
                                                 <div className="text-gray-600 dark:text-gray-300">Discovered: {check.discoveredCount || 0}</div>
                                                 {check.notes && <div className="text-gray-600 dark:text-gray-300 mt-1">{check.notes}</div>}
@@ -227,7 +227,7 @@ const LeadSourcesPage: React.FC = () => {
 
             {showSourceModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="w-full max-w-2xl rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl">
+                    <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl">
                         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white">{sources.some((source) => source.id === editingSource.id) ? 'Edit Lead Source' : 'Add Lead Source'}</h3>
                             <button onClick={() => setShowSourceModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
@@ -259,14 +259,14 @@ const LeadSourcesPage: React.FC = () => {
                                 <label className="block text-sm font-medium mb-2">Target Regions</label>
                                 <div className="space-y-2">
                                     {editingSource.regions.map((region) => (
-                                        <div key={region.id} className="grid grid-cols-1 sm:grid-cols-[1fr_180px_auto] gap-2">
+                                        <div key={region.id} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_180px_auto] gap-2">
                                             <input
                                                 value={region.label}
                                                 onChange={(e) => setEditingSource({
                                                     ...editingSource,
                                                     regions: editingSource.regions.map((item) => item.id === region.id ? { ...item, label: e.target.value } : item),
                                                 })}
-                                                className="border border-gray-300 dark:border-gray-700 rounded-lg p-2 bg-transparent"
+                                                className="min-w-0 border border-gray-300 dark:border-gray-700 rounded-lg p-2 bg-transparent"
                                                 placeholder="Boston metro"
                                             />
                                             <select
@@ -307,7 +307,7 @@ const LeadSourcesPage: React.FC = () => {
                             <button onClick={() => setShowSourceModal(false)} className="px-4 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                                 Cancel
                             </button>
-                            <button onClick={handleSaveSource} disabled={isSaving || !editingSource.label.trim() || !editingSource.url.trim()} className="px-4 py-2 rounded-lg text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 inline-flex items-center gap-2">
+                            <button onClick={handleSaveSource} disabled={isSaving || !editingSource.label.trim() || !editingSource.url.trim()} className="px-4 py-2 rounded-lg text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 inline-flex items-center justify-center gap-2">
                                 {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                                 Save Source
                             </button>
@@ -318,7 +318,7 @@ const LeadSourcesPage: React.FC = () => {
 
             {showCheckModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="w-full max-w-lg rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl">
+                    <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl">
                         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Log Lead Source Check</h3>
                             <button onClick={() => setShowCheckModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
@@ -347,7 +347,7 @@ const LeadSourcesPage: React.FC = () => {
                             <button onClick={() => setShowCheckModal(false)} className="px-4 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                                 Cancel
                             </button>
-                            <button onClick={handleRecordCheck} disabled={isSaving} className="px-4 py-2 rounded-lg text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 inline-flex items-center gap-2">
+                            <button onClick={handleRecordCheck} disabled={isSaving} className="px-4 py-2 rounded-lg text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 inline-flex items-center justify-center gap-2">
                                 {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                                 Save Check
                             </button>

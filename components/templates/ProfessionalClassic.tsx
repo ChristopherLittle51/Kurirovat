@@ -28,7 +28,7 @@ const ProfessionalClassic: React.FC<EditableTemplateProps> = ({
     const portfolioUrl = slug ? `${window.location.origin}/p/${slug}` : null;
 
     return (
-        <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-gray-950 p-8 md:p-12 shadow-2xl dark:shadow-none border border-gray-100 dark:border-gray-900 print:shadow-none print:border-none text-gray-900 dark:text-gray-100 font-serif transition-colors">
+        <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-gray-950 p-6 sm:p-8 md:p-12 shadow-2xl dark:shadow-none border border-gray-100 dark:border-gray-900 print:shadow-none print:border-none text-gray-900 dark:text-gray-100 font-serif transition-colors">
             {/* Header */}
             <header className="text-center border-b-2 border-gray-800 dark:border-gray-400 pb-6 mb-6">
                 <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-[0.2em] mb-3 text-gray-900 dark:text-white">

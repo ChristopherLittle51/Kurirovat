@@ -64,20 +64,20 @@ const Dashboard: React.FC = () => {
     }
 
     return (
-        <div className="max-w-6xl mx-auto p-8">
-            <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Application Dashboard</h2>
-                <Link to="/admin/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 dark:shadow-none">
-                    <Plus size={20} /> New Application
+        <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-4 mb-6 min-w-0">
+                <h2 className="min-w-0 text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white break-words">Application Dashboard</h2>
+                <Link to="/admin/new" className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 dark:shadow-none">
+                    <Plus size={20} className="shrink-0" /> <span className="truncate">New Application</span>
                 </Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
+                <div className="min-w-0 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
                     <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">Total Applications</div>
                     <div className="text-4xl font-bold text-gray-900 dark:text-white mt-2">{applications.length}</div>
                 </div>
-                <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
+                <div className="min-w-0 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
                     <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">Avg Match Score</div>
                     <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mt-2">
                         {applications.length > 0
@@ -85,7 +85,7 @@ const Dashboard: React.FC = () => {
                             : 0}%
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
+                <div className="min-w-0 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
                     <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">Interview Rate</div>
                     <div className="text-4xl font-bold text-purple-600 dark:text-purple-400 mt-2">
                         {applications.length > 0
@@ -96,11 +96,11 @@ const Dashboard: React.FC = () => {
             </div>
 
             <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">History</h3>
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden transition-colors">
+            <div className="min-w-0 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden transition-colors">
                 {applications.length === 0 ? (
                     <div className="p-8 text-center text-gray-500 dark:text-gray-400">No applications yet. Start by creating a new one!</div>
                 ) : (
-                    <div className="overflow-x-auto">
+                    <div className="max-w-full overflow-x-auto">
                         <table className="w-full text-left min-w-[700px]">
                             <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                                 <tr>
@@ -115,8 +115,8 @@ const Dashboard: React.FC = () => {
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                                 {applications.map(app => (
                                     <tr key={app.id} onClick={() => navigate(`/admin/application/${app.id}`)} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition">
-                                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white transition-colors">{app.jobDescription.companyName}</td>
-                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400 transition-colors">{app.jobDescription.roleTitle}</td>
+                                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white transition-colors max-w-[180px] truncate">{app.jobDescription.companyName}</td>
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400 transition-colors max-w-[220px] truncate">{app.jobDescription.roleTitle}</td>
                                         <td className="px-6 py-4">
                                             <div className="relative group" onClick={e => e.stopPropagation()}>
                                                 <select

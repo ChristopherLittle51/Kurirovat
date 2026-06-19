@@ -7,7 +7,7 @@ import { WebThemeProps } from './index';
 
 const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPreview }) => {
     return (
-        <div className={`min-h-screen bg-rose-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-serif selection:bg-rose-500 selection:text-white ${isPreview ? 'relative overflow-hidden' : ''}`}>
+        <div className={`min-h-screen min-w-0 overflow-x-hidden bg-rose-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-serif selection:bg-rose-500 selection:text-white ${isPreview ? 'relative' : ''}`}>
             {/* Nav / Floating buttons */}
             <div className={`${isPreview ? 'absolute' : 'fixed'} top-4 sm:top-8 right-4 sm:right-8 z-50`}>
                 <button
@@ -27,7 +27,7 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                         Available for projects
                     </span>
 
-                    <h1 className="text-5xl sm:text-7xl md:text-[10rem] font-black leading-[0.8] tracking-tighter mb-8 sm:mb-12 italic">
+                    <h1 className="text-5xl sm:text-7xl md:text-[10rem] font-black leading-[0.8] tracking-tighter mb-8 sm:mb-12 italic break-words">
                         {data.fullName.split(' ').map((name, i) => (
                             <React.Fragment key={i}>
                                 <span className={i === 0 ? "text-transparent stroke-rose-500 stroke-2" : "text-rose-600 dark:text-rose-500"}>
@@ -38,7 +38,7 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                         ))}
                     </h1>
 
-                    <div className="flex flex-col md:flex-row items-end gap-12">
+                    <div className="flex flex-col md:flex-row items-end gap-8 md:gap-12 min-w-0">
                         <p className="text-xl sm:text-2xl md:text-4xl text-zinc-600 dark:text-zinc-400 font-medium leading-tight max-w-3xl">
                             {data.summary}
                         </p>
@@ -52,8 +52,8 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                 </div>
 
                 {/* Abstract Blobs */}
-                <div className="absolute -top-20 -left-20 w-160 h-160 bg-rose-200/50 dark:bg-rose-900/10 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute top-1/2 -right-20 w-120 h-120 bg-orange-200/50 dark:bg-orange-900/10 rounded-full blur-[100px]" />
+                <div className="absolute -top-20 -left-20 w-80 sm:w-160 h-80 sm:h-160 bg-rose-200/50 dark:bg-rose-900/10 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute top-1/2 -right-20 w-80 sm:w-120 h-80 sm:h-120 bg-orange-200/50 dark:bg-orange-900/10 rounded-full blur-[100px]" />
             </section>
 
             {/* Work */}
@@ -61,15 +61,15 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                 <div className="max-w-6xl mx-auto">
                     <h2 className="text-3xl sm:text-5xl md:text-8xl font-black mb-16 sm:mb-32 tracking-tighter">Selected<br /><span className="text-rose-500">Exp.</span></h2>
 
-                    <div className="space-y-40">
+                    <div className="space-y-24 sm:space-y-40">
                         {data.experience?.map((exp, idx) => (
-                            <div key={idx} className="group grid grid-cols-1 md:grid-cols-12 gap-12 border-t border-zinc-800 pt-12">
-                                <div className="md:col-span-4">
+                            <div key={idx} className="group grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 border-t border-zinc-800 pt-12 min-w-0">
+                                <div className="md:col-span-4 min-w-0">
                                     <p className="text-rose-500 font-bold mb-4">{exp.startDate} — {exp.endDate}</p>
-                                    <h3 className="text-3xl font-bold uppercase">{exp.company}</h3>
+                                    <h3 className="text-3xl font-bold uppercase break-words">{exp.company}</h3>
                                 </div>
-                                <div className="md:col-span-8">
-                                    <h4 className="text-2xl sm:text-4xl md:text-6xl font-light mb-4 sm:mb-8 italic">{exp.role}</h4>
+                                <div className="md:col-span-8 min-w-0">
+                                    <h4 className="text-2xl sm:text-4xl md:text-6xl font-light mb-4 sm:mb-8 italic break-words">{exp.role}</h4>
                                     <ul className="space-y-6">
                                         {exp.description?.map((bullet, bIdx) => (
                                             <li key={bIdx} className="text-xl md:text-2xl text-zinc-400 group-hover:text-white transition-colors leading-snug">
@@ -97,16 +97,16 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                                     href={repo.html_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className={`group p-8 rounded-4xl border-4 border-zinc-900 dark:border-rose-500/20 bg-white dark:bg-zinc-900 hover:bg-rose-50 dark:hover:bg-rose-900/5 transition-colors relative overflow-hidden ${idx % 2 !== 0 ? 'md:translate-y-12' : ''}`}
+                                    className={`group min-w-0 p-5 sm:p-8 rounded-4xl border-4 border-zinc-900 dark:border-rose-500/20 bg-white dark:bg-zinc-900 hover:bg-rose-50 dark:hover:bg-rose-900/5 transition-colors relative overflow-hidden ${idx % 2 !== 0 ? 'md:translate-y-12' : ''}`}
                                 >
-                                    <div className="flex justify-between items-start mb-6">
+                                    <div className="flex justify-between items-start gap-3 mb-6">
                                         <Github size={32} className="text-zinc-900 dark:text-white" />
-                                        <div className="px-4 py-1 rounded-full border border-black dark:border-white text-xs font-bold uppercase tracking-wider">
+                                        <div className="shrink-0 px-4 py-1 rounded-full border border-black dark:border-white text-xs font-bold uppercase tracking-wider">
                                             {repo.language || 'Code'}
                                         </div>
                                     </div>
 
-                                    <h3 className="text-2xl sm:text-3xl font-black mb-4 group-hover:underline decoration-4 decoration-rose-500 underline-offset-4">{repo.name}</h3>
+                                    <h3 className="text-2xl sm:text-3xl font-black mb-4 group-hover:underline decoration-4 decoration-rose-500 underline-offset-4 break-words">{repo.name}</h3>
                                     <p className="text-lg text-zinc-600 dark:text-zinc-400 font-medium leading-tight mb-8">
                                         {repo.description || 'A creative project.'}
                                     </p>
@@ -128,7 +128,7 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
             <section className="px-4 sm:px-6 md:px-20 py-16 sm:py-40">
                 <div className="max-w-6xl mx-auto">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                        <div className="col-span-2 md:row-span-2 bg-rose-500 p-8 sm:p-12 rounded-4xl sm:rounded-4xl flex flex-col justify-between aspect-square md:aspect-auto">
+                        <div className="col-span-2 md:row-span-2 bg-rose-500 p-6 sm:p-12 rounded-4xl sm:rounded-4xl flex flex-col justify-between aspect-square md:aspect-auto min-w-0">
                             <h2 className="text-3xl sm:text-5xl font-black text-white">Skills<br />Matrix</h2>
                             <div className="flex flex-wrap gap-2">
                                 {data.skills?.slice(0, 5).map((skill, idx) => (
@@ -139,7 +139,7 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                             </div>
                         </div>
                         {data.skills?.slice(5).map((skill, idx) => (
-                            <div key={idx} className="p-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-4xl flex items-center justify-center text-center font-bold text-xl hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-colors">
+                            <div key={idx} className="min-w-0 p-4 sm:p-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-4xl flex items-center justify-center text-center font-bold text-base sm:text-xl hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-colors break-words">
                                 {skill}
                             </div>
                         ))}
@@ -158,7 +158,7 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                         {data.email}
                     </a>
 
-                    <div className="flex justify-center gap-12 mt-20">
+                    <div className="flex justify-center flex-wrap gap-6 sm:gap-12 mt-20">
                         {data.links?.map((link, idx) => {
                             const Icon = link.platform.toLowerCase() === 'github' ? Github :
                                 link.platform.toLowerCase() === 'linkedin' ? Linkedin : ExternalLink;

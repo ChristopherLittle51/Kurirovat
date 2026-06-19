@@ -85,14 +85,14 @@ const ResumeTemplate: React.FC<Props> = ({ data, slug, companyName, onUpdate }) 
   const isEditable = !!onUpdate;
 
   return (
-    <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white p-8 md:p-12 shadow-2xl print:shadow-none text-gray-900 leading-relaxed relative" id="resume-preview">
+    <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white p-6 sm:p-8 md:p-12 shadow-2xl print:shadow-none text-gray-900 leading-relaxed relative" id="resume-preview">
       {/* Page Break Indicators (Visual Only) */}
-      <div className="absolute top-[297mm] left-0 right-0 border-b border-red-400 border-dashed pointer-events-none print:hidden z-10 opacity-60">
+      <div className="hidden lg:block absolute top-[297mm] left-0 right-0 border-b border-red-400 border-dashed pointer-events-none print:hidden z-10 opacity-60">
         <span className="absolute right-[-140px] top-[-10px] w-[120px] text-right text-red-500 text-xs font-bold uppercase tracking-wider">
           Page 1 End &darr;
         </span>
       </div>
-      <div className="absolute top-[594mm] left-0 right-0 border-b border-red-400 border-dashed pointer-events-none print:hidden z-10 opacity-60">
+      <div className="hidden lg:block absolute top-[594mm] left-0 right-0 border-b border-red-400 border-dashed pointer-events-none print:hidden z-10 opacity-60">
         <span className="absolute right-[-140px] top-[-10px] w-[120px] text-right text-red-500 text-xs font-bold uppercase tracking-wider">
           Page 2 End &darr;
         </span>
@@ -100,33 +100,33 @@ const ResumeTemplate: React.FC<Props> = ({ data, slug, companyName, onUpdate }) 
 
       {/* Header */}
       <header className="border-b-[1.5px] border-gray-800 pb-4 mb-4">
-        <h1 className="text-3xl font-serif font-bold uppercase tracking-wider mb-2">
+        <h1 className="text-2xl sm:text-3xl font-serif font-bold uppercase tracking-wider mb-2 break-words">
           {isEditable ?
             <InlineEdit value={localData.fullName} onChange={(v) => handleUpdate('fullName', v)} /> :
             localData.fullName}
         </h1>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-600 mt-2 items-center">
           {localData.location && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 min-w-0">
               {/* <MapPin size={14} /> */}
-              <span>
+              <span className="break-words">
                 {isEditable ? <InlineEdit value={localData.location} onChange={(v) => handleUpdate('location', v)} /> : localData.location}
               </span>
             </div>
           )}
 
           {localData.email && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 min-w-0">
               {localData.location && <span className="text-gray-400">•</span>}
               {/* <Mail size={14} /> */}
-              <span>
+              <span className="break-all">
                 {isEditable ? <InlineEdit value={localData.email} onChange={(v) => handleUpdate('email', v)} /> : localData.email}
               </span>
             </div>
           )}
 
           {localData.phone && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 min-w-0">
               {(localData.location || localData.email) && <span className="text-gray-400">•</span>}
               {/* <Phone size={14} /> */}
               <span>
@@ -136,20 +136,20 @@ const ResumeTemplate: React.FC<Props> = ({ data, slug, companyName, onUpdate }) 
           )}
 
           {portfolioUrl && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 min-w-0">
               {(localData.location || localData.email || localData.phone) && <span className="text-gray-400">•</span>}
               {/* <Globe size={14} /> */}
-              <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="hover:underline font-medium text-blue-600">
+              <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="hover:underline font-medium text-blue-600 break-all">
                 {portfolioUrl.replace(/^https?:\/\//, '')}
               </a>
             </div>
           )}
 
           {localData.links.map((link, idx) => (
-            <div key={idx} className="flex items-center gap-1">
+            <div key={idx} className="flex items-center gap-1 min-w-0">
               <span className="text-gray-400">•</span>
               {/* <Globe size={14} /> */}
-              <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-600">
+              <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-600 break-all">
                 {link.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
               </a>
             </div>
@@ -197,10 +197,10 @@ const ResumeTemplate: React.FC<Props> = ({ data, slug, companyName, onUpdate }) 
             {localData.experience.map((exp) => (
               <div key={exp.id}>
                 <div className="flex flex-col md:flex-row md:justify-between md:items-baseline mb-1">
-                  <h3 className="font-bold text-lg">
+                  <h3 className="font-bold text-lg break-words">
                     {isEditable ? <InlineEdit value={exp.role} onChange={(v) => handleExperienceUpdate(exp.id!, 'role', v)} className="font-bold" /> : exp.role}
                   </h3>
-                  <div className="text-sm text-gray-600 font-medium whitespace-nowrap flex gap-1">
+                  <div className="text-sm text-gray-600 font-medium sm:whitespace-nowrap flex gap-1">
                     {isEditable ? (
                       <>
                         <InlineEdit value={exp.startDate} onChange={(v) => handleExperienceUpdate(exp.id!, 'startDate', v)} />
@@ -255,10 +255,10 @@ const ResumeTemplate: React.FC<Props> = ({ data, slug, companyName, onUpdate }) 
                   </button>
                 )}
                 <div className="flex flex-col md:flex-row md:justify-between md:items-baseline mb-0.5">
-                  <h3 className="font-bold text-base">
+                  <h3 className="font-bold text-base break-words">
                     {isEditable ? <InlineEdit value={exp.role} onChange={(v) => handleOtherExperienceUpdate(exp.id!, 'role', v)} className="font-bold" /> : exp.role}
                   </h3>
-                  <div className="text-sm text-gray-600 font-medium whitespace-nowrap flex gap-1">
+                  <div className="text-sm text-gray-600 font-medium sm:whitespace-nowrap flex gap-1">
                     {isEditable ? (
                       <>
                         <InlineEdit value={exp.startDate} onChange={(v) => handleOtherExperienceUpdate(exp.id!, 'startDate', v)} />

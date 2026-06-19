@@ -30,11 +30,11 @@ const CreativeBold: React.FC<EditableTemplateProps> = ({
     return (
         <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-gray-900 shadow-2xl dark:shadow-none print:shadow-none border border-gray-100 dark:border-gray-800 print:border-none overflow-hidden transition-colors">
             {/* Header - Solid Purple matching PDF */}
-            <header className="bg-purple-600 text-white p-8 md:p-10">
-                <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+            <header className="bg-purple-600 text-white p-6 sm:p-8 md:p-10">
+                <div className="flex flex-col md:flex-row justify-between items-start gap-4 min-w-0">
                     {/* Left - Name */}
-                    <div className="flex-1">
-                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight break-words">
                             {editable && onUpdate ? (
                                 <InlineEdit
                                     value={data.fullName || ''}
@@ -47,7 +47,7 @@ const CreativeBold: React.FC<EditableTemplateProps> = ({
                         </h1>
                     </div>
                     {/* Right - Contact Info Stacked */}
-                    <div className="flex flex-col items-start md:items-end gap-1 text-sm">
+                    <div className="min-w-0 flex flex-col items-start md:items-end gap-1 text-sm break-words">
                         {(data.email || editable) && (
                             editable && onUpdate ? (
                                 <InlineEdit
@@ -57,7 +57,7 @@ const CreativeBold: React.FC<EditableTemplateProps> = ({
                                     className="text-sm text-purple-200 bg-transparent"
                                 />
                             ) : (
-                                <a href={`mailto:${data.email}`} className="text-purple-200 hover:text-white transition-colors">
+                                <a href={`mailto:${data.email}`} className="text-purple-200 hover:text-white transition-colors break-all">
                                     {data.email}
                                 </a>
                             )
@@ -89,12 +89,12 @@ const CreativeBold: React.FC<EditableTemplateProps> = ({
                             )
                         )}
                         {portfolioUrl && (
-                            <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-purple-200 transition-colors">
+                            <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-purple-200 transition-colors break-all">
                                 {portfolioUrl.replace(/^https?:\/\//, '')}
                             </a>
                         )}
                         {data.links?.map((link, idx) => (
-                            <a key={idx} href={link.url.startsWith('http') ? link.url : `https://${link.url}`} target="_blank" rel="noopener noreferrer" className="text-white hover:text-purple-200 transition-colors">
+                            <a key={idx} href={link.url.startsWith('http') ? link.url : `https://${link.url}`} target="_blank" rel="noopener noreferrer" className="text-white hover:text-purple-200 transition-colors break-all">
                                 {link.platform || link.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
                             </a>
                         ))}
@@ -102,7 +102,7 @@ const CreativeBold: React.FC<EditableTemplateProps> = ({
                 </div>
             </header>
 
-            <div className="p-8 md:p-10">
+            <div className="p-6 sm:p-8 md:p-10">
                 {/* Summary */}
                 {(data.summary || editable) && (
                     <section className="mb-6">

@@ -7,10 +7,10 @@ import { WebThemeProps } from './index';
 
 const ModernWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPreview }) => {
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-500 selection:text-white">
+        <div className="min-h-screen min-w-0 overflow-x-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-500 selection:text-white">
             {/* Header / Hero */}
             <header className="relative pt-24 pb-16 px-6 overflow-hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-                <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12 relative z-10">
+                <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-8 md:gap-12 relative z-10 min-w-0">
                     {/* Avatar */}
                     {data.profilePhotoUrl ? (
                         <div className="w-32 h-32 sm:w-48 sm:h-48 rounded-3xl overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800 rotate-3">
@@ -22,18 +22,18 @@ const ModernWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPre
                         </div>
                     )}
 
-                    <div className="flex-1 text-center md:text-left">
-                        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight mb-4">
+                    <div className="min-w-0 flex-1 text-center md:text-left">
+                        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight mb-4 break-words">
                             {data.fullName}
                         </h1>
                         <p className="text-xl md:text-2xl text-slate-600 dark:text-slate-400 font-medium max-w-2xl leading-relaxed">
                             {data.summary}
                         </p>
 
-                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-8">
+                        <div className="flex flex-col min-[420px]:flex-row flex-wrap items-stretch min-[420px]:items-center justify-center md:justify-start gap-4 mt-8">
                             <button
                                 onClick={onDownloadResume}
-                                className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-1 active:scale-95"
+                                className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-1 active:scale-95"
                             >
                                 <Download size={20} />
                                 Download Resume
@@ -68,29 +68,29 @@ const ModernWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPre
             <main className="max-w-5xl mx-auto px-6 py-20 space-y-24">
                 {/* Contact Section */}
                 <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-                    <div className="flex items-center gap-4 p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-transform hover:scale-[1.02]">
+                    <div className="min-w-0 flex items-center gap-4 p-5 sm:p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-transform hover:scale-[1.02]">
                         <div className="p-3 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg">
                             <Mail size={24} />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                             <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Email</p>
-                            <a href={`mailto:${data.email}`} className="font-medium hover:text-blue-600 transition-colors truncate max-w-[180px] sm:max-w-none">{data.email}</a>
+                            <a href={`mailto:${data.email}`} className="block font-medium hover:text-blue-600 transition-colors truncate max-w-[180px] sm:max-w-none">{data.email}</a>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4 p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-transform hover:scale-[1.02]">
+                    <div className="min-w-0 flex items-center gap-4 p-5 sm:p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-transform hover:scale-[1.02]">
                         <div className="p-3 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-lg">
                             <Phone size={24} />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                             <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Phone</p>
                             <a href={`tel:${data.phone}`} className="font-medium hover:text-indigo-600 transition-colors">{data.phone}</a>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4 p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-transform hover:scale-[1.02]">
+                    <div className="min-w-0 flex items-center gap-4 p-5 sm:p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-transform hover:scale-[1.02]">
                         <div className="p-3 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-lg">
                             <MapPin size={24} />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                             <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Location</p>
                             <p className="font-medium">{data.location}</p>
                         </div>
@@ -105,15 +105,15 @@ const ModernWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPre
                     </div>
                     <div className="space-y-12">
                         {data.experience?.map((exp, idx) => (
-                            <div key={idx} className="group flex flex-col md:flex-row gap-8 relative">
-                                <div className="md:w-1/4">
+                            <div key={idx} className="group flex flex-col md:flex-row gap-6 md:gap-8 relative min-w-0">
+                                <div className="md:w-1/4 min-w-0">
                                     <div className="md:sticky md:top-24">
                                         <p className="text-lg font-bold text-slate-400 group-hover:text-blue-500 transition-colors">{exp.startDate} — {exp.endDate}</p>
                                         <p className="text-sm font-bold uppercase tracking-widest text-slate-500 mt-1">{exp.company}</p>
                                     </div>
                                 </div>
-                                <div className="md:w-3/4 bg-white dark:bg-slate-900 p-5 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl group-hover:-translate-y-1">
-                                    <h3 className="text-2xl font-bold mb-4">{exp.role}</h3>
+                                <div className="md:w-3/4 min-w-0 bg-white dark:bg-slate-900 p-5 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl group-hover:-translate-y-1">
+                                    <h3 className="text-2xl font-bold mb-4 break-words">{exp.role}</h3>
                                     <ul className="space-y-3">
                                         {exp.description?.map((bullet, bIdx) => (
                                             <li key={bIdx} className="flex items-start gap-3 text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -184,7 +184,7 @@ const ModernWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPre
                             ))}
                         </div>
                     </div>
-                    <div className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[100px]" />
+                            <div className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 w-64 sm:w-96 h-64 sm:h-96 bg-blue-600/20 rounded-full blur-[100px]" />
                 </section>
 
                 {/* Education */}

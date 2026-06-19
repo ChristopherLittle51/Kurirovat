@@ -33,12 +33,12 @@ const ModernMinimal: React.FC<EditableTemplateProps> = ({
     };
 
     return (
-        <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-gray-900 p-10 md:p-14 shadow-2xl dark:shadow-none border border-gray-100 dark:border-gray-800 print:shadow-none print:border-none text-gray-800 dark:text-gray-100 font-sans transition-colors">
+        <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-gray-900 p-6 sm:p-10 md:p-14 shadow-2xl dark:shadow-none border border-gray-100 dark:border-gray-800 print:shadow-none print:border-none text-gray-800 dark:text-gray-100 font-sans transition-colors">
             {/* Header - Two Column Layout matching PDF */}
             <header className="mb-6 flex flex-col md:flex-row justify-between items-start border-b-2 border-blue-600 dark:border-blue-500 pb-3 border-l-4 pl-4">
                 {/* Left - Name */}
-                <div className="flex-1">
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+                <div className="min-w-0 flex-1">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white break-words">
                         {editable && onUpdate ? (
                             <InlineEdit
                                 value={data.fullName || ''}
@@ -51,7 +51,7 @@ const ModernMinimal: React.FC<EditableTemplateProps> = ({
                     </h1>
                 </div>
                 {/* Right - Contact Info Stacked */}
-                <div className="flex flex-col items-start md:items-end gap-0.5 text-sm mt-2 md:mt-0">
+                <div className="min-w-0 flex flex-col items-start md:items-end gap-0.5 text-sm mt-2 md:mt-0 break-words">
                     {(data.email || editable) && (
                         editable && onUpdate ? (
                             <InlineEdit
@@ -61,7 +61,7 @@ const ModernMinimal: React.FC<EditableTemplateProps> = ({
                                 className="text-sm text-gray-600 dark:text-gray-400"
                             />
                         ) : (
-                            <a href={`mailto:${data.email}`} className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+                            <a href={`mailto:${data.email}`} className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 break-all">
                                 {data.email}
                             </a>
                         )
@@ -93,12 +93,12 @@ const ModernMinimal: React.FC<EditableTemplateProps> = ({
                         )
                     )}
                     {portfolioUrl && (
-                        <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
+                        <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline break-all">
                             {portfolioUrl.replace(/^https?:\/\//, '')}
                         </a>
                     )}
                     {data.links?.map((link, idx) => (
-                        <a key={idx} href={link.url.startsWith('http') ? link.url : `https://${link.url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
+                        <a key={idx} href={link.url.startsWith('http') ? link.url : `https://${link.url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline break-all">
                             {link.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
                         </a>
                     ))}
@@ -128,9 +128,9 @@ const ModernMinimal: React.FC<EditableTemplateProps> = ({
             )}
 
             {/* Two Column Layout */}
-            <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex flex-col md:flex-row gap-6 min-w-0">
                 {/* Left Column - Skills & Education */}
-                <div className="md:w-[30%] space-y-6 md:pr-5">
+                <div className="md:w-[30%] space-y-6 md:pr-5 min-w-0">
                     {/* Skills */}
                     {(data.skills && data.skills.length > 0) || editable ? (
                         <section className="mb-4">

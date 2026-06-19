@@ -442,12 +442,12 @@ const LandingPage: React.FC = () => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-colors">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 transition-colors min-w-0">
             {/* Page Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-                <div>
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white transition-colors">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 min-w-0">
+                <div className="min-w-0">
+                    <div className="flex flex-col min-[420px]:flex-row min-[420px]:items-center gap-2 min-[420px]:gap-3 min-w-0">
+                        <h1 className="min-w-0 text-2xl md:text-3xl font-bold text-gray-900 dark:text-white transition-colors break-words">
                             Welcome back, {profile.fullName.split(' ')[0]}!
                         </h1>
                         {isSaving ? (
@@ -467,13 +467,13 @@ const LandingPage: React.FC = () => {
                     </div>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your professional presence and resume designs.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col min-[420px]:flex-row items-stretch min-[420px]:items-center gap-3 w-full md:w-auto">
                     {/* Live Portfolio Link */}
                     <a
                         href="/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-750 transition shadow-sm"
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-750 transition shadow-sm"
                     >
                         <Globe size={18} />
                         View Live Site
@@ -482,7 +482,7 @@ const LandingPage: React.FC = () => {
                     {/* Edit/Preview Toggle */}
                     <button
                         onClick={() => setEditMode(!editMode)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${editMode
+                        className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition ${editMode
                             ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                             }`}
@@ -493,9 +493,9 @@ const LandingPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
                 {/* Sidebar */}
-                <div className="lg:col-span-1 space-y-6">
+                <div className="lg:col-span-1 space-y-6 min-w-0">
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 gap-4">
                         <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-800 shadow-sm">
@@ -504,12 +504,12 @@ const LandingPage: React.FC = () => {
                                 Quick Overview
                             </div>
                             <div className="flex items-center justify-between">
-                                <div>
+                                <div className="min-w-0">
                                     <p className="text-2xl font-bold text-gray-900 dark:text-white">{applications.length}</p>
                                     <p className="text-xs text-gray-500">Applications</p>
                                 </div>
                                 <div className="w-1 px-4 border-l border-gray-200 dark:border-gray-800 h-8"></div>
-                                <div>
+                                <div className="min-w-0">
                                     <p className="text-2xl font-bold text-gray-900 dark:text-white">{avgScore}%</p>
                                     <p className="text-xs text-gray-500">Avg Match</p>
                                 </div>
@@ -542,7 +542,7 @@ const LandingPage: React.FC = () => {
                             </button>
 
                             {showThemePicker && (
-                                <div className="absolute left-0 right-0 top-full mt-2 z-20">
+                                <div className="absolute left-0 right-auto sm:right-0 top-full mt-2 z-20 w-[calc(100vw-2rem)] max-w-sm">
                                     <TemplateSwitcher
                                         title="Select Web Theme"
                                         currentTemplate={selectedTheme}
@@ -575,7 +575,7 @@ const LandingPage: React.FC = () => {
                             </button>
 
                             {showTemplatePicker && (
-                                <div className="absolute left-0 right-0 top-full mt-2 z-20">
+                                <div className="absolute left-0 right-auto sm:right-0 top-full mt-2 z-20 w-[calc(100vw-2rem)] max-w-sm">
                                     <TemplateSwitcher
                                         title="Select Resume Template"
                                         currentTemplate={selectedTemplate}
@@ -588,22 +588,22 @@ const LandingPage: React.FC = () => {
                 </div>
 
                 {/* Main Content Area */}
-                <div className="lg:col-span-3">
-                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-800">
-                        <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 flex items-center justify-between">
-                            <h2 className="font-semibold text-gray-700 dark:text-gray-200">
+                <div className="lg:col-span-3 min-w-0">
+                    <div className="min-w-0 bg-white dark:bg-gray-900 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-800">
+                        <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-w-0">
+                            <h2 className="font-semibold text-gray-700 dark:text-gray-200 truncate">
                                 {editMode ? 'Edit Base Experience' : 'Portfolio Preview'}
                             </h2>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                                 <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500">
                                     Showing:
                                 </span>
-                                <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-full border border-blue-100 dark:border-blue-900/30">
+                                <span className="min-w-0 truncate text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-full border border-blue-100 dark:border-blue-900/30">
                                     {TEMPLATES.find(t => t.id === (editMode ? selectedTemplate : selectedTheme))?.name}
                                 </span>
                             </div>
                         </div>
-                        <div className="max-h-[800px] overflow-auto">
+                        <div className="max-h-[800px] max-w-full overflow-auto">
                             {renderTemplate(editMode)}
                         </div>
                     </div>

@@ -597,19 +597,19 @@ const ApplicationDetails: React.FC = () => {
     if (!application) return <div className="p-8 text-center">Application not found</div>;
 
     return (
-        <div className="bg-gray-50 dark:bg-gray-950 min-h-screen transition-colors">
+        <div className="bg-gray-50 dark:bg-gray-950 min-h-screen min-w-0 overflow-x-hidden transition-colors">
             {/* Sub-header for this page */}
             <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-16 z-10 print:hidden">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 min-w-0">
+                    <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 min-w-0">
                         {/* Left side - Back & Title */}
-                        <div className="flex items-center gap-4">
-                            <Link to="/admin/dashboard" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-600 dark:text-gray-400">
+                        <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0 w-full xl:w-auto">
+                            <Link to="/admin/dashboard" className="shrink-0 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-600 dark:text-gray-400">
                                 <ChevronLeft size={20} />
                             </Link>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white truncate max-w-[200px] lg:max-w-md">
+                            <div className="min-w-0 flex-1">
+                                <div className="flex flex-col min-[420px]:flex-row min-[420px]:items-center gap-2 min-w-0">
+                                    <h2 className="min-w-0 text-xl font-bold text-gray-900 dark:text-white truncate max-w-full lg:max-w-md">
                                         {application.jobDescription.companyName}
                                     </h2>
                                     {isSaving ? (
@@ -627,8 +627,8 @@ const ApplicationDetails: React.FC = () => {
                                         </span>
                                     )}
                                 </div>
-                                <div className="flex items-center gap-3 mt-1">
-                                    <span className="text-sm text-gray-500 dark:text-gray-400">{application.jobDescription.roleTitle}</span>
+                                <div className="flex flex-col min-[420px]:flex-row min-[420px]:items-center gap-2 min-[420px]:gap-3 mt-1 min-w-0">
+                                    <span className="min-w-0 text-sm text-gray-500 dark:text-gray-400 break-words">{application.jobDescription.roleTitle}</span>
                                     <select
                                         value={application.status || 'Pending'}
                                         onChange={(e) => handleStatusChange(e.target.value as ApplicationStatus)}
@@ -645,9 +645,9 @@ const ApplicationDetails: React.FC = () => {
                         </div>
 
                         {/* Right side - Actions */}
-                        <div className="flex items-center gap-3 w-full lg:w-auto">
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 w-full xl:w-auto min-w-0">
                             {/* View Switcher */}
-                            <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                            <div className="flex w-full sm:w-auto bg-gray-100 dark:bg-gray-800 rounded-lg p-1 overflow-x-auto">
                                 {[
                                     { key: 'RESUME', icon: FileText, label: 'Resume' },
                                     { key: 'COVER_LETTER', icon: Mail, label: 'Cover' },
@@ -656,7 +656,7 @@ const ApplicationDetails: React.FC = () => {
                                     <button
                                         key={key}
                                         onClick={() => setView(key as typeof view)}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${view === key
+                                        className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition whitespace-nowrap ${view === key
                                             ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
                                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                                             }`}
@@ -671,7 +671,7 @@ const ApplicationDetails: React.FC = () => {
                             {view === 'RESUME' && (
                                 <button
                                     onClick={() => setEditMode(!editMode)}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition ${editMode
+                                    className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition ${editMode
                                         ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                                         : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                                         }`}
@@ -688,10 +688,11 @@ const ApplicationDetails: React.FC = () => {
                                         setShowTemplatePicker(!showTemplatePicker);
                                         setShowThemePicker(false);
                                     }}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition"
+                                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition"
                                 >
                                     <Palette size={14} />
-                                    Resume Template
+                                    <span className="hidden min-[420px]:inline">Resume Template</span>
+                                    <span className="min-[420px]:hidden">Template</span>
                                 </button>
                             )}
 
@@ -701,7 +702,7 @@ const ApplicationDetails: React.FC = () => {
                                         setShowThemePicker(!showThemePicker);
                                         setShowTemplatePicker(false);
                                     }}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition"
+                                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition"
                                 >
                                     <Globe size={14} />
                                     Web Theme
@@ -709,7 +710,7 @@ const ApplicationDetails: React.FC = () => {
                             )}
 
                             {/* Action Buttons */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2 min-w-0">
                                 {(view === 'RESUME' || view === 'COVER_LETTER') && (
                                     <div className="relative">
                                         <div className="flex rounded-lg shadow-sm bg-gradient-to-r from-amber-500 to-orange-500 text-white transition hover:from-amber-600 hover:to-orange-600">
@@ -731,7 +732,7 @@ const ApplicationDetails: React.FC = () => {
                                         </div>
 
                                         {showRegenMenu && (
-                                            <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                                            <div className="absolute top-full right-0 mt-2 w-[calc(100vw-2rem)] max-w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
                                                 <div className="p-1">
                                                     <button
                                                         onClick={() => {
@@ -763,7 +764,7 @@ const ApplicationDetails: React.FC = () => {
                                 <button
                                     onClick={handleSaveChanges}
                                     disabled={!hasUnsavedChanges || isSaving}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition ${hasUnsavedChanges
+                                    className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition ${hasUnsavedChanges
                                         ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20'
                                         : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
                                         }`}
@@ -777,7 +778,7 @@ const ApplicationDetails: React.FC = () => {
                                         key={`${selectedTemplate}-${JSON.stringify(application.resume)}`}
                                         document={getPDFDocument()!}
                                         fileName={`${application.resume.fullName.replace(/\s+/g, '_')}_Resume.pdf`}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-900 dark:bg-gray-700 text-white hover:bg-gray-800 dark:hover:bg-gray-600 transition"
+                                        className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-900 dark:bg-gray-700 text-white hover:bg-gray-800 dark:hover:bg-gray-600 transition"
                                     >
                                         {({ loading: pdfLoading }) => (
                                             <>
@@ -799,7 +800,7 @@ const ApplicationDetails: React.FC = () => {
                                             />
                                         }
                                         fileName={`${application.resume.fullName.replace(/\s+/g, '_')}_CoverLetter.pdf`}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-900 dark:bg-gray-700 text-white hover:bg-gray-800 dark:hover:bg-gray-600 transition"
+                                        className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-900 dark:bg-gray-700 text-white hover:bg-gray-800 dark:hover:bg-gray-600 transition"
                                     >
                                         {({ loading: pdfLoading }) => (
                                             <>
@@ -815,7 +816,7 @@ const ApplicationDetails: React.FC = () => {
                 </div>
 
                 {showTemplatePicker && view === 'RESUME' && (
-                    <div className="absolute right-4 top-full mt-2 w-80 z-30">
+                    <div className="absolute left-4 right-4 sm:left-auto sm:right-4 top-full mt-2 w-auto sm:w-[calc(100vw-2rem)] sm:max-w-sm z-30">
                         <TemplateSwitcher
                             title="Select Resume Template"
                             currentTemplate={selectedTemplate}
@@ -825,7 +826,7 @@ const ApplicationDetails: React.FC = () => {
                 )}
 
                 {showThemePicker && view === 'PORTFOLIO' && (
-                    <div className="absolute right-4 top-full mt-2 w-80 z-30">
+                    <div className="absolute left-4 right-4 sm:left-auto sm:right-4 top-full mt-2 w-auto sm:w-[calc(100vw-2rem)] sm:max-w-sm z-30">
                         <TemplateSwitcher
                             title="Select Web Theme"
                             currentTemplate={selectedTheme}
@@ -836,17 +837,17 @@ const ApplicationDetails: React.FC = () => {
             </header>
 
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:max-w-none print:p-0">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-w-0 print:max-w-none print:p-0">
                 {view === 'RESUME' && (
-                    <div className="flex justify-center">
-                        <div className="shadow-2xl rounded-lg overflow-hidden">
+                    <div className="flex justify-center min-w-0">
+                        <div className="w-full max-w-full overflow-x-auto shadow-2xl rounded-lg">
                             {renderTemplatePreview(editMode)}
                         </div>
                     </div>
                 )}
 
                 {view === 'COVER_LETTER' && (
-                    <div className="max-w-[210mm] mx-auto">
+                    <div className="max-w-[210mm] mx-auto overflow-x-auto">
                         <CoverLetterTemplate
                             resume={application.resume}
                             jobDescription={application.jobDescription}
@@ -857,7 +858,7 @@ const ApplicationDetails: React.FC = () => {
                 )}
 
                 {view === 'PORTFOLIO' && (
-                    <div className="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-lg bg-white dark:bg-gray-900 transition-colors">
+                    <div className="min-w-0 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-lg bg-white dark:bg-gray-900 transition-colors">
                         {/* Simulated Browser Bar */}
                         <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex items-center gap-2 print:hidden">
                             <div className="flex gap-1.5">
@@ -865,15 +866,15 @@ const ApplicationDetails: React.FC = () => {
                                 <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
                                 <div className="w-3 h-3 rounded-full bg-green-400"></div>
                             </div>
-                            <div className="flex-1 bg-white dark:bg-gray-900 ml-4 rounded px-3 py-1 text-xs text-gray-500 dark:text-gray-400 text-center font-mono border border-gray-200 dark:border-gray-700">
+                            <div className="min-w-0 flex-1 bg-white dark:bg-gray-900 ml-2 sm:ml-4 rounded px-3 py-1 text-xs text-gray-500 dark:text-gray-400 text-center font-mono border border-gray-200 dark:border-gray-700">
                                 <a
                                     href={`${window.location.origin}/p/${application.slug || application.id}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="hover:underline text-blue-600 dark:text-blue-400 flex items-center justify-center gap-1"
+                                    className="hover:underline text-blue-600 dark:text-blue-400 flex items-center justify-center gap-1 min-w-0"
                                 >
-                                    {window.location.host}/p/{application.slug || '...'}
-                                    <Globe size={12} />
+                                    <span className="truncate">{window.location.host}/p/{application.slug || '...'}</span>
+                                    <Globe size={12} className="shrink-0" />
                                 </a>
                             </div>
                         </div>
@@ -1113,7 +1114,7 @@ const ApplicationDetails: React.FC = () => {
                             </button>
                         </div>
                         <div className="p-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Company</label>
                                     <input
@@ -1144,7 +1145,7 @@ const ApplicationDetails: React.FC = () => {
                                 />
                             </div>
                         </div>
-                        <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex justify-end gap-3 bg-gray-50 dark:bg-gray-900/50">
+                        <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col min-[420px]:flex-row min-[420px]:justify-end gap-3 bg-gray-50 dark:bg-gray-900/50">
                             <button
                                 onClick={() => setShowJDEditor(false)}
                                 className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
@@ -1165,7 +1166,7 @@ const ApplicationDetails: React.FC = () => {
             {/* Generation Settings Modal */}
             {showOptionsModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-lg">
+                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Regeneration Settings</h3>
                             <button onClick={() => setShowOptionsModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">

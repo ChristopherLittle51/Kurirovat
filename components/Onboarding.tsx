@@ -279,9 +279,9 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
   );
 
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4 transition-colors">
+    <div className="max-w-2xl mx-auto py-8 sm:py-12 px-4 transition-colors min-w-0">
       <div className="mb-8 text-center md:text-left">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white transition-colors">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white transition-colors">
           {initialData ? "Edit Profile" : (step === 0 ? "Upload Your Resume" : "Review & Edit Profile")}
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2 transition-colors">
@@ -293,7 +293,7 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
       </div>
 
       {step === 0 && (
-        <div className="bg-white dark:bg-gray-900 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer relative shadow-sm">
+        <div className="bg-white dark:bg-gray-900 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 sm:p-10 flex flex-col items-center justify-center text-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer relative shadow-sm">
           <input
             type="file"
             accept=".pdf"
@@ -329,11 +329,11 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Re-upload Section */}
           <div className="bg-orange-50 dark:bg-orange-950/20 p-6 rounded-xl border border-orange-200 dark:border-orange-900/40 shadow-sm transition-colors">
-            <div className="flex items-start gap-4">
+            <div className="flex flex-col min-[420px]:flex-row items-start gap-4 min-w-0">
               <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-600 dark:text-orange-400 transition-colors">
                 <UploadCloud size={24} />
               </div>
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white transition-colors">Update from Resume</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 transition-colors">
                   Upload a new PDF resume to re-parse and update your profile automatically.
@@ -345,7 +345,7 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
                         document.getElementById('reupload-resume')?.click();
                       }
                     }}
-                    className="text-sm font-medium bg-white dark:bg-gray-800 border border-orange-300 dark:border-orange-900/50 text-orange-700 dark:text-orange-300 px-4 py-2 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 hover:border-orange-400 dark:hover:border-orange-800 transition flex items-center gap-2"
+                    className="text-sm font-medium bg-white dark:bg-gray-800 border border-orange-300 dark:border-orange-900/50 text-orange-700 dark:text-orange-300 px-4 py-2 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 hover:border-orange-400 dark:hover:border-orange-800 transition flex items-center justify-center gap-2"
                     disabled={isUploading}
                   >
                     {isUploading ? <Loader2 className="animate-spin w-4 h-4" /> : <UploadCloud className="w-4 h-4" />}
@@ -384,8 +384,8 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
             <input className="border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="Email" value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} />
             <input className="border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="Phone" value={profile.phone} onChange={e => setProfile({ ...profile, phone: e.target.value })} />
           </div>
-          <div className="flex gap-2 items-end">
-            <div className="flex-1">
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-end min-w-0">
+            <div className="min-w-0 flex-1">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">GitHub Username</label>
               <input
                 className="w-full border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors"
@@ -397,7 +397,7 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
             <button
               onClick={handleFetchRepos}
               disabled={!profile.githubUsername || isFetchingRepos}
-              className="bg-gray-900 dark:bg-gray-700 text-white p-3 rounded-lg hover:bg-black dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+              className="bg-gray-900 dark:bg-gray-700 text-white p-3 rounded-lg hover:bg-black dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
             >
               {isFetchingRepos ? <Loader2 className="animate-spin" size={20} /> : <Github size={20} />}
               Fetch Repos
@@ -448,9 +448,9 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
               <h3 className="font-semibold text-gray-900 dark:text-white">Import Profile Source</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">Bring in a LinkedIn or portfolio URL as extra evidence without overwriting your validated profile.</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 min-w-0">
               <input
-                className="flex-1 border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                className="min-w-0 flex-1 border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 placeholder="https://www.linkedin.com/in/your-profile"
                 value={importUrl}
                 onChange={e => setImportUrl(e.target.value)}
@@ -458,7 +458,7 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
               <button
                 onClick={handleImportSource}
                 disabled={isImportingSource || !importUrl.trim()}
-                className="bg-blue-600 text-white px-4 rounded-lg hover:bg-blue-700 disabled:opacity-60 flex items-center gap-2"
+                className="bg-blue-600 text-white px-4 py-3 sm:py-0 rounded-lg hover:bg-blue-700 disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 {isImportingSource ? <Loader2 className="animate-spin" size={16} /> : null}
                 Import
@@ -480,25 +480,25 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
           <div className="space-y-2">
             <h3 className="font-semibold text-gray-700 dark:text-gray-300 transition-colors">Social Links</h3>
             {profile.links.map((link, idx) => (
-              <div key={idx} className="flex gap-2">
-                <input className="flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors" value={link.platform} onChange={(e) => {
+              <div key={idx} className="flex flex-col sm:flex-row gap-2 min-w-0">
+                <input className="min-w-0 flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors" value={link.platform} onChange={(e) => {
                   const newLinks = [...profile.links];
                   newLinks[idx].platform = e.target.value;
                   setProfile({ ...profile, links: newLinks });
                 }} placeholder="Platform (e.g. LinkedIn)" />
-                <input className="flex-[2] border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors" value={link.url} onChange={(e) => {
+                <input className="min-w-0 flex-[2] border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors" value={link.url} onChange={(e) => {
                   const newLinks = [...profile.links];
                   newLinks[idx].url = e.target.value;
                   setProfile({ ...profile, links: newLinks });
                 }} placeholder="URL" />
-                <button onClick={() => setProfile({ ...profile, links: profile.links.filter((_, i) => i !== idx) })} className="text-red-500 hover:text-red-600 transition-colors"><Trash2 size={16} /></button>
+                <button onClick={() => setProfile({ ...profile, links: profile.links.filter((_, i) => i !== idx) })} className="self-start sm:self-center text-red-500 hover:text-red-600 transition-colors"><Trash2 size={16} /></button>
               </div>
             ))}
             <button onClick={() => setProfile({ ...profile, links: [...profile.links, { platform: '', url: '' }] })} className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline transition-colors">+ Add Link</button>
           </div>
 
           <div className="flex justify-end pt-4">
-            <button onClick={() => setStep(2)} className="bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700">Next: Experience <ChevronRight size={18} /></button>
+            <button onClick={() => setStep(2)} className="w-full sm:w-auto bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700">Next: Experience <ChevronRight size={18} /></button>
           </div>
         </div>
       )}
@@ -523,9 +523,9 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Achievements (Bullet Points)</label>
                 {exp.description.map((bullet, bIdx) => (
-                  <div key={bIdx} className="flex gap-2">
-                    <input className="flex-1 border dark:border-gray-700 p-2 rounded text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors" value={bullet} onChange={(e) => updateExperienceBullet(idx, bIdx, e.target.value)} placeholder="• Led a team of..." />
-                    <button onClick={() => removeBullet(idx, bIdx)} className="text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
+                  <div key={bIdx} className="flex gap-2 min-w-0">
+                    <input className="min-w-0 flex-1 border dark:border-gray-700 p-2 rounded text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors" value={bullet} onChange={(e) => updateExperienceBullet(idx, bIdx, e.target.value)} placeholder="• Led a team of..." />
+                    <button onClick={() => removeBullet(idx, bIdx)} className="shrink-0 text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
                   </div>
                 ))}
                 <button onClick={() => addBullet(idx)} className="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline transition-colors">+ Add Bullet</button>
@@ -535,9 +535,9 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
           <button onClick={addExperience} className="w-full border-2 border-dashed border-gray-300 dark:border-gray-700 p-3 rounded-lg text-gray-500 dark:text-gray-400 hover:border-blue-500 dark:hover:border-blue-400 hover:text-blue-500 dark:hover:text-blue-400 flex justify-center items-center gap-2 transition-colors">
             <Plus size={18} /> Add Position
           </button>
-          <div className="flex justify-between">
+          <div className="flex flex-col min-[420px]:flex-row min-[420px]:justify-between gap-3">
             <button onClick={() => setStep(1)} className="text-gray-600 px-6 py-2">Back</button>
-            <button onClick={() => setStep(3)} className="bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700">Next: Education <ChevronRight size={18} /></button>
+            <button onClick={() => setStep(3)} className="bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700">Next: Education <ChevronRight size={18} /></button>
           </div>
         </div>
       )}
@@ -561,9 +561,9 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
           <button onClick={addEducation} className="w-full border-2 border-dashed border-gray-300 dark:border-gray-700 p-3 rounded-lg text-gray-500 dark:text-gray-400 hover:border-blue-500 dark:hover:border-blue-400 hover:text-blue-500 dark:hover:text-blue-400 flex justify-center items-center gap-2 transition-colors">
             <Plus size={18} /> Add Education
           </button>
-          <div className="flex justify-between">
+          <div className="flex flex-col min-[420px]:flex-row min-[420px]:justify-between gap-3">
             <button onClick={() => setStep(2)} className="text-gray-600 px-6 py-2">Back</button>
-            <button onClick={() => setStep(4)} className="bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700">Next: Skills <ChevronRight size={18} /></button>
+            <button onClick={() => setStep(4)} className="bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700">Next: Skills <ChevronRight size={18} /></button>
           </div>
         </div>
       )}
@@ -571,19 +571,19 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
       {step === 4 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white transition-colors">Skills</h2>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 min-w-0">
             <input
-              className="flex-1 border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors"
+              className="min-w-0 flex-1 border dark:border-gray-700 p-3 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors"
               placeholder="e.g. React, Project Management, Python"
               value={tempSkill}
               onChange={e => setTempSkill(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addSkill()}
             />
-            <button onClick={addSkill} className="bg-gray-900 dark:bg-gray-700 text-white px-4 rounded hover:bg-black dark:hover:bg-gray-600 transition-colors">Add</button>
+            <button onClick={addSkill} className="bg-gray-900 dark:bg-gray-700 text-white px-4 py-3 sm:py-0 rounded hover:bg-black dark:hover:bg-gray-600 transition-colors">Add</button>
           </div>
           <div className="flex flex-wrap gap-2">
             {profile.skills.map((skill, i) => (
-              <span key={i} className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full text-sm flex items-center gap-2 shadow-sm transition-colors">
+              <span key={i} className="max-w-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full text-sm flex items-center gap-2 shadow-sm transition-colors break-words">
                 {skill}
                 <button onClick={() => setProfile(prev => ({ ...prev, skills: prev.skills.filter((_, idx) => idx !== i) }))} className="text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors">×</button>
               </span>
@@ -602,11 +602,11 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <h4 className="font-medium text-gray-800 dark:text-gray-200">Target Roles</h4>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 min-w-0">
                   <input
                     value={tempTargetRole}
                     onChange={e => setTempTargetRole(e.target.value)}
-                    className="flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
+                    className="min-w-0 flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
                     placeholder="Senior Frontend Engineer"
                   />
                   <button
@@ -615,14 +615,14 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
                       setProfile(prev => ({ ...prev, targetRoles: [...(prev.targetRoles || []), tempTargetRole.trim()] }));
                       setTempTargetRole('');
                     }}
-                    className="px-3 rounded bg-gray-900 dark:bg-gray-700 text-white"
+                    className="px-3 py-2 rounded bg-gray-900 dark:bg-gray-700 text-white"
                   >
                     Add
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {(profile.targetRoles || []).map((role, index) => (
-                    <span key={`${role}-${index}`} className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                    <span key={`${role}-${index}`} className="max-w-full bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm flex items-center gap-2 break-words">
                       {role}
                       <button onClick={() => setProfile(prev => ({ ...prev, targetRoles: (prev.targetRoles || []).filter((_, i) => i !== index) }))}>×</button>
                     </span>
@@ -632,11 +632,11 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
 
               <div className="space-y-3">
                 <h4 className="font-medium text-gray-800 dark:text-gray-200">Preferred Industries</h4>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 min-w-0">
                   <input
                     value={tempIndustry}
                     onChange={e => setTempIndustry(e.target.value)}
-                    className="flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
+                    className="min-w-0 flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
                     placeholder="Developer tools"
                   />
                   <button
@@ -645,14 +645,14 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
                       setProfile(prev => ({ ...prev, preferredIndustries: [...(prev.preferredIndustries || []), tempIndustry.trim()] }));
                       setTempIndustry('');
                     }}
-                    className="px-3 rounded bg-gray-900 dark:bg-gray-700 text-white"
+                    className="px-3 py-2 rounded bg-gray-900 dark:bg-gray-700 text-white"
                   >
                     Add
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {(profile.preferredIndustries || []).map((industry, index) => (
-                    <span key={`${industry}-${index}`} className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                    <span key={`${industry}-${index}`} className="max-w-full bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm flex items-center gap-2 break-words">
                       {industry}
                       <button onClick={() => setProfile(prev => ({ ...prev, preferredIndustries: (prev.preferredIndustries || []).filter((_, i) => i !== index) }))}>×</button>
                     </span>
@@ -664,25 +664,25 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <h4 className="font-medium text-gray-800 dark:text-gray-200">Target Regions</h4>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 min-w-0">
                   <input
                     value={tempRegion}
                     onChange={e => setTempRegion(e.target.value)}
-                    className="flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
+                    className="min-w-0 flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
                     placeholder="Boston metro"
                   />
-                  <button onClick={addTargetRegion} className="px-3 rounded bg-gray-900 dark:bg-gray-700 text-white">Add</button>
+                  <button onClick={addTargetRegion} className="px-3 py-2 rounded bg-gray-900 dark:bg-gray-700 text-white">Add</button>
                 </div>
                 <div className="space-y-2">
                   {(profile.targetRegions || []).map(region => (
-                    <div key={region.id} className="flex gap-2 items-center">
+                    <div key={region.id} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_150px_auto] gap-2 sm:items-center">
                       <input
                         value={region.label}
                         onChange={e => setProfile(prev => ({
                           ...prev,
                           targetRegions: (prev.targetRegions || []).map(item => item.id === region.id ? { ...item, label: e.target.value } : item)
                         }))}
-                        className="flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
+                        className="min-w-0 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
                       />
                       <select
                         value={region.remotePreference}
@@ -707,11 +707,11 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
 
               <div className="space-y-3">
                 <h4 className="font-medium text-gray-800 dark:text-gray-200">Anti-Claims</h4>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 min-w-0">
                   <input
                     value={tempAntiClaim}
                     onChange={e => setTempAntiClaim(e.target.value)}
-                    className="flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
+                    className="min-w-0 flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
                     placeholder="Do not imply direct people management"
                   />
                   <button
@@ -720,15 +720,15 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
                       setProfile(prev => ({ ...prev, antiClaims: [...(prev.antiClaims || []), tempAntiClaim.trim()] }));
                       setTempAntiClaim('');
                     }}
-                    className="px-3 rounded bg-gray-900 dark:bg-gray-700 text-white"
+                    className="px-3 py-2 rounded bg-gray-900 dark:bg-gray-700 text-white"
                   >
                     Add
                   </button>
                 </div>
                 <div className="space-y-2">
                   {(profile.antiClaims || []).map((claim, index) => (
-                    <div key={`${claim}-${index}`} className="flex items-center justify-between text-sm border dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900">
-                      <span>{claim}</span>
+                    <div key={`${claim}-${index}`} className="flex items-center justify-between gap-3 text-sm border dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 min-w-0">
+                      <span className="min-w-0 break-words">{claim}</span>
                       <button onClick={() => setProfile(prev => ({ ...prev, antiClaims: (prev.antiClaims || []).filter((_, i) => i !== index) }))} className="text-red-500">×</button>
                     </div>
                   ))}
@@ -737,24 +737,24 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0">
                   <h4 className="font-medium text-gray-800 dark:text-gray-200">Achievement Bank</h4>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Reusable evidence the generator can safely pull from.</p>
                 </div>
-                <button onClick={addAchievement} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                <button onClick={addAchievement} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2">
                   <Plus size={16} /> Add Achievement
                 </button>
               </div>
 
               {(profile.achievementBank || []).map(entry => (
                 <div key={entry.id} className="border dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-900/40 space-y-3">
-                  <div className="flex justify-between items-center gap-3">
+                  <div className="flex justify-between items-center gap-3 min-w-0">
                     <input
                       value={entry.title}
                       onChange={e => updateAchievement(entry.id, 'title', e.target.value)}
                       placeholder="Achievement title"
-                      className="flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
+                      className="min-w-0 flex-1 border dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
                     />
                     <button onClick={() => setProfile(prev => ({ ...prev, achievementBank: (prev.achievementBank || []).filter(item => item.id !== entry.id) }))} className="text-red-500">
                       <Trash2 size={16} />
@@ -782,7 +782,7 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
             </div>
 
             <div className="flex justify-end pt-2">
-              <button onClick={() => onComplete(profile)} className="bg-green-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 shadow-lg shadow-green-200">
+              <button onClick={() => onComplete(profile)} className="w-full sm:w-auto bg-green-600 text-white px-8 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-green-700 shadow-lg shadow-green-200">
                 {initialData ? "Save Changes" : "Finish Setup"} {initialData ? <Save size={18} /> : <Check size={18} />}
               </button>
             </div>

@@ -30,7 +30,7 @@ const TechFocused: React.FC<EditableTemplateProps> = ({
     return (
         <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-gray-900 text-gray-100 shadow-2xl border border-gray-800 print:shadow-none print:border-none font-mono">
             {/* Terminal-style Header */}
-            <header className="bg-gray-800 p-6 border-b border-gray-700">
+            <header className="bg-gray-800 p-4 sm:p-6 border-b border-gray-700">
                 <div className="flex items-center gap-1 mb-3">
                     <div className="w-2 h-2 rounded-full bg-red-500"></div>
                     <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
@@ -115,7 +115,7 @@ const TechFocused: React.FC<EditableTemplateProps> = ({
                 </div>
             </header>
 
-            <div className="p-6 md:p-8 space-y-6">
+            <div className="p-4 sm:p-6 md:p-8 space-y-6">
                 {/* Summary */}
                 {(data.summary || editable) && (
                     <section>

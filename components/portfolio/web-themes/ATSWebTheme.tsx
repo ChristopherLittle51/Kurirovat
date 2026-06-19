@@ -16,7 +16,7 @@ import { WebThemeProps } from './index';
  */
 const ATSWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPreview }) => {
     return (
-        <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-['Inter',system-ui,sans-serif] selection:bg-blue-600 selection:text-white">
+        <div className="min-h-screen min-w-0 overflow-x-hidden bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-['Inter',system-ui,sans-serif] selection:bg-blue-600 selection:text-white">
 
             {/* ── Hero / Header ── */}
             <header className="bg-slate-900 dark:bg-slate-950 text-white pt-20 pb-14 px-6 border-b border-slate-800">
@@ -32,7 +32,7 @@ const ATSWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevie
                         </div>
                     )}
 
-                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">{data.fullName}</h1>
+                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3 break-words">{data.fullName}</h1>
                     <p className="text-lg text-slate-400 max-w-xl mx-auto leading-relaxed mb-6">{data.summary}</p>
 
                     {/* Contact strip */}
@@ -58,10 +58,10 @@ const ATSWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevie
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center justify-center gap-3">
+                    <div className="flex flex-wrap items-center justify-center gap-3">
                         <button
                             onClick={onDownloadResume}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm shadow-md transition-all hover:-translate-y-0.5 active:scale-95"
+                            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm shadow-md transition-all hover:-translate-y-0.5 active:scale-95"
                         >
                             <Download size={16} />
                             Download Resume
@@ -144,8 +144,8 @@ const ATSWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevie
                                     rel="noopener noreferrer"
                                     className="block p-5 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-blue-400 dark:hover:border-blue-600 transition-colors group"
                                 >
-                                    <div className="flex justify-between items-start">
-                                        <div>
+                                    <div className="flex justify-between items-start gap-3 min-w-0">
+                                        <div className="min-w-0">
                                             <h3 className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                                 {repo.name}
                                             </h3>

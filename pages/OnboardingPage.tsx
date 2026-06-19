@@ -36,7 +36,7 @@ const OnboardingPage: React.FC = () => {
     if (loading) return <div>Loading...</div>; // Simplification, maybe improved UI later
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col transition-colors">
+        <div className="min-h-screen min-w-0 overflow-x-hidden bg-gray-50 dark:bg-gray-950 flex flex-col transition-colors">
             <div className="p-4 bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800 transition-colors">
                 <div className="max-w-7xl mx-auto flex items-center gap-2">
                     <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">K</div>

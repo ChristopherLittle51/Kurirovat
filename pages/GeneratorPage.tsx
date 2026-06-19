@@ -141,8 +141,8 @@ const GeneratorPage: React.FC = () => {
     };
 
     return (
-        <div className="p-8">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 max-w-5xl mx-auto">New Application</h2>
+        <div className="px-4 py-6 sm:px-6 lg:px-8 min-w-0">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6 max-w-5xl mx-auto break-words">New Application</h2>
             {pageError && (
                 <div className="max-w-5xl mx-auto mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
                     {pageError}

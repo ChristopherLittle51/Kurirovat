@@ -51,18 +51,18 @@ const ATSOptimized: React.FC<EditableTemplateProps> = ({
     const portfolioUrl = slug ? `${origin}/p/${slug}` : null;
 
     return (
-        <div className="w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-white text-black p-10 font-['Helvetica_Neue',Helvetica,Arial,sans-serif] text-[10pt] leading-relaxed print:shadow-none" style={{ color: '#000' }}>
+        <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-white text-black p-6 sm:p-10 font-['Helvetica_Neue',Helvetica,Arial,sans-serif] text-[10pt] leading-relaxed print:shadow-none" style={{ color: '#000' }}>
 
             {/* ── Header ── */}
             <header className="text-center mb-3">
-                <h1 className="text-[18pt] font-bold uppercase tracking-[2px] mb-1" style={{ color: '#000' }}>
+                <h1 className="text-[18pt] font-bold uppercase tracking-[2px] mb-1 break-words" style={{ color: '#000' }}>
                     {editable && onUpdate ? (
                         <InlineEdit value={data.fullName} onSave={(v) => onUpdate('fullName', v)} />
                     ) : data.fullName}
                 </h1>
 
                 {/* Contact line: Location | Email | Phone */}
-                <div className="text-[9pt] text-gray-700 flex flex-wrap justify-center gap-0">
+                <div className="text-[9pt] text-gray-700 flex flex-wrap justify-center gap-0 break-words">
                     {data.location && (
                         <span>
                             {editable && onUpdate ? (
@@ -90,7 +90,7 @@ const ATSOptimized: React.FC<EditableTemplateProps> = ({
 
                 {/* Links line */}
                 {(data.links && data.links.length > 0 || portfolioUrl) && (
-                    <div className="text-[9pt] text-gray-700 flex flex-wrap justify-center mt-0.5">
+                    <div className="text-[9pt] text-gray-700 flex flex-wrap justify-center mt-0.5 break-all">
                         {portfolioUrl && (
                             <a href={portfolioUrl} className="text-gray-700 hover:text-blue-700 no-underline" target="_blank" rel="noopener noreferrer">
                                 {portfolioUrl.replace(/^https?:\/\//, '')}
@@ -169,13 +169,13 @@ const ATSOptimized: React.FC<EditableTemplateProps> = ({
                     </h2>
                     {data.experience.map((exp) => (
                         <div key={exp.id} className="mb-3 group/exp">
-                            <div className="flex justify-between items-baseline">
-                                <span className="font-bold text-[10pt]" style={{ color: '#000' }}>
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1 min-w-0">
+                                <span className="font-bold text-[10pt] break-words" style={{ color: '#000' }}>
                                     {editable && onExperienceUpdate ? (
                                         <InlineEdit value={exp.role} onSave={(v) => onExperienceUpdate(exp.id, 'role', v)} />
                                     ) : exp.role}
                                 </span>
-                                <span className="text-[9pt] text-gray-600">
+                                <span className="text-[9pt] text-gray-600 shrink-0">
                                     {editable && onExperienceUpdate ? (
                                         <span className="inline-flex gap-0.5 items-center">
                                             <InlineEdit value={exp.startDate} onSave={(v) => onExperienceUpdate(exp.id, 'startDate', v)} />
@@ -192,9 +192,9 @@ const ATSOptimized: React.FC<EditableTemplateProps> = ({
                             </div>
                             <ul className="ml-2">
                                 {exp.description?.map((bullet, bIdx) => (
-                                    <li key={bIdx} className="flex items-start gap-2 text-[9.5pt] text-gray-800 mb-0.5 group/bullet">
+                                    <li key={bIdx} className="flex items-start gap-2 text-[9.5pt] text-gray-800 mb-0.5 group/bullet min-w-0">
                                         <span className="text-gray-500 select-none">-</span>
-                                        <span className="flex-1">
+                                        <span className="min-w-0 flex-1 break-words">
                                             {editable && onBulletUpdate ? (
                                                 <InlineEdit value={bullet} onSave={(v) => onBulletUpdate(exp.id, bIdx, v)} multiline />
                                             ) : bullet}
@@ -233,9 +233,9 @@ const ATSOptimized: React.FC<EditableTemplateProps> = ({
                         Additional Experience
                     </h2>
                     {data.otherExperience.map((exp) => (
-                        <div key={exp.id} className="flex justify-between items-baseline mb-1">
-                            <span className="font-bold text-[10pt]" style={{ color: '#000' }}>{exp.role}</span>
-                            <span className="text-[9pt] text-gray-600">{exp.company} | {exp.startDate} - {exp.endDate}</span>
+                        <div key={exp.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1 mb-1 min-w-0">
+                            <span className="font-bold text-[10pt] break-words" style={{ color: '#000' }}>{exp.role}</span>
+                            <span className="text-[9pt] text-gray-600 break-words">{exp.company} | {exp.startDate} - {exp.endDate}</span>
                         </div>
                     ))}
                 </section>
@@ -248,8 +248,8 @@ const ATSOptimized: React.FC<EditableTemplateProps> = ({
                         Education
                     </h2>
                     {data.education.map((edu) => (
-                        <div key={edu.id} className="flex justify-between items-baseline mb-1 group/edu">
-                            <div>
+                        <div key={edu.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1 mb-1 group/edu min-w-0">
+                            <div className="min-w-0">
                                 <span className="font-bold text-[10pt]" style={{ color: '#000' }}>
                                     {editable && onEducationUpdate ? (
                                         <InlineEdit value={edu.institution} onSave={(v) => onEducationUpdate(edu.id, 'institution', v)} />
@@ -261,7 +261,7 @@ const ATSOptimized: React.FC<EditableTemplateProps> = ({
                                     ) : edu.degree}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 shrink-0">
                                 <span className="text-[9pt] text-gray-600">
                                     {editable && onEducationUpdate ? (
                                         <InlineEdit value={edu.year} onSave={(v) => onEducationUpdate(edu.id, 'year', v)} />
