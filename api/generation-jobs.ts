@@ -1,4 +1,3 @@
-import { waitUntil } from '@vercel/functions';
 import { createClient } from '@supabase/supabase-js';
 
 const json = (res: any, status: number, body: unknown) => {
@@ -34,27 +33,6 @@ const normalizeProfile = (data: any) => ({
   antiClaims: data.anti_claims || [],
   learnedPreferenceSuggestions: data.learned_preference_suggestions || [],
 });
-
-const kickGenerationJob = async (jobId: string, token: string) => {
-  if (!supabaseUrl) throw new Error('Supabase URL is missing.');
-
-  const response = await fetch(`${supabaseUrl}/functions/v1/gemini-api`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      action: 'processGenerationJob',
-      payload: { jobId },
-    }),
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Generation worker failed to start: ${body}`);
-  }
-};
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -126,10 +104,6 @@ export default async function handler(req: any, res: any) {
       .single();
 
     if (insertError) throw insertError;
-
-    waitUntil(kickGenerationJob(job.id, token).catch((error) => {
-      console.error('generation job kickoff failed:', error);
-    }));
 
     return json(res, 202, { job });
   } catch (error: any) {

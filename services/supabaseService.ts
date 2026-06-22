@@ -181,6 +181,40 @@ export const startGenerationJob = async (payload: {
     return normalizeGenerationJob(body.job);
 };
 
+export const kickGenerationJob = async (jobId: string): Promise<void> => {
+    const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+    if (sessionError || !session?.access_token) {
+        throw new Error('You must be signed in to start the generation worker.');
+    }
+
+    const { error } = await supabase.functions.invoke('gemini-api', {
+        body: {
+            action: 'processGenerationJob',
+            payload: { jobId },
+            access_token: session.access_token,
+        },
+        headers: {
+            Authorization: `Bearer ${session.access_token}`,
+        },
+    });
+
+    if (error) {
+        const message = error.message || 'Failed to start generation worker.';
+        await supabase
+            .from('generation_jobs')
+            .update({
+                status: 'failed',
+                stage: 'Failed to start worker',
+                progress: 100,
+                error_message: message,
+                updated_at: new Date().toISOString(),
+                finished_at: new Date().toISOString(),
+            })
+            .eq('id', jobId);
+        throw new Error(message);
+    }
+};
+
 export const getGenerationJob = async (jobId: string): Promise<GenerationJob | null> => {
     const { data, error } = await supabase
         .from('generation_jobs')

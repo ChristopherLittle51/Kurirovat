@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Generator from '../components/Generator';
 import {
     ApplicationLeadContext,
@@ -22,6 +22,7 @@ const GeneratorPage: React.FC = () => {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [generationJobs, setGenerationJobs] = useState<GenerationJob[]>([]);
     const [pageError, setPageError] = useState('');
+    const kickedJobIdsRef = useRef<Set<string>>(new Set());
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -59,6 +60,25 @@ const GeneratorPage: React.FC = () => {
         if (!user) return;
         const jobs = await SupabaseService.getRecentGenerationJobs(user.id);
         setGenerationJobs(jobs);
+        jobs
+            .filter((job) => job.status === 'queued')
+            .forEach((job) => {
+                kickJob(job.id);
+            });
+    };
+
+    const kickJob = (jobId: string) => {
+        if (kickedJobIdsRef.current.has(jobId)) return;
+        kickedJobIdsRef.current.add(jobId);
+        void SupabaseService.kickGenerationJob(jobId)
+            .then(() => {
+                void refreshGenerationJobs();
+            })
+            .catch((error) => {
+                console.error(error);
+                kickedJobIdsRef.current.delete(jobId);
+                void refreshGenerationJobs();
+            });
     };
 
     const handleGenerate = async (
@@ -80,6 +100,7 @@ const GeneratorPage: React.FC = () => {
                 leadContext,
             });
             setGenerationJobs((prev) => [job, ...prev.filter((existing) => existing.id !== job.id)].slice(0, 10));
+            kickJob(job.id);
         } catch (e) {
             console.error(e);
             const message = e instanceof Error ? e.message : 'Error starting generation. Please try again.';
