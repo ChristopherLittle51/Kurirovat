@@ -1,4 +1,10 @@
 {
+    "crons": [
+        {
+            "path": "/api/generation-jobs-retry",
+            "schedule": "*/5 * * * *"
+        }
+    ],
     "rewrites": [
         {
             "source": "/p/:slug/json",

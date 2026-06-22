@@ -7,6 +7,10 @@ import {
     LeadSource,
     LeadSourceCheck,
     JobLead,
+    GenerationJob,
+    JobDescription,
+    GithubProject,
+    TailoringOptions,
 } from '../types';
 
 const defaultRegion = (region?: Partial<TargetRegion>): TargetRegion => ({
@@ -78,6 +82,22 @@ const normalizeApplication = (app: any): TailoredApplication => ({
     regenerationHistory: app.regeneration_history || [],
 });
 
+const normalizeGenerationJob = (job: any): GenerationJob => ({
+    id: job.id,
+    userId: job.user_id,
+    status: job.status,
+    stage: job.stage || 'Queued',
+    progress: job.progress || 0,
+    requestPayload: job.request_payload || {},
+    resultApplicationId: job.result_application_id,
+    errorMessage: job.error_message,
+    attemptCount: job.attempt_count || 0,
+    createdAt: job.created_at,
+    updatedAt: job.updated_at,
+    startedAt: job.started_at,
+    finishedAt: job.finished_at,
+});
+
 export const getProfile = async (userId: string): Promise<UserProfile | null> => {
     const { data, error } = await supabase
         .from('profiles')
@@ -132,6 +152,68 @@ export const saveProfile = async (userId: string, profile: UserProfile): Promise
     }
 };
 
+export const startGenerationJob = async (payload: {
+    jd: JobDescription;
+    projects: GithubProject[];
+    showScore: boolean;
+    options?: TailoringOptions;
+    leadContext?: any;
+}): Promise<GenerationJob> => {
+    const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+    if (sessionError || !session?.access_token) {
+        throw new Error('You must be signed in to start a generation job.');
+    }
+
+    const response = await fetch('/api/generation-jobs', {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+        throw new Error(body?.error || 'Failed to start generation job.');
+    }
+
+    return normalizeGenerationJob(body.job);
+};
+
+export const getGenerationJob = async (jobId: string): Promise<GenerationJob | null> => {
+    const { data, error } = await supabase
+        .from('generation_jobs')
+        .select('*')
+        .eq('id', jobId)
+        .single();
+
+    if (error) {
+        if (error.code === 'PGRST116') return null;
+        console.error('Error fetching generation job:', error);
+        throw error;
+    }
+
+    return normalizeGenerationJob(data);
+};
+
+export const getRecentGenerationJobs = async (userId: string): Promise<GenerationJob[]> => {
+    const { data, error } = await supabase
+        .from('generation_jobs')
+        .select('*')
+        .eq('user_id', userId)
+        .in('status', ['queued', 'running', 'failed', 'succeeded'])
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+    if (error) {
+        console.error('Error fetching generation jobs:', error);
+        return [];
+    }
+
+    return data.map(normalizeGenerationJob);
+};
+
 export const getApplications = async (userId: string): Promise<TailoredApplication[]> => {
     const { data, error } = await supabase
         .from('applications')
@@ -163,7 +245,7 @@ export const saveApplication = async (userId: string, application: TailoredAppli
             status: application.status || 'Pending',
             github_projects: application.githubProjects,
             show_match_score: application.showMatchScore,
-            profile_photo_url: application.profilePhotoUrl,
+            profile_photo_url: application.profilePhotoUrl || application.resume?.profilePhotoUrl,
             template: application.template,
             portfolio_theme: application.portfolioTheme,
             job_analysis: application.jobAnalysis,

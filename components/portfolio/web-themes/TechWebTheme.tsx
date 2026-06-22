@@ -1,6 +1,7 @@
 import React from 'react';
-import { Mail, Phone, MapPin, Github, Linkedin, ExternalLink, Download, Terminal, Code2, Cpu, Database, Star } from 'lucide-react';
+import { Mail, Phone, MapPin, Github, Linkedin, ExternalLink, Download, Code2, Cpu, Database, Star } from 'lucide-react';
 import { ensureAbsoluteUrl } from '../../../services/urlUtils';
+import ProfilePhoto from '../ProfilePhoto';
 
 import { WebThemeProps } from './index';
 
@@ -13,9 +14,11 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
             {/* Mobile Header - Visible below lg */}
             <header className={`lg:hidden ${isPreview ? 'absolute' : 'fixed'} top-0 left-0 right-0 z-40 bg-[#0d0d0e] border-b border-emerald-900/30 px-4 sm:px-6 py-3 flex items-center justify-between`}>
                 <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center text-[#0a0a0b]">
-                        <Terminal size={20} />
-                    </div>
+                    <ProfilePhoto
+                        src={data.profilePhotoUrl}
+                        alt={data.fullName}
+                        className="w-10 h-10 shrink-0 rounded-lg overflow-hidden border border-emerald-500/40"
+                    />
                     <span className="text-white font-bold text-sm truncate max-w-[120px] sm:max-w-[180px]">{data.fullName}</span>
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2 shrink-0">
@@ -36,9 +39,11 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
 
             {/* Sidebar Navigation - Desktop only */}
             <nav className={`${isPreview ? 'absolute' : 'fixed'} left-0 top-0 h-full w-20 border-r border-emerald-900/30 bg-[#0d0d0e] hidden lg:flex flex-col items-center py-8 gap-8 z-40`}>
-                <div className="w-12 h-12 bg-emerald-500 rounded-lg flex items-center justify-center text-[#0a0a0b]">
-                    <Terminal size={24} />
-                </div>
+                <ProfilePhoto
+                    src={data.profilePhotoUrl}
+                    alt={data.fullName}
+                    className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-emerald-500/40"
+                />
                 <div className="flex-1 flex flex-col gap-6">
                     {data.links?.map((link, idx) => {
                         const Icon = link.platform.toLowerCase() === 'github' ? Github :
@@ -72,16 +77,17 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                             {data.fullName}
                         </h1>
 
-                        {data.profilePhotoUrl && (
-                            <div className="col-span-1 row-span-1 md:row-span-2 shrink-0 relative group">
-                                <div className="absolute -inset-4 bg-emerald-500/20 rounded-2xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-64 md:h-64 rounded-2xl border-2 border-emerald-500/30 overflow-hidden grayscale-0 md:grayscale contrast-125 brightness-100 md:brightness-75 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-500">
-                                    <img src={data.profilePhotoUrl} alt={data.fullName} className="w-full h-full object-cover" />
-                                    {/* Grid Overlay */}
-                                    <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.1)_1px,transparent_1px)] bg-size-[20px_20px]" />
-                                </div>
+                        <div className="col-span-1 row-span-1 md:row-span-2 shrink-0 relative group">
+                            <div className="absolute -inset-4 bg-emerald-500/20 rounded-2xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-64 md:h-64 rounded-2xl border-2 border-emerald-500/30 overflow-hidden grayscale-0 md:grayscale contrast-125 brightness-100 md:brightness-75 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-500">
+                                <ProfilePhoto
+                                    src={data.profilePhotoUrl}
+                                    alt={data.fullName}
+                                    className="w-full h-full"
+                                />
+                                <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.1)_1px,transparent_1px)] bg-size-[20px_20px]" />
                             </div>
-                        )}
+                        </div>
 
                         <div className="col-span-1 min-[420px]:col-span-2 md:col-span-1 p-4 sm:p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-xl relative overflow-hidden group min-w-0">
                             <div className="absolute top-0 right-0 p-2 text-[8px] opacity-20 group-hover:opacity-40 transition-opacity">
@@ -129,7 +135,7 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                             {data.skills?.map((skill, idx) => (
                                 <div key={idx} className="min-w-0 px-4 py-2 bg-emerald-500/5 border border-emerald-500/10 rounded text-sm hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all cursor-default flex items-center gap-2 group break-words">
                                     <div className="w-1.5 h-1.5 bg-emerald-900 group-hover:bg-emerald-500 rounded-full transition-colors" />
-                                    {skill}
+                                <span className="min-w-0 break-words">{skill}</span>
                                 </div>
                             ))}
                         </div>
@@ -138,7 +144,7 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                     <div className="space-y-6">
                         <div className="flex items-center gap-4 text-white">
                             <Database size={24} className="text-emerald-500" />
-                            <h2 className="text-2xl font-bold uppercase tracking-widest">Connect</h2>
+                            <h2 className="text-2xl font-bold uppercase tracking-widest break-words">Connect</h2>
                         </div>
                         <div className="space-y-3">
                             <a href={`mailto:${data.email}`} className="min-w-0 flex items-center gap-4 p-4 bg-[#0d0d0e] border border-emerald-900/20 rounded-lg group hover:border-emerald-500/30 transition-colors">
@@ -218,17 +224,17 @@ const TechWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevi
                                 <div className="absolute left-[-5px] top-2 w-2 h-2 bg-[#0a0a0b] border border-emerald-500 rounded-full group-hover:bg-emerald-500 transition-colors" />
                                 <div className="space-y-4">
                                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-2">
-                                        <h3 className="text-2xl font-bold text-white tracking-tight">{exp.role}</h3>
-                                        <span className="text-sm text-emerald-900">{exp.startDate} / {exp.endDate}</span>
+                                        <h3 className="text-2xl font-bold text-white tracking-tight break-words">{exp.role}</h3>
+                                        <span className="text-sm text-emerald-900 break-words">{exp.startDate} / {exp.endDate}</span>
                                     </div>
-                                    <div className="text-emerald-600 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
-                                        @ {exp.company}
+                                    <div className="text-emerald-600 font-bold uppercase text-xs tracking-widest flex items-center gap-2 min-w-0">
+                                        <span className="min-w-0 break-words">@ {exp.company}</span>
                                         <div className="h-px w-8 bg-emerald-900/50" />
                                     </div>
                                     <div className="p-4 sm:p-6 bg-[#0d0d0e] border border-emerald-900/20 rounded-xl group-hover:border-emerald-500/20 transition-colors">
                                         <ul className="grid grid-cols-1 gap-4">
                                             {exp.description?.map((bullet, bIdx) => (
-                                                <li key={bIdx} className="text-sm leading-relaxed text-emerald-500/70 before:content-['>_'] before:text-emerald-700">
+                                                <li key={bIdx} className="text-sm leading-relaxed text-emerald-500/70 before:content-['>_'] before:text-emerald-700 break-words">
                                                     {bullet}
                                                 </li>
                                             ))}

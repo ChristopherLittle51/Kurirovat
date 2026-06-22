@@ -268,6 +268,24 @@ export interface TailoredApplication {
   }>;
 }
 
+export type GenerationJobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
+
+export interface GenerationJob {
+  id: string;
+  userId: string;
+  status: GenerationJobStatus;
+  stage: string;
+  progress: number;
+  requestPayload: Record<string, any>;
+  resultApplicationId?: string | null;
+  errorMessage?: string | null;
+  attemptCount: number;
+  createdAt: string;
+  updatedAt: string;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+}
+
 export interface TargetRegion {
   id: string;
   label: string;

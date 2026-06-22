@@ -2,6 +2,7 @@ import React from 'react';
 import { UserProfile } from '../../../types';
 import { Mail, Phone, MapPin, Github, Linkedin, ExternalLink, Download, Sparkles, Star } from 'lucide-react';
 import { ensureAbsoluteUrl } from '../../../services/urlUtils';
+import ProfilePhoto from '../ProfilePhoto';
 
 import { WebThemeProps } from './index';
 
@@ -27,7 +28,7 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                         Available for projects
                     </span>
 
-                    <h1 className="text-5xl sm:text-7xl md:text-[10rem] font-black leading-[0.8] tracking-tighter mb-8 sm:mb-12 italic break-words">
+                    <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[9rem] font-black leading-[0.85] tracking-tighter mb-8 sm:mb-12 italic break-words">
                         {data.fullName.split(' ').map((name, i) => (
                             <React.Fragment key={i}>
                                 <span className={i === 0 ? "text-transparent stroke-rose-500 stroke-2" : "text-rose-600 dark:text-rose-500"}>
@@ -39,15 +40,15 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                     </h1>
 
                     <div className="flex flex-col md:flex-row items-end gap-8 md:gap-12 min-w-0">
-                        <p className="text-xl sm:text-2xl md:text-4xl text-zinc-600 dark:text-zinc-400 font-medium leading-tight max-w-3xl">
+                        <p className="min-w-0 text-xl sm:text-2xl md:text-4xl text-zinc-600 dark:text-zinc-400 font-medium leading-tight max-w-3xl break-words">
                             {data.summary}
                         </p>
 
-                        {data.profilePhotoUrl && (
-                            <div className="shrink-0 w-40 h-40 sm:w-64 sm:h-64 md:w-80 md:h-80 grayscale hover:grayscale-0 transition-all duration-700 rounded-full overflow-hidden border-4 sm:border-8 border-rose-200 dark:border-rose-900/20 shadow-2xl">
-                                <img src={data.profilePhotoUrl} alt={data.fullName} className="w-full h-full object-cover" />
-                            </div>
-                        )}
+                        <ProfilePhoto
+                            src={data.profilePhotoUrl}
+                            alt={data.fullName}
+                            className="shrink-0 w-40 h-40 sm:w-64 sm:h-64 md:w-80 md:h-80 grayscale hover:grayscale-0 transition-all duration-700 rounded-full overflow-hidden border-4 sm:border-8 border-rose-200 dark:border-rose-900/20 shadow-2xl"
+                        />
                     </div>
                 </div>
 
@@ -72,7 +73,7 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                                     <h4 className="text-2xl sm:text-4xl md:text-6xl font-light mb-4 sm:mb-8 italic break-words">{exp.role}</h4>
                                     <ul className="space-y-6">
                                         {exp.description?.map((bullet, bIdx) => (
-                                            <li key={bIdx} className="text-xl md:text-2xl text-zinc-400 group-hover:text-white transition-colors leading-snug">
+                                            <li key={bIdx} className="text-lg sm:text-xl md:text-2xl text-zinc-400 group-hover:text-white transition-colors leading-snug break-words">
                                                 — {bullet}
                                             </li>
                                         ))}
@@ -101,13 +102,13 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                                 >
                                     <div className="flex justify-between items-start gap-3 mb-6">
                                         <Github size={32} className="text-zinc-900 dark:text-white" />
-                                        <div className="shrink-0 px-4 py-1 rounded-full border border-black dark:border-white text-xs font-bold uppercase tracking-wider">
+                                        <div className="shrink-0 max-w-[50%] px-4 py-1 rounded-full border border-black dark:border-white text-xs font-bold uppercase tracking-wider truncate">
                                             {repo.language || 'Code'}
                                         </div>
                                     </div>
 
                                     <h3 className="text-2xl sm:text-3xl font-black mb-4 group-hover:underline decoration-4 decoration-rose-500 underline-offset-4 break-words">{repo.name}</h3>
-                                    <p className="text-lg text-zinc-600 dark:text-zinc-400 font-medium leading-tight mb-8">
+                                    <p className="text-lg text-zinc-600 dark:text-zinc-400 font-medium leading-tight mb-8 break-words">
                                         {repo.description || 'A creative project.'}
                                     </p>
 
@@ -132,7 +133,7 @@ const CreativeWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isP
                             <h2 className="text-3xl sm:text-5xl font-black text-white">Skills<br />Matrix</h2>
                             <div className="flex flex-wrap gap-2">
                                 {data.skills?.slice(0, 5).map((skill, idx) => (
-                                    <span key={idx} className="px-3 py-1 bg-white/20 text-white rounded-full text-sm backdrop-blur-md">
+                                    <span key={idx} className="max-w-full px-3 py-1 bg-white/20 text-white rounded-full text-sm backdrop-blur-md break-words">
                                         {skill}
                                     </span>
                                 ))}

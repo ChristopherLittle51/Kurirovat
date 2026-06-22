@@ -38,12 +38,12 @@ const PortfolioPreview: React.FC<Props> = ({
       const ThemeComponent = WEB_THEMES[theme] || WEB_THEMES['modern-minimal'];
       const profileWithPhoto: UserProfile = {
         ...resume,
-        profilePhotoUrl: application.profilePhotoUrl,
+        profilePhotoUrl: application.profilePhotoUrl || resume.profilePhotoUrl,
         githubProjects: application.githubProjects || resume.githubProjects
       };
       const isAdminPreview = window.location.pathname.startsWith('/admin');
       return (
-        <div className={isAdminPreview ? 'relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800' : ''}>
+        <div className={isAdminPreview ? 'relative max-h-[80vh] overflow-auto rounded-xl border border-gray-200 dark:border-gray-800' : ''}>
           <ThemeComponent
             data={profileWithPhoto}
             onDownloadResume={onDownloadResume}

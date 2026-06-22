@@ -2,6 +2,7 @@ import React from 'react';
 import { UserProfile, SocialLink } from '../../types';
 import { Github, Linkedin, Mail, MapPin, Phone, ExternalLink } from 'lucide-react';
 import { ensureAbsoluteUrl } from '../../services/urlUtils';
+import ProfilePhoto from './ProfilePhoto';
 
 interface PortfolioShellProps {
     data: UserProfile;
@@ -72,14 +73,14 @@ const PortfolioShell: React.FC<PortfolioShellProps> = ({ data, children }) => {
                             </div>
                         </div>
 
-                        {/* Visual element / Avatar placeholder */}
+                        {/* Visual element */}
                         <div className="hidden lg:block relative w-64 h-64">
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl rotate-6 opacity-20 animate-pulse"></div>
-                            <div className="absolute inset-0 bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-xl flex items-center justify-center">
-                                <span className="text-8xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-blue-600 to-indigo-600">
-                                    {data.fullName.charAt(0)}
-                                </span>
-                            </div>
+                            <ProfilePhoto
+                                src={data.profilePhotoUrl}
+                                alt={data.fullName}
+                                className="absolute inset-0 rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-xl"
+                            />
                         </div>
                     </div>
                 </div>

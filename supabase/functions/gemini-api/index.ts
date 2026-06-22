@@ -177,17 +177,30 @@ serve(async (req) => {
             });
         }
 
+        const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+        const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+        const isServiceRole = Boolean(serviceRoleKey && token === serviceRoleKey);
         const supabaseClient = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+            supabaseUrl,
+            isServiceRole ? serviceRoleKey : anonKey,
+            {
+                global: {
+                    headers: { Authorization: `Bearer ${token}` },
+                },
+            },
         );
 
-        const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-        if (authError || !user) {
-            return new Response(JSON.stringify({ error: 'Unauthorized: Invalid session' }), {
-                status: 401,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+        let user = null;
+        if (!isServiceRole) {
+            const { data: { user: authedUser }, error: authError } = await supabaseClient.auth.getUser(token);
+            if (authError || !authedUser) {
+                return new Response(JSON.stringify({ error: 'Unauthorized: Invalid session' }), {
+                    status: 401,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                });
+            }
+            user = authedUser;
         }
 
         const apiKey = Deno.env.get('GOOGLE_GENAI_API_KEY');
@@ -202,6 +215,8 @@ serve(async (req) => {
                 return await handleParseResume(ai, payload);
             case 'tailorResume':
                 return await handleTailorResume(ai, payload);
+            case 'processGenerationJob':
+                return await handleProcessGenerationJob(ai, supabaseClient, payload, user?.id, isServiceRole);
             case 'analyzeJobDescription':
                 return await handleAnalyzeJobDescription(ai, payload);
             case 'generateIdealJobDescription':
@@ -1033,16 +1048,17 @@ Rules:
     return data;
 }
 
-async function handleTailorResume(ai: GoogleGenAI, payload: {
+async function runTailorResume(ai: GoogleGenAI, payload: {
     baseProfile: UserProfile;
     jd: JobDescription;
     githubProjects: GithubProject[];
     includeScore: boolean;
     targetPageCount?: number;
     options?: TailoringOptions;
-}) {
+}, onProgress?: (stage: string, progress: number) => Promise<void>) {
     const baseProfile = payload.baseProfile;
     const options = mergeTailoringOptions(baseProfile, payload.options);
+    await onProgress?.('Analyzing job', 10);
     const analyzedJob = await analyzeJobDescription(ai, payload.jd);
     const jobAnalysis = {
         ...analyzedJob,
@@ -1055,12 +1071,14 @@ async function handleTailorResume(ai: GoogleGenAI, payload: {
         mustHaveTerms: payload.options?.jobAnalysisOverride?.mustHaveTerms || analyzedJob.mustHaveTerms,
         niceToHaveTerms: payload.options?.jobAnalysisOverride?.niceToHaveTerms || analyzedJob.niceToHaveTerms,
     };
+    await onProgress?.('Researching company', 25);
     const companyResearch = await researchCompany(ai, payload.jd.companyName);
     const relevantProjects = selectRelevantProjects(
         payload.githubProjects?.length ? payload.githubProjects : (baseProfile.githubProjects || []),
         jobAnalysis.keywords,
         options.focusSkill,
     );
+    await onProgress?.('Resolving evidence', 35);
     const evidenceResolution = await resolveEvidence(ai, {
         profile: baseProfile,
         jobAnalysis,
@@ -1070,36 +1088,40 @@ async function handleTailorResume(ai: GoogleGenAI, payload: {
     });
     const roleFamilyInstruction = roleFamilyPacks[jobAnalysis.roleFamily] || roleFamilyPacks.general;
 
-    const summaryResult = await generateSummary(ai, {
-        profile: baseProfile,
-        jobAnalysis,
-        evidence: evidenceResolution,
-        options,
-        companyResearch: companyResearch.summary,
-        roleFamilyInstruction,
-    });
-    const skillsResult = await generateSkills(ai, {
-        profile: baseProfile,
-        jobAnalysis,
-        evidence: evidenceResolution,
-        options,
-        roleFamilyInstruction,
-    });
-    const experienceResult = await generateExperience(ai, {
-        profile: baseProfile,
-        jobAnalysis,
-        evidence: evidenceResolution,
-        options,
-        roleFamilyInstruction,
-    });
-    const coverLetter = await generateCoverLetter(ai, {
-        profile: baseProfile,
-        jobAnalysis,
-        evidence: evidenceResolution,
-        options,
-        companyResearch: companyResearch.summary,
-        roleFamilyInstruction,
-    });
+    await onProgress?.('Writing resume and cover letter', 55);
+    const [summaryResult, skillsResult, experienceResult, coverLetter] = await Promise.all([
+        generateSummary(ai, {
+            profile: baseProfile,
+            jobAnalysis,
+            evidence: evidenceResolution,
+            options,
+            companyResearch: companyResearch.summary,
+            roleFamilyInstruction,
+        }),
+        generateSkills(ai, {
+            profile: baseProfile,
+            jobAnalysis,
+            evidence: evidenceResolution,
+            options,
+            roleFamilyInstruction,
+        }),
+        generateExperience(ai, {
+            profile: baseProfile,
+            jobAnalysis,
+            evidence: evidenceResolution,
+            options,
+            roleFamilyInstruction,
+        }),
+        generateCoverLetter(ai, {
+            profile: baseProfile,
+            jobAnalysis,
+            evidence: evidenceResolution,
+            options,
+            companyResearch: companyResearch.summary,
+            roleFamilyInstruction,
+        }),
+    ]);
+    await onProgress?.('Running diagnostics', 80);
     const diagnosticsResult = await generateDiagnostics(ai, {
         profile: baseProfile,
         jobAnalysis,
@@ -1208,9 +1230,187 @@ async function handleTailorResume(ai: GoogleGenAI, payload: {
         }),
     };
 
+    return finalResult;
+}
+
+async function handleTailorResume(ai: GoogleGenAI, payload: {
+    baseProfile: UserProfile;
+    jd: JobDescription;
+    githubProjects: GithubProject[];
+    includeScore: boolean;
+    targetPageCount?: number;
+    options?: TailoringOptions;
+}) {
+    const finalResult = await runTailorResume(ai, payload);
+
     return new Response(JSON.stringify(finalResult), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+}
+
+async function handleProcessGenerationJob(
+    ai: GoogleGenAI,
+    supabaseClient: any,
+    payload: { jobId: string; userId?: string },
+    authedUserId?: string,
+    isServiceRole?: boolean,
+) {
+    if (!payload?.jobId) {
+        throw new Error('Missing generation job id.');
+    }
+
+    const { data: job, error: jobError } = await supabaseClient
+        .from('generation_jobs')
+        .select('*')
+        .eq('id', payload.jobId)
+        .single();
+
+    if (jobError || !job) {
+        throw new Error(jobError?.message || 'Generation job not found.');
+    }
+
+    if (!isServiceRole && job.user_id !== authedUserId) {
+        return new Response(JSON.stringify({ error: 'Unauthorized generation job access.' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+    }
+
+    if (isServiceRole && payload.userId && job.user_id !== payload.userId) {
+        return new Response(JSON.stringify({ error: 'Generation job owner mismatch.' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+    }
+
+    if (job.status === 'succeeded') {
+        return new Response(JSON.stringify({ job }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+    }
+
+    const updatedAt = job.updated_at ? new Date(job.updated_at).getTime() : 0;
+    const runningRecently = job.status === 'running' && Date.now() - updatedAt < 8 * 60 * 1000;
+    if (runningRecently) {
+        return new Response(JSON.stringify({ job, skipped: 'already running' }), {
+            status: 202,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+    }
+
+    const attemptCount = (job.attempt_count || 0) + 1;
+
+    const updateJob = async (updates: Record<string, any>) => {
+        const { error } = await supabaseClient
+            .from('generation_jobs')
+            .update({
+                ...updates,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', job.id);
+
+        if (error) throw error;
+    };
+
+    try {
+        await updateJob({
+            status: 'running',
+            stage: 'Starting generation',
+            progress: 5,
+            error_message: null,
+            attempt_count: attemptCount,
+            started_at: job.started_at || new Date().toISOString(),
+            finished_at: null,
+        });
+
+        const requestPayload = job.request_payload || {};
+        const result = await runTailorResume(ai, {
+            baseProfile: requestPayload.baseProfile,
+            jd: requestPayload.jd,
+            githubProjects: requestPayload.githubProjects || [],
+            includeScore: requestPayload.includeScore ?? true,
+            targetPageCount: requestPayload.targetPageCount || 1,
+            options: requestPayload.options,
+        }, async (stage, progress) => {
+            await updateJob({ stage, progress });
+        });
+
+        await updateJob({ stage: 'Saving application', progress: 92 });
+
+        const application = result.application || {};
+        const leadContext = requestPayload.leadContext;
+        const searchSources = leadContext
+            ? [
+                ...(application.searchSources || []),
+                {
+                    title: leadContext.leadSourceLabel || 'Lead source',
+                    uri: leadContext.leadUrl,
+                },
+            ]
+            : (application.searchSources || []);
+
+        const { data: savedApplication, error: saveError } = await supabaseClient
+            .from('applications')
+            .insert({
+                user_id: job.user_id,
+                company_name: requestPayload.jd.companyName,
+                role_title: requestPayload.jd.roleTitle,
+                raw_job_description: requestPayload.jd.rawText,
+                resume_data: application.resume,
+                cover_letter: application.coverLetter || '',
+                match_score: application.matchScore || 0,
+                key_keywords: application.keyKeywords || [],
+                search_sources: searchSources,
+                status: 'Pending',
+                github_projects: application.githubProjects,
+                show_match_score: application.showMatchScore,
+                profile_photo_url: application.resume?.profilePhotoUrl || requestPayload.baseProfile?.profilePhotoUrl,
+                template: requestPayload.baseProfile?.portfolioTemplate,
+                portfolio_theme: requestPayload.baseProfile?.portfolioTheme || requestPayload.baseProfile?.portfolioTemplate,
+                job_analysis: application.jobAnalysis,
+                evidence_resolution: application.evidenceResolution,
+                diagnostics: application.diagnostics,
+                rewrite_insights: application.rewriteInsights,
+                prompt_preview: application.assembledPromptPreview,
+                selected_playbook_id: application.selectedPlaybookId,
+                generation_options: {
+                    ...(application.generationOptions || {}),
+                    promptOverride: application.promptOverride ?? application.generationOptions?.promptOverride,
+                },
+                edit_suggestions: application.editSuggestions,
+                regeneration_history: application.regenerationHistory,
+            })
+            .select('id')
+            .single();
+
+        if (saveError) throw saveError;
+
+        await updateJob({
+            status: 'succeeded',
+            stage: 'Complete',
+            progress: 100,
+            result_application_id: savedApplication.id,
+            finished_at: new Date().toISOString(),
+        });
+
+        return new Response(JSON.stringify({ jobId: job.id, applicationId: savedApplication.id }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+    } catch (error: any) {
+        console.error('Generation job failed:', error);
+        await updateJob({
+            status: 'failed',
+            stage: 'Failed',
+            progress: 100,
+            error_message: error.message || 'Generation failed.',
+            finished_at: new Date().toISOString(),
+        }).catch((updateError) => console.error('Failed to mark generation job failed:', updateError));
+
+        return new Response(JSON.stringify({ error: error.message || 'Generation failed.' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+    }
 }
 
 async function handleCondenseResume(ai: GoogleGenAI, payload: { profile: UserProfile }) {

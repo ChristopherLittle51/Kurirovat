@@ -2,6 +2,7 @@ import React from 'react';
 import { UserProfile } from '../../../types';
 import { Mail, Phone, MapPin, Github, Linkedin, ExternalLink, Download } from 'lucide-react';
 import { ensureAbsoluteUrl } from '../../../services/urlUtils';
+import ProfilePhoto from '../ProfilePhoto';
 
 import { WebThemeProps } from './index';
 
@@ -21,36 +22,31 @@ const ATSWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevie
             {/* ── Hero / Header ── */}
             <header className="bg-slate-900 dark:bg-slate-950 text-white pt-20 pb-14 px-6 border-b border-slate-800">
                 <div className="max-w-3xl mx-auto text-center">
-                    {/* Avatar */}
-                    {data.profilePhotoUrl ? (
-                        <div className="w-24 h-24 rounded-full overflow-hidden mx-auto mb-6 border-2 border-slate-700 shadow-lg">
-                            <img src={data.profilePhotoUrl} alt={data.fullName} className="w-full h-full object-cover" />
-                        </div>
-                    ) : (
-                        <div className="w-24 h-24 rounded-full bg-blue-700 flex items-center justify-center mx-auto mb-6 border-2 border-blue-600 shadow-lg">
-                            <span className="text-3xl font-bold text-white uppercase">{data.fullName.charAt(0)}</span>
-                        </div>
-                    )}
+                    <ProfilePhoto
+                        src={data.profilePhotoUrl}
+                        alt={data.fullName}
+                        className="w-24 h-24 rounded-full overflow-hidden mx-auto mb-6 border-2 border-slate-700 shadow-lg"
+                    />
 
                     <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3 break-words">{data.fullName}</h1>
-                    <p className="text-lg text-slate-400 max-w-xl mx-auto leading-relaxed mb-6">{data.summary}</p>
+                    <p className="text-lg text-slate-400 max-w-xl mx-auto leading-relaxed mb-6 break-words">{data.summary}</p>
 
                     {/* Contact strip */}
                     <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-slate-400 mb-6">
                         {data.location && (
-                            <span className="flex items-center gap-1.5">
+                            <span className="flex min-w-0 items-center gap-1.5 break-words">
                                 <MapPin size={14} className="text-slate-500" />
                                 {data.location}
                             </span>
                         )}
                         {data.email && (
-                            <a href={`mailto:${data.email}`} className="flex items-center gap-1.5 hover:text-white transition-colors">
+                            <a href={`mailto:${data.email}`} className="flex min-w-0 items-center gap-1.5 hover:text-white transition-colors break-all">
                                 <Mail size={14} className="text-slate-500" />
                                 {data.email}
                             </a>
                         )}
                         {data.phone && (
-                            <a href={`tel:${data.phone}`} className="flex items-center gap-1.5 hover:text-white transition-colors">
+                            <a href={`tel:${data.phone}`} className="flex min-w-0 items-center gap-1.5 hover:text-white transition-colors break-words">
                                 <Phone size={14} className="text-slate-500" />
                                 {data.phone}
                             </a>
@@ -117,9 +113,9 @@ const ATSWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevie
                                     <p className="text-sm text-slate-500 mb-3 font-medium">{exp.company}</p>
                                     <ul className="space-y-1.5">
                                         {exp.description?.map((bullet, bIdx) => (
-                                            <li key={bIdx} className="flex items-start gap-2 text-slate-700 dark:text-slate-300 text-[15px] leading-relaxed">
-                                                <span className="text-slate-400 mt-0.5 select-none">–</span>
-                                                <span>{bullet}</span>
+                            <li key={bIdx} className="flex items-start gap-2 text-slate-700 dark:text-slate-300 text-[15px] leading-relaxed">
+                                <span className="text-slate-400 mt-0.5 select-none">–</span>
+                                <span className="min-w-0 break-words">{bullet}</span>
                                             </li>
                                         ))}
                                     </ul>
@@ -178,8 +174,8 @@ const ATSWebTheme: React.FC<WebThemeProps> = ({ data, onDownloadResume, isPrevie
                             {data.education.map((edu, idx) => (
                                 <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline">
                                     <div>
-                                        <span className="font-bold text-slate-900 dark:text-slate-100">{edu.institution}</span>
-                                        <span className="text-slate-500 ml-2">{edu.degree}</span>
+                                        <span className="font-bold text-slate-900 dark:text-slate-100 break-words">{edu.institution}</span>
+                                        <span className="text-slate-500 sm:ml-2 break-words">{edu.degree}</span>
                                     </div>
                                     <span className="text-sm text-slate-500">{edu.year}</span>
                                 </div>

@@ -13,6 +13,7 @@
     "@react-pdf/renderer": "^4.3.2",
     "@supabase/supabase-js": "^2.90.1",
     "@vercel/analytics": "^1.6.1",
+    "@vercel/functions": "^3.7.2",
     "lucide-react": "^0.562.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
