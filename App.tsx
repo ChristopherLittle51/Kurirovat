@@ -12,7 +12,6 @@ import PublicPortfolio from './pages/PublicPortfolio';
 import PublicHome from './pages/PublicHome';
 import LandingPage from './pages/LandingPage';
 import LeadSourcesPage from './pages/LeadSourcesPage';
-import JobLeadsPage from './pages/JobLeadsPage';
 import IdealRolePage from './pages/IdealRolePage';
 import EvidenceLibraryPage from './pages/EvidenceLibraryPage';
 import * as SupabaseService from './services/supabaseService';
@@ -114,7 +113,6 @@ const App: React.FC = () => {
               <Route path="/admin/ideal-role" element={<IdealRolePage />} />
               <Route path="/admin/evidence" element={<EvidenceLibraryPage />} />
               <Route path="/admin/lead-sources" element={<LeadSourcesPage />} />
-              <Route path="/admin/job-leads" element={<JobLeadsPage />} />
               <Route path="/admin/application/:id" element={<ApplicationDetails />} />
             </Route>
 

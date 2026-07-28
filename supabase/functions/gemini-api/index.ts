@@ -625,13 +625,6 @@ async function handleGenerationJob(args: {
       usage_metrics: recordUsage(usages),
     });
 
-    const leadContext = request.leadContext;
-    const searchSources = leadContext
-      ? [{
-        title: leadContext.leadSourceLabel || "Lead source",
-        uri: leadContext.leadUrl,
-      }]
-      : [];
     const application = generated.application;
     let { data: saved, error: saveError } = await args.supabaseClient
       .from("applications")
@@ -644,7 +637,6 @@ async function handleGenerationJob(args: {
         cover_letter: application.coverLetter,
         match_score: application.matchScore,
         key_keywords: application.keyKeywords,
-        search_sources: searchSources,
         status: "Pending",
         github_projects: application.githubProjects,
         show_match_score: request.includeScore ?? true,

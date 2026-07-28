@@ -33,11 +33,11 @@ Implement the first full pass of the grounded tailoring system:
   - `EvidenceResolution`
   - `TailoringDiagnostics`
   - `TailoringOptions`
-  - `LeadSource`, `LeadSourceCheck`, `JobLead`
+  - `LeadSource`, `LeadSourceCheck`
 - `supabase/migrations/20260608120000_tailoring_platform_expansion.sql` adds:
   - profile JSON columns for achievements, playbooks, imports, guardrails, regions
   - application JSON columns for job analysis, evidence, diagnostics, prompt preview, regeneration history
-  - `lead_sources`, `lead_source_checks`, and `job_leads`
+  - `lead_sources`, `lead_source_checks`, and the historical `job_leads` table
 - `supabase/functions/gemini-api/index.ts` is now staged:
   1. JD analysis
   2. company research
@@ -61,9 +61,8 @@ Implement the first full pass of the grounded tailoring system:
   - prompt preview
   - redo suggestions
   - expanded regeneration settings
-- Agent-facing lead endpoints added:
+- Agent-facing lead-source endpoint added:
   - `api/lead-sources.ts`
-  - `api/job-leads.ts`
 
 ## Verification
 - `npm run build` succeeds after the changes.
@@ -73,8 +72,7 @@ Implement the first full pass of the grounded tailoring system:
 - Split generated prompt context from the user-editable prompt override.
 - Keep regenerate payload ordering explicit:
   current JD -> current jobAnalysis override -> generation settings -> prompt override -> redo instructions.
-- Add user-visible admin pages for lead sources and job leads using the existing API endpoints.
-- Preserve lead provenance when converting a lead into an application draft.
+- Keep the lead-source tracker focused on manual review.
 - Replace prompt-related placeholder interactions with in-app controls.
 
 ## Hardening + lead workflow implementation
@@ -90,13 +88,13 @@ Implement the first full pass of the grounded tailoring system:
 - `components/Generator.tsx` now:
   - shows separate assembled preview and prompt override panels
   - uses an in-app modal for playbook save
-  - supports prefilled lead conversion drafts
-- Lead workflow now includes:
+  - supports prefilled job-description drafts
+- Lead-source workflow now includes:
   - `services/leadService.ts`
   - `pages/LeadSourcesPage.tsx`
-  - `pages/JobLeadsPage.tsx`
-  - admin routes and navbar entries for both pages
-- Job lead conversion now preloads the generator route with company/title/raw description and preserves lead provenance as a source link on the saved application.
+  - an admin route and navbar entry for the source tracker
+
+The unused Job Leads workflow was removed on 2026-07-28. See [Job Leads removal](job-leads-removal.md) for the complete scope and database cleanup note.
 
 ## Verification for this pass
 - `npm run build` succeeds after the hardening and lead UI changes.

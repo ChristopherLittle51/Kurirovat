@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Generator from '../components/Generator';
 import {
-    ApplicationLeadContext,
     JobDescription,
     GithubProject,
     UserProfile,
@@ -29,7 +28,6 @@ const GeneratorPage: React.FC = () => {
     const location = useLocation();
 
     const prefillJobDescription = (location.state as { jobDescription?: Partial<JobDescription> } | null)?.jobDescription;
-    const leadContext = (location.state as { leadContext?: ApplicationLeadContext } | null)?.leadContext || null;
 
     useEffect(() => {
         if (user) {
@@ -99,7 +97,6 @@ const GeneratorPage: React.FC = () => {
                 projects,
                 showScore,
                 options,
-                leadContext,
             });
             setGenerationJobs((prev) => [job, ...prev.filter((existing) => existing.id !== job.id)].slice(0, 10));
             kickJob(job.id);
@@ -344,7 +341,6 @@ const GeneratorPage: React.FC = () => {
                 availableGithubProjects={githubRepos}
                 availablePlaybooks={profile?.tailoringPlaybooks || []}
                 initialJobDescription={prefillJobDescription}
-                initialLeadContext={leadContext}
             />
         </div>
     );

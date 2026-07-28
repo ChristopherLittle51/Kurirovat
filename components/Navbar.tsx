@@ -12,7 +12,6 @@ import {
     FileText,
     ExternalLink,
     Radar,
-    BriefcaseBusiness,
     Sparkles,
     Library
 } from 'lucide-react';
@@ -81,7 +80,6 @@ const Navbar: React.FC<NavbarProps> = ({ variant = 'admin' }) => {
         { path: '/admin/evidence', icon: Library, label: 'Evidence' },
         { path: '/admin/ideal-role', icon: Sparkles, label: 'Ideal Role' },
         { path: '/admin/lead-sources', icon: Radar, label: 'Lead Sources' },
-        { path: '/admin/job-leads', icon: BriefcaseBusiness, label: 'Job Leads' },
         { path: '/admin/onboarding', icon: User, label: 'Profile' },
     ];
 

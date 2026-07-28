@@ -76,7 +76,7 @@ export default async function handler(req: any, res: any) {
       throw new Error('Profile not found. Please complete onboarding.');
     }
 
-    const { jd, projects = [], showScore = true, options, leadContext } = req.body || {};
+    const { jd, projects = [], showScore = true, options } = req.body || {};
     if (!jd?.companyName || !jd?.roleTitle || !jd?.rawText) {
       throw new Error('Company, role title, and job description are required.');
     }
@@ -88,7 +88,6 @@ export default async function handler(req: any, res: any) {
       includeScore: showScore,
       targetPageCount: 2,
       options: { ...(options || {}), targetPageCount: 2 },
-      leadContext,
     };
 
     const { data: job, error: insertError } = await supabase

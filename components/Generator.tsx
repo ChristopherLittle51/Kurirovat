@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Sparkles, ArrowRight, Loader2, ScanSearch, Save, X, MapPin, Briefcase } from 'lucide-react';
+import { Sparkles, ArrowRight, Loader2, ScanSearch, Save, X } from 'lucide-react';
 import {
-  ApplicationLeadContext,
   GithubProject,
   JobAnalysis,
   JobDescription,
@@ -17,7 +16,6 @@ interface Props {
   availableGithubProjects?: GithubProject[];
   availablePlaybooks?: TailoringPlaybook[];
   initialJobDescription?: Partial<JobDescription>;
-  initialLeadContext?: ApplicationLeadContext | null;
 }
 
 const roleFamilyOptions = ['engineering', 'product', 'design', 'marketing', 'operations', 'sales', 'general'];
@@ -72,7 +70,6 @@ const Generator: React.FC<Props> = ({
   availableGithubProjects = [],
   availablePlaybooks = [],
   initialJobDescription,
-  initialLeadContext,
 }) => {
   const [company, setCompany] = useState(initialJobDescription?.companyName || '');
   const [role, setRole] = useState(initialJobDescription?.roleTitle || '');
@@ -281,22 +278,6 @@ const Generator: React.FC<Props> = ({
           </li>
         ))}
       </ol>
-
-      {initialLeadContext && (
-        <div className="max-w-4xl mx-auto mb-6 rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-950/20 p-4">
-          <div className="flex flex-wrap items-center gap-3 text-sm text-emerald-900 dark:text-emerald-200">
-            <span className="inline-flex items-center gap-2 font-semibold">
-              <Briefcase size={16} />
-              Draft seeded from a saved job lead
-            </span>
-            {initialLeadContext.leadSourceLabel && <span>Source: {initialLeadContext.leadSourceLabel}</span>}
-            <a href={initialLeadContext.leadUrl} target="_blank" rel="noopener noreferrer" className="underline">
-              Open original listing
-            </a>
-            {initialLeadContext.leadSummary && <span className="inline-flex items-center gap-1"><MapPin size={14} /> {initialLeadContext.leadSummary}</span>}
-          </div>
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="min-w-0 space-y-6 bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
         {(errorMessage || successMessage) && (

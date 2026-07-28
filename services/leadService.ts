@@ -1,16 +1,12 @@
 import { supabase } from './supabaseClient';
 import {
-    ApplicationLeadContext,
-    JobLead,
     LeadSource,
     LeadSourceCheck,
 } from '../types';
 import {
-    getJobLeads,
     getLeadSourceChecks,
     getLeadSources,
     recordLeadSourceCheck as recordLeadSourceCheckInDb,
-    saveJobLead as saveJobLeadInDb,
     saveLeadSource as saveLeadSourceInDb,
 } from './supabaseService';
 
@@ -47,36 +43,3 @@ export const recordLeadSourceCheck = async (check: {
     const userId = await requireUserId();
     return recordLeadSourceCheckInDb(userId, check);
 };
-
-export const listJobLeads = async (): Promise<JobLead[]> => {
-    const userId = await requireUserId();
-    return getJobLeads(userId);
-};
-
-export const saveJobLead = async (lead: JobLead): Promise<JobLead> => {
-    const userId = await requireUserId();
-    await saveJobLeadInDb(userId, lead);
-    return lead;
-};
-
-export const convertLeadToApplication = (lead: JobLead): {
-    jobDescription: {
-        companyName: string;
-        roleTitle: string;
-        rawText: string;
-    };
-    leadContext: ApplicationLeadContext;
-} => ({
-    jobDescription: {
-        companyName: lead.companyName,
-        roleTitle: lead.title,
-        rawText: lead.rawDescription || `${lead.summary}\n\nLocation: ${lead.location}\nSource: ${lead.url}`,
-    },
-    leadContext: {
-        leadId: lead.id,
-        leadSourceId: lead.leadSourceId,
-        leadSourceLabel: lead.leadSourceLabel,
-        leadUrl: lead.url,
-        leadSummary: lead.summary,
-    },
-});

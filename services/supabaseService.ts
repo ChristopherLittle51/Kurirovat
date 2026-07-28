@@ -6,7 +6,6 @@ import {
     TailoringPlaybook,
     LeadSource,
     LeadSourceCheck,
-    JobLead,
     GenerationJob,
     JobDescription,
     GithubProject,
@@ -209,7 +208,6 @@ export const startGenerationJob = async (payload: {
     projects: GithubProject[];
     showScore: boolean;
     options?: TailoringOptions;
-    leadContext?: any;
 }): Promise<GenerationJob> => {
     const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
     if (sessionError || !session?.access_token) {
@@ -902,58 +900,4 @@ export const recordLeadSourceCheck = async (
         notes: data.notes,
         discoveredCount: data.discovered_count,
     };
-};
-
-export const saveJobLead = async (userId: string, lead: JobLead): Promise<void> => {
-    const { error } = await supabase
-        .from('job_leads')
-        .upsert({
-            id: lead.id,
-            user_id: userId,
-            lead_source_id: lead.leadSourceId,
-            title: lead.title,
-            company_name: lead.companyName,
-            location: lead.location,
-            url: lead.url,
-            summary: lead.summary,
-            raw_description: lead.rawDescription,
-            provenance: lead.provenance,
-            regions: lead.regions,
-            match: lead.match,
-            status: lead.status,
-        });
-
-    if (error) {
-        console.error('Error saving job lead:', error);
-        throw error;
-    }
-};
-
-export const getJobLeads = async (userId: string): Promise<JobLead[]> => {
-    const { data, error } = await supabase
-        .from('job_leads')
-        .select('*, lead_sources(label)')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error('Error fetching job leads:', error);
-        return [];
-    }
-
-    return data.map((lead: any) => ({
-        id: lead.id,
-        leadSourceId: lead.lead_source_id,
-        leadSourceLabel: lead.lead_sources?.label,
-        title: lead.title,
-        companyName: lead.company_name,
-        location: lead.location,
-        url: lead.url,
-        summary: lead.summary,
-        rawDescription: lead.raw_description,
-        provenance: lead.provenance,
-        regions: (lead.regions || []).map(defaultRegion),
-        match: lead.match,
-        status: lead.status,
-    }));
 };

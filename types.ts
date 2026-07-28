@@ -502,41 +502,6 @@ export interface LeadSourceCheck {
   leadSourceLabel?: string;
 }
 
-export interface JobLeadMatch {
-  score: number;
-  rationale: string;
-  matchedKeywords: string[];
-  concerns: string[];
-}
-
-export interface JobLead {
-  id: string;
-  leadSourceId: string;
-  title: string;
-  companyName: string;
-  location: string;
-  url: string;
-  summary: string;
-  rawDescription?: string;
-  provenance: {
-    discoveredAt: string;
-    submittedBy: 'user' | 'agent' | 'system';
-    notes?: string;
-  };
-  regions: TargetRegion[];
-  match?: JobLeadMatch;
-  status?: 'new' | 'saved' | 'dismissed';
-  leadSourceLabel?: string;
-}
-
-export interface ApplicationLeadContext {
-  leadId: string;
-  leadSourceId: string;
-  leadSourceLabel?: string;
-  leadUrl: string;
-  leadSummary?: string;
-}
-
 export type ViewState =
   | 'ONBOARDING'
   | 'DASHBOARD'
