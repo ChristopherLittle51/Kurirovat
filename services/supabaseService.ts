@@ -761,6 +761,14 @@ export const cancelGenerationJob = async (jobId: string): Promise<void> => {
     if (error) throw error;
 };
 
+export const removeGenerationJob = async (jobId: string): Promise<void> => {
+    const { error } = await supabase
+        .from('generation_jobs')
+        .delete()
+        .eq('id', jobId);
+    if (error) throw error;
+};
+
 export const decideEvidenceRound = async (jobId: string, anotherRound: boolean): Promise<void> => {
     const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
     if (sessionError || !session?.access_token) throw new Error('You must be signed in.');

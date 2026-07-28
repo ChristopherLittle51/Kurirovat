@@ -14,6 +14,7 @@ import LandingPage from './pages/LandingPage';
 import LeadSourcesPage from './pages/LeadSourcesPage';
 import IdealRolePage from './pages/IdealRolePage';
 import EvidenceLibraryPage from './pages/EvidenceLibraryPage';
+import GenerationQueuePage from './pages/GenerationQueuePage';
 import * as SupabaseService from './services/supabaseService';
 import { Loader2 } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
@@ -110,6 +111,7 @@ const App: React.FC = () => {
               <Route path="/admin" element={<LandingPage />} />
               <Route path="/admin/dashboard" element={<Dashboard />} />
               <Route path="/admin/new" element={<GeneratorPage />} />
+              <Route path="/admin/generation-queue" element={<GenerationQueuePage />} />
               <Route path="/admin/ideal-role" element={<IdealRolePage />} />
               <Route path="/admin/evidence" element={<EvidenceLibraryPage />} />
               <Route path="/admin/lead-sources" element={<LeadSourcesPage />} />
