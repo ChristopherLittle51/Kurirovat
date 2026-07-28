@@ -677,9 +677,9 @@ const ApplicationDetails: React.FC = () => {
     if (!application) return <div className="p-8 text-center">Application not found</div>;
 
     return (
-        <div className="bg-gray-50 dark:bg-gray-950 min-h-screen min-w-0 overflow-x-hidden transition-colors">
+        <div className="isolate bg-gray-50 dark:bg-gray-950 min-h-screen min-w-0 overflow-x-hidden transition-colors">
             {/* Sub-header for this page */}
-            <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-16 z-10 print:hidden">
+            <header className="relative z-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 print:hidden">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 min-w-0">
                     <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 min-w-0">
                         {/* Left side - Back & Title */}
@@ -913,10 +913,10 @@ const ApplicationDetails: React.FC = () => {
             </header>
 
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-w-0 print:max-w-none print:p-0">
+            <main className="relative z-0 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-w-0 print:max-w-none print:p-0">
                 {view === 'RESUME' && (
-                    <div className="flex flex-col xl:flex-row justify-center items-start gap-5 min-w-0">
-                        <div className="w-full max-w-full overflow-x-auto shadow-2xl rounded-lg">
+                    <div className="grid min-w-0 grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
+                        <div className="min-w-0 max-w-full overflow-x-auto rounded-lg shadow-2xl">
                             {renderTemplatePreview(editMode)}
                         </div>
                         {renderBulletReviewPanel()}
@@ -924,7 +924,7 @@ const ApplicationDetails: React.FC = () => {
                 )}
 
                 {view === 'COVER_LETTER' && (
-                    <div className="max-w-[210mm] mx-auto overflow-x-auto">
+                    <div className="mx-auto min-w-0 max-w-[210mm] overflow-x-auto">
                         <CoverLetterTemplate
                             resume={application.resume}
                             jobDescription={application.jobDescription}
@@ -935,7 +935,7 @@ const ApplicationDetails: React.FC = () => {
                 )}
 
                 {view === 'PORTFOLIO' && (
-                    <div className="min-w-0 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-lg bg-white dark:bg-gray-900 transition-colors">
+                    <div className="min-w-0 max-w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg transition-colors dark:border-gray-800 dark:bg-gray-900">
                         {/* Simulated Browser Bar */}
                         <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex items-center gap-2 print:hidden">
                             <div className="flex gap-1.5">
