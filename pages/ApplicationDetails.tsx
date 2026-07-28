@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { TailoredApplication, ApplicationStatus, UserProfile, Experience, Education, JobDescription } from '../types';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { TailoredApplication, ApplicationStatus, UserProfile, Experience, Education, JobDescription, ApplicationEventType, TailoringOptions } from '../types';
 import * as SupabaseService from '../services/supabaseService';
-import { tailorResume } from '../services/geminiService';
 import { useAuth } from '../contexts/AuthContext';
 import PortfolioPreview from '../components/PortfolioPreview';
 import CoverLetterTemplate from '../components/CoverLetterTemplate';
@@ -43,6 +42,7 @@ import {
     Sliders
 } from 'lucide-react';
 import CoverLetterPDF from '../components/CoverLetterPDF';
+import { downloadBlob, inspectRenderedResume, RenderedResumeReview } from '../services/pdfReviewService';
 
 const STATUS_COLORS: Record<ApplicationStatus, string> = {
     'Pending': 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200',
@@ -55,6 +55,7 @@ const STATUS_COLORS: Record<ApplicationStatus, string> = {
 const ApplicationDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [application, setApplication] = useState<TailoredApplication | null>(null);
     const [view, setView] = useState<'RESUME' | 'PORTFOLIO' | 'COVER_LETTER'>('RESUME');
     const [editMode, setEditMode] = useState(true); // Toggle between editor and preview
@@ -66,9 +67,14 @@ const ApplicationDetails: React.FC = () => {
     const [showThemePicker, setShowThemePicker] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern-minimal');
     const [selectedTheme, setSelectedTheme] = useState<TemplateId>('modern-minimal');
+    const [newEventType, setNewEventType] = useState<ApplicationEventType>('applied');
+    const [newEventDate, setNewEventDate] = useState('');
+    const [newEventNotes, setNewEventNotes] = useState('');
+    const [isReviewingPdf, setIsReviewingPdf] = useState(false);
+    const [renderReview, setRenderReview] = useState<RenderedResumeReview | null>(null);
 
     // Regeneration Options State
-    const [genOptions, setGenOptions] = useState({
+    const [genOptions, setGenOptions] = useState<TailoringOptions>({
         strategyPreset: 'Balanced',
         careerMode: 'Standard',
         critiqueMode: 'Blunt',
@@ -146,6 +152,7 @@ const ApplicationDetails: React.FC = () => {
         const apps = await SupabaseService.getApplications(user.id);
         const app = apps.find(a => a.id === id);
         setApplication(app || null);
+        setRenderReview(app?.renderReview || null);
         if (app) {
             lastSavedData.current = JSON.stringify({
                 resume: app.resume,
@@ -183,6 +190,41 @@ const ApplicationDetails: React.FC = () => {
             setApplication({ ...application, status: newStatus });
         } catch (error) {
             alert("Failed to update status");
+        }
+    };
+
+    const handleRecordEvent = async () => {
+        if (!application) return;
+        try {
+            const event = await SupabaseService.recordApplicationEvent(application.id, {
+                eventType: newEventType,
+                occurredAt: newEventDate ? new Date(`${newEventDate}T12:00:00`).toISOString() : null,
+                notes: newEventNotes,
+            });
+            setApplication({
+                ...application,
+                applicationEvents: [...(application.applicationEvents || []), event],
+            });
+            setNewEventNotes('');
+        } catch (error) {
+            alert(error instanceof Error ? error.message : 'Failed to record event');
+        }
+    };
+
+    const handleEditEvent = async (eventId: string) => {
+        if (!application) return;
+        const current = application.applicationEvents?.find((event) => event.id === eventId);
+        if (!current) return;
+        const notes = window.prompt('Update event notes', current.notes);
+        if (notes === null) return;
+        try {
+            const saved = await SupabaseService.updateApplicationEvent(eventId, { notes });
+            setApplication({
+                ...application,
+                applicationEvents: (application.applicationEvents || []).map((event) => event.id === eventId ? saved : event),
+            });
+        } catch (error) {
+            alert(error instanceof Error ? error.message : 'Failed to update event');
         }
     };
 
@@ -443,6 +485,10 @@ const ApplicationDetails: React.FC = () => {
     const handleTemplateChange = (templateId: TemplateId) => {
         setSelectedTemplate(templateId);
         setApplication(prev => prev ? ({ ...prev, template: templateId }) : null);
+        setRenderReview(null);
+        if (application) {
+            void SupabaseService.saveRenderedReview(application.id, application.tailoringRunId, undefined);
+        }
         setHasUnsavedChanges(true);
         setShowTemplatePicker(false);
     };
@@ -465,48 +511,18 @@ const ApplicationDetails: React.FC = () => {
                 throw new Error('Could not load base profile');
             }
 
-            const result = await tailorResume(
-                baseProfile,
-                application.jobDescription,
-                application.githubProjects || [],
-                application.showMatchScore ?? true,
-                1,
-                {
+            const job = await SupabaseService.startGenerationJob({
+                jd: application.jobDescription,
+                projects: application.githubProjects || [],
+                showScore: application.showMatchScore ?? true,
+                options: {
                     ...genOptions,
                     promptOverride: genOptions.promptOverride,
                     jobAnalysisOverride: application.jobAnalysis,
-                }
-            );
-            const { application: regenerated } = result;
-
-            setApplication(prev => prev ? ({
-                ...prev,
-                resume: regenerated.resume || prev.resume,
-                coverLetter: regenerated.coverLetter || prev.coverLetter,
-                matchScore: regenerated.matchScore ?? prev.matchScore,
-                keyKeywords: regenerated.keyKeywords || prev.keyKeywords,
-                jobAnalysis: regenerated.jobAnalysis || prev.jobAnalysis,
-                evidenceResolution: regenerated.evidenceResolution || prev.evidenceResolution,
-                diagnostics: regenerated.diagnostics || prev.diagnostics,
-                rewriteInsights: regenerated.rewriteInsights || prev.rewriteInsights,
-                assembledPromptPreview: regenerated.assembledPromptPreview || prev.assembledPromptPreview,
-                promptOverride: regenerated.promptOverride || prev.promptOverride,
-                selectedPlaybookId: regenerated.selectedPlaybookId || prev.selectedPlaybookId,
-                generationOptions: regenerated.generationOptions || {
-                    ...genOptions,
-                    jobAnalysisOverride: prev.jobAnalysis,
                 },
-                editSuggestions: regenerated.editSuggestions || prev.editSuggestions,
-                regenerationHistory: [
-                    ...(prev.regenerationHistory || []),
-                    ...((regenerated.regenerationHistory || []).filter((entry) =>
-                        !(prev.regenerationHistory || []).some((existing) =>
-                            existing.timestamp === entry.timestamp && existing.instructions === entry.instructions
-                        )
-                    )),
-                ],
-            }) : null);
-            setHasUnsavedChanges(true);
+            });
+            await SupabaseService.kickGenerationJob(job.id);
+            navigate('/admin/new');
         } catch (error) {
             console.error('Regenerate error:', error);
             alert('Failed to regenerate. Please try again.');
@@ -591,6 +607,70 @@ const ApplicationDetails: React.FC = () => {
             case 'ats-optimized': return <ATSOptimizedPDF {...props} />;
             default: return <ModernMinimalPDF {...props} />;
         }
+    };
+
+    const handleReviewedResumeDownload = async () => {
+        const document = getPDFDocument();
+        if (!document || !application) return;
+        setIsReviewingPdf(true);
+        try {
+            await SupabaseService.markRenderReviewStarted(application.tailoringRunId);
+            const { blob, report } = await inspectRenderedResume(document, true);
+            setRenderReview(report);
+            await SupabaseService.saveRenderedReview(application.id, application.tailoringRunId, {
+                ...report,
+                reviewedAt: new Date().toISOString(),
+            });
+            setApplication({ ...application, renderReview: { ...report, reviewedAt: new Date().toISOString() } });
+            downloadBlob(blob, `${application.resume.fullName.replace(/\s+/g, '_')}_Resume.pdf`);
+        } catch (error) {
+            await SupabaseService.saveRenderedReview(application.id, application.tailoringRunId, {
+                pageCount: 0,
+                warnings: [{
+                    code: 'render_review_failed',
+                    severity: 'warning',
+                    message: error instanceof Error ? error.message : 'Could not validate the rendered PDF.',
+                }],
+                reviewedAt: new Date().toISOString(),
+            }).catch(() => undefined);
+            alert(error instanceof Error ? error.message : 'Could not validate the rendered PDF.');
+        } finally {
+            setIsReviewingPdf(false);
+        }
+    };
+
+    const renderBulletReviewPanel = () => {
+        if (!application) return null;
+        const issues = application.qualityReport?.issues || [];
+        const rewriteGroups = application.rewriteInsights?.bullets || [];
+        return (
+            <aside className="w-full xl:w-80 shrink-0 space-y-3 print:hidden">
+                <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+                    <h3 className="font-bold">Bullet evidence & recruiter review</h3>
+                    <p className="mt-1 text-xs text-gray-500">Warnings and requirement coverage are aligned to each resume bullet.</p>
+                </div>
+                {application.resume.experience.flatMap((role) =>
+                    (role.description || []).map((bullet, bulletIndex) => {
+                        const bulletIssues = issues.filter((issue) => issue.experienceId === role.id && issue.bulletIndex === bulletIndex);
+                        const rewrite = rewriteGroups.find((group) => group.experienceId === role.id)?.rewrites?.[bulletIndex];
+                        const coverage = (rewrite?.requirementIds || []).map((requirementId) =>
+                            application.evidenceResolution?.matches?.find((match) => match.requirementId === requirementId),
+                        ).filter(Boolean);
+                        return (
+                            <div key={`${role.id}-${bulletIndex}`} className="rounded-xl border border-gray-200 bg-white p-4 text-sm dark:border-gray-800 dark:bg-gray-900">
+                                <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">{role.role} · bullet {bulletIndex + 1}</div>
+                                <p className="mt-2 line-clamp-3 text-gray-700 dark:text-gray-300">{bullet}</p>
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                    {coverage.map((match) => <span key={match!.requirementId} className={`rounded-full px-2 py-0.5 text-xs ${match!.coverage === 'strong' ? 'bg-emerald-100 text-emerald-800' : match!.coverage === 'partial' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}`}>{match!.requirementId}: {match!.coverage}</span>)}
+                                    {(rewrite?.evidenceIds || []).map((evidenceId) => <span key={evidenceId} className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700 dark:bg-blue-950 dark:text-blue-200">evidence {evidenceId.slice(0, 8)}</span>)}
+                                </div>
+                                {bulletIssues.map((issue) => <p key={issue.id} className="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">{issue.message}</p>)}
+                            </div>
+                        );
+                    }),
+                )}
+            </aside>
+        );
     };
 
     if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
@@ -774,19 +854,15 @@ const ApplicationDetails: React.FC = () => {
                                 </button>
 
                                 {view === 'RESUME' && application && (
-                                    <PDFDownloadLink
-                                        key={`${selectedTemplate}-${JSON.stringify(application.resume)}`}
-                                        document={getPDFDocument()!}
-                                        fileName={`${application.resume.fullName.replace(/\s+/g, '_')}_Resume.pdf`}
-                                        className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-900 dark:bg-gray-700 text-white hover:bg-gray-800 dark:hover:bg-gray-600 transition"
+                                    <button
+                                        type="button"
+                                        disabled={isReviewingPdf}
+                                        onClick={() => void handleReviewedResumeDownload()}
+                                        className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-900 dark:bg-gray-700 text-white hover:bg-gray-800 dark:hover:bg-gray-600 transition disabled:opacity-50"
                                     >
-                                        {({ loading: pdfLoading }) => (
-                                            <>
-                                                {pdfLoading ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />}
-                                                <span className="hidden sm:inline">{pdfLoading ? 'Preparing...' : 'Download'}</span>
-                                            </>
-                                        )}
-                                    </PDFDownloadLink>
+                                        {isReviewingPdf ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />}
+                                        <span className="hidden sm:inline">{isReviewingPdf ? 'Reviewing PDF…' : 'Review & Download'}</span>
+                                    </button>
                                 )}
 
                                 {view === 'COVER_LETTER' && application && (
@@ -839,10 +915,11 @@ const ApplicationDetails: React.FC = () => {
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-w-0 print:max-w-none print:p-0">
                 {view === 'RESUME' && (
-                    <div className="flex justify-center min-w-0">
+                    <div className="flex flex-col xl:flex-row justify-center items-start gap-5 min-w-0">
                         <div className="w-full max-w-full overflow-x-auto shadow-2xl rounded-lg">
                             {renderTemplatePreview(editMode)}
                         </div>
+                        {renderBulletReviewPanel()}
                     </div>
                 )}
 
@@ -896,16 +973,74 @@ const ApplicationDetails: React.FC = () => {
                             template={selectedTemplate}
                             theme={selectedTheme as any}
                             type="web"
-                            onDownloadResume={() => {
-                                const link = document.getElementById('web-preview-resume-download');
-                                if (link) link.click();
-                            }}
+                            onDownloadResume={() => void handleReviewedResumeDownload()}
                         />
                     </div>
                 )}
 
-                {(application.jobAnalysis || application.diagnostics || application.assembledPromptPreview || application.promptOverride || application.editSuggestions?.length || application.rewriteInsights || application.evidenceResolution || application.searchSources?.length) && (
+                {(renderReview || application.jobAnalysis || application.qualityReport || application.applicationEvents?.length || application.diagnostics || application.assembledPromptPreview || application.promptOverride || application.editSuggestions?.length || application.rewriteInsights || application.evidenceResolution || application.searchSources?.length) && (
                     <section className="max-w-5xl mx-auto mt-8 grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 xl:col-span-2">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Application timeline</h3>
+                            <p className="mt-1 text-sm text-gray-500">Unknown historical dates stay unknown and are excluded from timing metrics.</p>
+                            <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_2fr_auto]">
+                                <select value={newEventType} onChange={(event) => setNewEventType(event.target.value as ApplicationEventType)} className="rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700">
+                                    {['created', 'applied', 'reply_received', 'screening', 'interview_scheduled', 'interview_completed', 'rejected', 'offer', 'withdrawn', 'no_response'].map((type) => <option key={type} value={type}>{type.replaceAll('_', ' ')}</option>)}
+                                </select>
+                                <input type="date" value={newEventDate} onChange={(event) => setNewEventDate(event.target.value)} className="rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700" />
+                                <input value={newEventNotes} onChange={(event) => setNewEventNotes(event.target.value)} placeholder="Optional notes or interview round" className="rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700" />
+                                <button onClick={() => void handleRecordEvent()} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white">Record</button>
+                            </div>
+                            <ol className="mt-4 space-y-2">
+                                {(application.applicationEvents || []).map((event) => (
+                                    <li key={event.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm dark:bg-gray-950">
+                                        <span className="font-medium capitalize">{event.eventType.replaceAll('_', ' ')}</span>
+                                        <span className="flex items-center gap-2 text-gray-500">
+                                            {event.occurredAt ? new Date(event.occurredAt).toLocaleDateString() : 'Date unknown'}{event.notes ? ` · ${event.notes}` : ''}
+                                            <button type="button" onClick={() => void handleEditEvent(event.id)} className="text-blue-600 hover:underline">Edit</button>
+                                        </span>
+                                    </li>
+                                ))}
+                            </ol>
+                        </div>
+
+                        {renderReview && (
+                            <div className={`rounded-xl border p-5 xl:col-span-2 ${renderReview.warnings.some((warning) => warning.severity === 'error') ? 'border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950/20' : 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/20'}`}>
+                                <h3 className="text-lg font-bold">Rendered PDF review · {renderReview.pageCount} page{renderReview.pageCount === 1 ? '' : 's'}</h3>
+                                {renderReview.warnings.length ? (
+                                    <ul className="mt-3 space-y-2 text-sm">
+                                        {renderReview.warnings.map((warning, index) => <li key={`${warning.code}-${index}`}><span className="font-semibold uppercase">{warning.severity}</span> · {warning.message}</li>)}
+                                    </ul>
+                                ) : (
+                                    <p className="mt-2 text-sm">No page overflow, orphan-page, text-extraction, or model layout warnings were found.</p>
+                                )}
+                                <p className="mt-3 text-xs text-gray-500">Warnings are nonblocking; the downloaded file is the exact PDF that was reviewed.</p>
+                            </div>
+                        )}
+
+                        {application.qualityReport && (
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900/50 dark:bg-amber-950/20 xl:col-span-2">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <h3 className="text-lg font-bold">Recruiter-quality review</h3>
+                                    <span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-amber-800 dark:bg-gray-900 dark:text-amber-200">
+                                        {Math.round(Object.values(application.qualityReport.scores || {}).reduce((sum, score) => sum + score, 0) / Math.max(1, Object.keys(application.qualityReport.scores || {}).length))}/100
+                                    </span>
+                                </div>
+                                <p className="mt-2 text-sm">{application.qualityReport.passed ? 'The independent recruiter review passed.' : 'Review the remaining advisory findings before export.'}</p>
+                                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                                    {(application.qualityReport.issues || []).map((issue) => (
+                                        <div key={issue.id} className="rounded-lg border border-amber-200 bg-white p-3 text-sm dark:border-amber-900/50 dark:bg-gray-900">
+                                            <div className="font-semibold capitalize">{issue.severity} · {issue.code.replaceAll('_', ' ')}</div>
+                                            <p className="mt-1 text-gray-600 dark:text-gray-300">{issue.message}</p>
+                                            {issue.repairInstruction && <p className="mt-2 text-blue-700 dark:text-blue-300">Suggested fix: {issue.repairInstruction}</p>}
+                                            {issue.experienceId && issue.bulletIndex >= 0 && <p className="mt-2 text-xs text-gray-500">Resume bullet {issue.bulletIndex + 1} in role {issue.experienceId}</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="mt-4 text-xs text-gray-500">Warnings are advisory. Export remains available after review.</p>
+                            </div>
+                        )}
+
                         {!!application.searchSources?.length && (
                             <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 xl:col-span-2">
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Application Origin</h3>
@@ -943,6 +1078,47 @@ const ApplicationDetails: React.FC = () => {
                                             {(application.jobAnalysis.painPoints || []).map((item) => <li key={item}>• {item}</li>)}
                                         </ul>
                                     </div>
+                                    {!!application.jobAnalysis.requirementsV2?.length && (
+                                        <div>
+                                            <span className="font-semibold">Prioritized requirements:</span>
+                                            <ol className="mt-2 space-y-2">
+                                                {application.jobAnalysis.requirementsV2.map((requirement) => {
+                                                    const match = application.evidenceResolution?.matches?.find((item) => item.requirementId === requirement.id);
+                                                    return (
+                                                        <li key={requirement.id} className="rounded-lg bg-gray-50 p-2 dark:bg-gray-950">
+                                                            <div className="flex items-start justify-between gap-2">
+                                                                <span>{requirement.text}</span>
+                                                                <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${match?.coverage === 'strong' ? 'bg-emerald-100 text-emerald-800' : match?.coverage === 'partial' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}`}>
+                                                                    {match?.coverage || 'gap'}
+                                                                </span>
+                                                            </div>
+                                                            <p className="mt-1 text-xs text-gray-500">{requirement.priority.replaceAll('_', ' ')} · importance {requirement.importance}/100 · expects {requirement.expectedProof}</p>
+                                                            {match?.missingDetail && <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">Needs: {match.missingDetail}</p>}
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ol>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {application.contentStrategy && (
+                            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Content plan</h3>
+                                <p className="mt-1 text-sm text-gray-500">Planned for {application.contentStrategy.targetPageCount} pages before prose generation.</p>
+                                <div className="mt-3 text-sm">
+                                    <div className="font-semibold">Role order</div>
+                                    <ol className="mt-1 list-decimal pl-5 text-gray-600 dark:text-gray-300">
+                                        {application.contentStrategy.selectedExperienceIds.map((roleId) => <li key={roleId}>{application.resume.experience.find((role) => role.id === roleId)?.role || roleId}</li>)}
+                                    </ol>
+                                    {!!application.contentStrategy.omittedExperienceIds?.length && (
+                                        <>
+                                            <div className="mt-3 font-semibold">Intentionally omitted</div>
+                                            <ul className="mt-1 space-y-1 text-gray-600 dark:text-gray-300">{application.contentStrategy.omittedExperienceIds.map((roleId) => <li key={roleId}>• {application.resume.experience.find((role) => role.id === roleId)?.role || roleId}</li>)}</ul>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -1179,7 +1355,7 @@ const ApplicationDetails: React.FC = () => {
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preset</label>
                                     <select
                                         value={genOptions.strategyPreset}
-                                        onChange={e => setGenOptions({ ...genOptions, strategyPreset: e.target.value })}
+                                        onChange={e => setGenOptions({ ...genOptions, strategyPreset: e.target.value as NonNullable<TailoringOptions['strategyPreset']> })}
                                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
                                     >
                                         <option value="Balanced">Balanced</option>
@@ -1191,7 +1367,7 @@ const ApplicationDetails: React.FC = () => {
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Career Mode</label>
                                     <select
                                         value={genOptions.careerMode}
-                                        onChange={e => setGenOptions({ ...genOptions, careerMode: e.target.value })}
+                                        onChange={e => setGenOptions({ ...genOptions, careerMode: e.target.value as NonNullable<TailoringOptions['careerMode']> })}
                                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
                                     >
                                         <option value="Standard">Standard</option>
@@ -1202,7 +1378,7 @@ const ApplicationDetails: React.FC = () => {
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Critique</label>
                                     <select
                                         value={genOptions.critiqueMode}
-                                        onChange={e => setGenOptions({ ...genOptions, critiqueMode: e.target.value })}
+                                        onChange={e => setGenOptions({ ...genOptions, critiqueMode: e.target.value as NonNullable<TailoringOptions['critiqueMode']> })}
                                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
                                     >
                                         <option value="Blunt">Blunt</option>

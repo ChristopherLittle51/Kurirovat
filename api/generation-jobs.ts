@@ -86,8 +86,8 @@ export default async function handler(req: any, res: any) {
       jd,
       githubProjects: projects,
       includeScore: showScore,
-      targetPageCount: 1,
-      options,
+      targetPageCount: 2,
+      options: { ...(options || {}), targetPageCount: 2 },
       leadContext,
     };
 
@@ -99,6 +99,17 @@ export default async function handler(req: any, res: any) {
         stage: 'Queued',
         progress: 0,
         request_payload: requestPayload,
+        working_state: {},
+        pending_questions: [],
+        accepted_evidence_ids: [],
+        prompt_version: 'tailoring-v2.0.0',
+        schema_version: 'tailoring-v2.0.0',
+        model_config: {
+          extraction: { model: 'gpt-5.6-terra', reasoning: 'medium' },
+          judgment: { model: 'gpt-5.6-sol', reasoning: 'high' },
+        },
+        usage_metrics: {},
+        repair_count: 0,
       })
       .select()
       .single();

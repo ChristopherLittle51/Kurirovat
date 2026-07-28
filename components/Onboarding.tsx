@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, Experience, Education, GithubProject, AchievementBankEntry, TargetRegion } from '../types';
 import { Plus, Trash2, ChevronRight, Check, UploadCloud, Loader2, FileText, Save, Github, Star } from 'lucide-react';
-import { parseResumeFromPdf, importProfileSource } from '../services/geminiService';
+import { parseResumeFromPdf, importProfileSource } from '../services/openaiService';
 import { fetchGithubRepos } from '../services/githubService';
 import PhotoUpload from './PhotoUpload';
 
@@ -286,7 +286,7 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2 transition-colors">
           {step === 0 && !initialData
-            ? "Upload your current PDF resume. Gemini will extract your details automatically."
+            ? "Upload your current PDF resume. OpenAI will extract your details automatically."
             : "Review and update your profile details."}
         </p>
         {step > 0 && renderStepIndicator()}
@@ -304,7 +304,7 @@ const Onboarding: React.FC<Props> = ({ onComplete, initialData }) => {
           {isUploading ? (
             <div className="flex flex-col items-center animate-pulse">
               <Loader2 className="w-12 h-12 text-blue-600 dark:text-blue-400 animate-spin mb-4" />
-              <p className="text-lg font-medium text-gray-700 dark:text-gray-200">Analyzing PDF with Gemini...</p>
+              <p className="text-lg font-medium text-gray-700 dark:text-gray-200">Analyzing PDF with OpenAI...</p>
               <p className="text-sm text-gray-500 dark:text-gray-400">This may take a few seconds.</p>
             </div>
           ) : (

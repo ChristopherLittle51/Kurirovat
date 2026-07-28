@@ -1,5 +1,5 @@
 {
   "name": "Kurirovat",
-  "description": "A dynamic resume builder and portfolio generator powered by Gemini. Tailors your professional profile to specific job descriptions instantly.",
+  "description": "An evidence-first resume builder and application coach powered by OpenAI.",
   "requestFramePermissions": []
 }

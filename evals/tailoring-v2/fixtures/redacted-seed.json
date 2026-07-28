@@ -1,0 +1,26 @@
+{
+  "description": "Redacted schema fixture. Replace or extend locally with private historical pairs; never commit candidate-identifying content.",
+  "comparisons": [
+    {
+      "id": "synthetic-platform-role",
+      "outcomeLabel": "unknown",
+      "baseline": { "source": "legacy-production-baseline" },
+      "v2": {
+        "unsupportedNumericClaims": [],
+        "pageCount": 2,
+        "structuredOutputValid": true,
+        "evidenceReferencesValid": true
+      },
+      "review": {
+        "requirementCoverage": 4,
+        "impact": 4,
+        "specificity": 4,
+        "truthfulness": 5,
+        "chronology": 5,
+        "scanQuality": 4,
+        "coverLetterUsefulness": 4,
+        "winner": "v2"
+      }
+    }
+  ]
+}

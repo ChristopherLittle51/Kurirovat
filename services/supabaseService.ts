@@ -11,6 +11,9 @@ import {
     JobDescription,
     GithubProject,
     TailoringOptions,
+    CandidateEvidence,
+    ApplicationEvent,
+    ApplicationEventType,
 } from '../types';
 
 const defaultRegion = (region?: Partial<TargetRegion>): TargetRegion => ({
@@ -18,6 +21,9 @@ const defaultRegion = (region?: Partial<TargetRegion>): TargetRegion => ({
     label: region?.label || '',
     remotePreference: region?.remotePreference || 'flexible',
 });
+
+const nonEmptyRecord = (value: any) =>
+    value && typeof value === 'object' && Object.keys(value).length ? value : undefined;
 
 const normalizeProfile = (data: any): UserProfile => ({
     fullName: data.full_name || '',
@@ -49,7 +55,9 @@ const normalizeProfile = (data: any): UserProfile => ({
     learnedPreferenceSuggestions: data.learned_preference_suggestions || [],
 });
 
-const normalizeApplication = (app: any): TailoredApplication => ({
+const normalizeApplication = (app: any): TailoredApplication => {
+ const privateData = app.private_artifacts || {};
+ return ({
     id: app.id,
     createdAt: new Date(app.created_at).getTime(),
     jobDescription: {
@@ -70,17 +78,23 @@ const normalizeApplication = (app: any): TailoredApplication => ({
     portfolioTheme: app.portfolio_theme,
     profilePhotoUrl: app.profile_photo_url,
     githubLastSyncedAt: app.github_last_synced_at,
-    jobAnalysis: app.job_analysis,
-    evidenceResolution: app.evidence_resolution,
-    diagnostics: app.diagnostics,
-    rewriteInsights: app.rewrite_insights,
-    assembledPromptPreview: app.prompt_preview,
-    promptOverride: app.generation_options?.promptOverride || app.generation_options?.promptPreviewOverride || '',
-    selectedPlaybookId: app.selected_playbook_id,
-    generationOptions: app.generation_options,
-    editSuggestions: app.edit_suggestions,
-    regenerationHistory: app.regeneration_history || [],
-});
+    jobAnalysis: nonEmptyRecord(privateData.job_analysis),
+    evidenceResolution: nonEmptyRecord(privateData.evidence_resolution),
+    diagnostics: nonEmptyRecord(privateData.diagnostics),
+    rewriteInsights: nonEmptyRecord(privateData.rewrite_insights),
+    assembledPromptPreview: privateData.prompt_preview,
+    promptOverride: privateData.generation_options?.promptOverride || privateData.generation_options?.promptPreviewOverride || '',
+    selectedPlaybookId: privateData.selected_playbook_id,
+    generationOptions: nonEmptyRecord(privateData.generation_options),
+    editSuggestions: privateData.edit_suggestions,
+    regenerationHistory: privateData.regeneration_history || [],
+    contentStrategy: nonEmptyRecord(privateData.content_strategy),
+    qualityReport: nonEmptyRecord(privateData.quality_report),
+    renderReview: nonEmptyRecord(privateData.render_review),
+    tailoringRunId: app.tailoring_run_id,
+    applicationEvents: app.application_events || [],
+ });
+};
 
 const normalizeGenerationJob = (job: any): GenerationJob => ({
     id: job.id,
@@ -96,6 +110,15 @@ const normalizeGenerationJob = (job: any): GenerationJob => ({
     updatedAt: job.updated_at,
     startedAt: job.started_at,
     finishedAt: job.finished_at,
+    workingState: job.working_state || {},
+    pendingQuestions: job.pending_questions || [],
+    acceptedEvidenceIds: job.accepted_evidence_ids || [],
+    promptVersion: job.prompt_version,
+    schemaVersion: job.schema_version,
+    modelConfig: job.model_config || {},
+    usageMetrics: job.usage_metrics || {},
+    qualityReport: nonEmptyRecord(job.quality_report),
+    repairCount: job.repair_count || 0,
 });
 
 export const getProfile = async (userId: string): Promise<UserProfile | null> => {
@@ -149,6 +172,35 @@ export const saveProfile = async (userId: string, profile: UserProfile): Promise
     if (error) {
         console.error('Error saving profile:', error);
         throw error;
+    }
+
+    const resumeEvidence = (profile.experience || []).flatMap((experience) =>
+        (experience.description || [])
+            .map((bullet, bulletIndex) => ({
+                user_id: userId,
+                legacy_id: `resume:${experience.id}:${bulletIndex + 1}`,
+                title: [experience.company, experience.role].filter(Boolean).join(' - '),
+                situation: [experience.role, experience.company ? `at ${experience.company}` : ''].filter(Boolean).join(' '),
+                action: bullet,
+                source_type: 'resume',
+                source_label: [experience.company, experience.role].filter(Boolean).join(' - '),
+                source_excerpt: bullet,
+                confidence: 'medium',
+                role_ids: [experience.id],
+                nice_to_use: true,
+                dedupe_key: bullet.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 240),
+                updated_at: new Date().toISOString(),
+            }))
+            .filter((item) => item.action.trim()),
+    );
+    if (resumeEvidence.length) {
+        const { error: evidenceError } = await supabase
+            .from('candidate_evidence')
+            .upsert(resumeEvidence, { onConflict: 'user_id,legacy_id' });
+        if (evidenceError) {
+            console.error('Error synchronizing resume evidence:', evidenceError);
+            throw evidenceError;
+        }
     }
 };
 
@@ -236,7 +288,7 @@ export const getRecentGenerationJobs = async (userId: string): Promise<Generatio
         .from('generation_jobs')
         .select('*')
         .eq('user_id', userId)
-        .in('status', ['queued', 'running', 'failed', 'succeeded'])
+        .in('status', ['queued', 'running', 'needs_input', 'failed', 'succeeded', 'cancelled'])
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -260,11 +312,36 @@ export const getApplications = async (userId: string): Promise<TailoredApplicati
         return [];
     }
 
-    return data.map(normalizeApplication);
+    const applicationIds = data.map((item: any) => item.id);
+    const [{ data: events }, { data: privateArtifacts }] = applicationIds.length
+        ? await Promise.all([
+            supabase
+                .from('application_events')
+                .select('*')
+                .in('application_id', applicationIds)
+                .order('recorded_at', { ascending: true }),
+            supabase
+                .from('application_private_artifacts')
+                .select('*')
+                .in('application_id', applicationIds),
+        ])
+        : [{ data: [] as any[] }, { data: [] as any[] }];
+    const eventsByApplication = (events || []).reduce((acc: Record<string, ApplicationEvent[]>, item: any) => {
+        const event = normalizeApplicationEvent(item);
+        acc[event.applicationId] = [...(acc[event.applicationId] || []), event];
+        return acc;
+    }, {});
+
+    const privateByApplication = Object.fromEntries((privateArtifacts || []).map((item: any) => [item.application_id, item]));
+    return data.map((app: any) => normalizeApplication({
+        ...app,
+        application_events: eventsByApplication[app.id] || [],
+        private_artifacts: privateByApplication[app.id] || {},
+    }));
 };
 
 export const saveApplication = async (userId: string, application: TailoredApplication): Promise<void> => {
-    const { error } = await supabase
+    const { data: saved, error } = await supabase
         .from('applications')
         .insert({
             user_id: userId,
@@ -282,28 +359,43 @@ export const saveApplication = async (userId: string, application: TailoredAppli
             profile_photo_url: application.profilePhotoUrl || application.resume?.profilePhotoUrl,
             template: application.template,
             portfolio_theme: application.portfolioTheme,
-            job_analysis: application.jobAnalysis,
-            evidence_resolution: application.evidenceResolution,
-            diagnostics: application.diagnostics,
-            rewrite_insights: application.rewriteInsights,
-            prompt_preview: application.assembledPromptPreview,
-            selected_playbook_id: application.selectedPlaybookId,
-            generation_options: {
-                ...(application.generationOptions || {}),
-                promptOverride: application.promptOverride ?? application.generationOptions?.promptOverride,
-            },
-            edit_suggestions: application.editSuggestions,
-            regeneration_history: application.regenerationHistory,
-        });
+            tailoring_run_id: application.tailoringRunId,
+        })
+        .select('id')
+        .single();
 
     if (error) {
         console.error('Error saving application:', error);
         throw error;
     }
+
+    const { error: privateError } = await supabase
+        .from('application_private_artifacts')
+        .upsert({
+            application_id: saved.id,
+            user_id: userId,
+            job_analysis: application.jobAnalysis || {},
+            evidence_resolution: application.evidenceResolution || {},
+            diagnostics: application.diagnostics || {},
+            rewrite_insights: application.rewriteInsights || {},
+            prompt_preview: application.assembledPromptPreview || '',
+            selected_playbook_id: application.selectedPlaybookId,
+            generation_options: {
+                ...(application.generationOptions || {}),
+                promptOverride: application.promptOverride ?? application.generationOptions?.promptOverride,
+            },
+            edit_suggestions: application.editSuggestions || [],
+            regeneration_history: application.regenerationHistory || [],
+            content_strategy: application.contentStrategy || {},
+            quality_report: application.qualityReport || {},
+            updated_at: new Date().toISOString(),
+        });
+    if (privateError) throw privateError;
 };
 
 export const updateApplication = async (appId: string, updates: Partial<TailoredApplication>): Promise<void> => {
     const updatePayload: any = {};
+    const privatePayload: any = {};
 
     if (updates.resume) updatePayload.resume_data = updates.resume;
     if (updates.coverLetter !== undefined) updatePayload.cover_letter = updates.coverLetter;
@@ -316,36 +408,64 @@ export const updateApplication = async (appId: string, updates: Partial<Tailored
         updatePayload.role_title = updates.jobDescription.roleTitle;
         updatePayload.raw_job_description = updates.jobDescription.rawText;
     }
-    if (updates.jobAnalysis) updatePayload.job_analysis = updates.jobAnalysis;
-    if (updates.evidenceResolution) updatePayload.evidence_resolution = updates.evidenceResolution;
-    if (updates.diagnostics) updatePayload.diagnostics = updates.diagnostics;
-    if (updates.rewriteInsights) updatePayload.rewrite_insights = updates.rewriteInsights;
-    if (updates.assembledPromptPreview !== undefined) updatePayload.prompt_preview = updates.assembledPromptPreview;
-    if (updates.selectedPlaybookId !== undefined) updatePayload.selected_playbook_id = updates.selectedPlaybookId;
+    if (updates.jobAnalysis) privatePayload.job_analysis = updates.jobAnalysis;
+    if (updates.evidenceResolution) privatePayload.evidence_resolution = updates.evidenceResolution;
+    if (updates.diagnostics) privatePayload.diagnostics = updates.diagnostics;
+    if (updates.rewriteInsights) privatePayload.rewrite_insights = updates.rewriteInsights;
+    if (updates.assembledPromptPreview !== undefined) privatePayload.prompt_preview = updates.assembledPromptPreview;
+    if (updates.selectedPlaybookId !== undefined) privatePayload.selected_playbook_id = updates.selectedPlaybookId;
     if (updates.generationOptions || updates.promptOverride !== undefined) {
-        updatePayload.generation_options = {
+        privatePayload.generation_options = {
             ...(updates.generationOptions || {}),
             promptOverride: updates.promptOverride ?? updates.generationOptions?.promptOverride,
         };
     }
-    if (updates.editSuggestions) updatePayload.edit_suggestions = updates.editSuggestions;
-    if (updates.regenerationHistory) updatePayload.regeneration_history = updates.regenerationHistory;
+    if (updates.editSuggestions) privatePayload.edit_suggestions = updates.editSuggestions;
+    if (updates.regenerationHistory) privatePayload.regeneration_history = updates.regenerationHistory;
+    if (updates.contentStrategy) privatePayload.content_strategy = updates.contentStrategy;
+    if (updates.qualityReport) privatePayload.quality_report = updates.qualityReport;
 
-    if (Object.keys(updatePayload).length === 0) return;
+    if (Object.keys(updatePayload).length) {
+        const { error } = await supabase
+            .from('applications')
+            .update(updatePayload)
+            .eq('id', appId);
 
-    const { error } = await supabase
-        .from('applications')
-        .update(updatePayload)
-        .eq('id', appId);
+        if (error) {
+            console.error('Error updating application:', error);
+            throw error;
+        }
+    }
 
-    if (error) {
-        console.error('Error updating application:', error);
-        throw error;
+    if (Object.keys(privatePayload).length) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('You must be signed in.');
+        const { error } = await supabase
+            .from('application_private_artifacts')
+            .upsert({
+                application_id: appId,
+                user_id: user.id,
+                ...privatePayload,
+                updated_at: new Date().toISOString(),
+            });
+        if (error) throw error;
     }
 };
 
 export const updateApplicationStatus = async (appId: string, status: string): Promise<void> => {
-    return updateApplication(appId, { status: status as any });
+    const eventMap: Record<string, ApplicationEventType> = {
+        Pending: 'legacy_status_imported',
+        Sent: 'applied',
+        Replied: 'reply_received',
+        'Interview Scheduled': 'interview_scheduled',
+        Rejected: 'rejected',
+    };
+    await recordApplicationEvent(appId, {
+        eventType: eventMap[status] || 'legacy_status_imported',
+        occurredAt: new Date().toISOString(),
+        notes: `Status updated to ${status}.`,
+        metadata: { status },
+    });
 };
 
 export const getApplicationBySlug = async (slug: string): Promise<TailoredApplication | null> => {
@@ -373,6 +493,288 @@ export const deleteApplication = async (appId: string): Promise<void> => {
         console.error('Error deleting application:', error);
         throw error;
     }
+};
+
+const normalizeCandidateEvidence = (item: any): CandidateEvidence => ({
+    id: item.id,
+    legacyId: item.legacy_id,
+    title: item.title || '',
+    situation: item.situation || '',
+    action: item.action || '',
+    result: item.result || '',
+    metric: item.metric || '',
+    scope: item.scope || '',
+    tools: item.tools || [],
+    teamSize: item.team_size || '',
+    domain: item.domain || '',
+    tags: item.tags || [],
+    sourceType: item.source_type || 'manual',
+    sourceLabel: item.source_label || '',
+    sourceExcerpt: item.source_excerpt || '',
+    confidence: item.confidence || 'medium',
+    roleIds: item.role_ids || [],
+    mustInclude: Boolean(item.must_include),
+    niceToUse: item.nice_to_use !== false,
+    unavailable: Boolean(item.unavailable),
+    disabled: Boolean(item.disabled),
+    roleFamilyConstraints: item.role_family_constraints || [],
+    dedupeKey: item.dedupe_key,
+    lastUsedAt: item.last_used_at,
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
+});
+
+const evidenceToRow = (userId: string, evidence: CandidateEvidence) => ({
+    id: evidence.id,
+    user_id: userId,
+    legacy_id: evidence.legacyId,
+    title: evidence.title,
+    situation: evidence.situation,
+    action: evidence.action,
+    result: evidence.result,
+    metric: evidence.metric,
+    scope: evidence.scope,
+    tools: evidence.tools,
+    team_size: evidence.teamSize,
+    domain: evidence.domain,
+    tags: evidence.tags,
+    source_type: evidence.sourceType,
+    source_label: evidence.sourceLabel,
+    source_excerpt: evidence.sourceExcerpt,
+    confidence: evidence.confidence,
+    role_ids: evidence.roleIds,
+    must_include: evidence.mustInclude,
+    nice_to_use: evidence.niceToUse,
+    unavailable: evidence.unavailable,
+    disabled: evidence.disabled,
+    role_family_constraints: evidence.roleFamilyConstraints,
+    dedupe_key: evidence.dedupeKey,
+    updated_at: new Date().toISOString(),
+});
+
+export const getCandidateEvidence = async (userId: string): Promise<CandidateEvidence[]> => {
+    const [{ data, error }, { data: usage, error: usageError }] = await Promise.all([
+        supabase
+            .from('candidate_evidence')
+            .select('*')
+            .eq('user_id', userId)
+            .order('updated_at', { ascending: false }),
+        supabase
+            .from('candidate_evidence_usage')
+            .select('*')
+            .eq('user_id', userId)
+            .order('used_at', { ascending: false }),
+    ]);
+    if (error) throw error;
+    if (usageError) throw usageError;
+    const usageByEvidence = (usage || []).reduce((acc: Record<string, CandidateEvidence['usageHistory']>, item: any) => {
+        acc[item.evidence_id] = [
+            ...(acc[item.evidence_id] || []),
+            {
+                applicationId: item.application_id,
+                generationJobId: item.generation_job_id,
+                usedAt: item.used_at,
+                locations: item.locations || [],
+            },
+        ];
+        return acc;
+    }, {});
+    return (data || []).map((item: any) => ({
+        ...normalizeCandidateEvidence(item),
+        usageHistory: usageByEvidence[item.id] || [],
+    }));
+};
+
+export const saveCandidateEvidence = async (
+    userId: string,
+    evidence: CandidateEvidence,
+): Promise<CandidateEvidence> => {
+    const { data, error } = await supabase
+        .from('candidate_evidence')
+        .upsert(evidenceToRow(userId, evidence))
+        .select('*')
+        .single();
+    if (error) throw error;
+    return normalizeCandidateEvidence(data);
+};
+
+export const mergeCandidateEvidence = async (
+    userId: string,
+    keep: CandidateEvidence,
+    removeId: string,
+): Promise<CandidateEvidence> => {
+    const saved = await saveCandidateEvidence(userId, keep);
+    const { error } = await supabase
+        .from('candidate_evidence')
+        .delete()
+        .eq('id', removeId)
+        .eq('user_id', userId);
+    if (error) throw error;
+    return saved;
+};
+
+export const deleteCandidateEvidence = async (userId: string, evidenceId: string): Promise<void> => {
+    const { error } = await supabase
+        .from('candidate_evidence')
+        .delete()
+        .eq('id', evidenceId)
+        .eq('user_id', userId);
+    if (error) throw error;
+};
+
+const normalizeApplicationEvent = (item: any): ApplicationEvent => ({
+    id: item.id,
+    applicationId: item.application_id,
+    eventType: item.event_type,
+    occurredAt: item.occurred_at,
+    recordedAt: item.recorded_at,
+    notes: item.notes || '',
+    interviewRound: item.interview_round,
+    metadata: item.metadata || {},
+});
+
+export const getApplicationEvents = async (applicationId: string): Promise<ApplicationEvent[]> => {
+    const { data, error } = await supabase
+        .from('application_events')
+        .select('*')
+        .eq('application_id', applicationId)
+        .order('recorded_at', { ascending: true });
+    if (error) throw error;
+    return (data || []).map(normalizeApplicationEvent);
+};
+
+export const recordApplicationEvent = async (
+    applicationId: string,
+    event: Pick<ApplicationEvent, 'eventType' | 'occurredAt' | 'notes'> & {
+        interviewRound?: number | null;
+        metadata?: Record<string, unknown>;
+    },
+): Promise<ApplicationEvent> => {
+    const { data, error } = await supabase
+        .from('application_events')
+        .insert({
+            application_id: applicationId,
+            event_type: event.eventType,
+            occurred_at: event.occurredAt || null,
+            notes: event.notes || '',
+            interview_round: event.interviewRound || null,
+            metadata: event.metadata || {},
+        })
+        .select('*')
+        .single();
+    if (error) throw error;
+    return normalizeApplicationEvent(data);
+};
+
+export const updateApplicationEvent = async (
+    eventId: string,
+    updates: Partial<Pick<ApplicationEvent, 'eventType' | 'occurredAt' | 'notes' | 'interviewRound' | 'metadata'>>,
+): Promise<ApplicationEvent> => {
+    const row: Record<string, unknown> = {};
+    if (updates.eventType) row.event_type = updates.eventType;
+    if (updates.occurredAt !== undefined) row.occurred_at = updates.occurredAt;
+    if (updates.notes !== undefined) row.notes = updates.notes;
+    if (updates.interviewRound !== undefined) row.interview_round = updates.interviewRound;
+    if (updates.metadata !== undefined) row.metadata = updates.metadata;
+    const { data, error } = await supabase
+        .from('application_events')
+        .update(row)
+        .eq('id', eventId)
+        .select('*')
+        .single();
+    if (error) throw error;
+    return normalizeApplicationEvent(data);
+};
+
+export const saveRenderedReview = async (
+    applicationId: string,
+    tailoringRunId: string | null | undefined,
+    review: TailoredApplication['renderReview'],
+): Promise<void> => {
+    const { error } = await supabase
+        .from('application_private_artifacts')
+        .update({
+            render_review: review || {},
+            updated_at: new Date().toISOString(),
+        })
+        .eq('application_id', applicationId);
+    if (error) throw error;
+    if (tailoringRunId) {
+        await supabase
+            .from('generation_jobs')
+            .update({ stage: 'completed', updated_at: new Date().toISOString() })
+            .eq('id', tailoringRunId);
+    }
+};
+
+export const markRenderReviewStarted = async (tailoringRunId?: string | null): Promise<void> => {
+    if (!tailoringRunId) return;
+    const { error } = await supabase
+        .from('generation_jobs')
+        .update({ stage: 'render_review', updated_at: new Date().toISOString() })
+        .eq('id', tailoringRunId);
+    if (error) throw error;
+};
+
+export const answerEvidenceQuestion = async (
+    jobId: string,
+    questionId: string,
+    disposition: 'answered' | 'skipped' | 'unavailable',
+    answer = '',
+): Promise<void> => {
+    const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+    if (sessionError || !session?.access_token) throw new Error('You must be signed in.');
+    const { error } = await supabase.functions.invoke('gemini-api', {
+        body: {
+            action: 'answerEvidenceQuestion',
+            payload: { jobId, questionId, disposition, answer },
+            access_token: session.access_token,
+        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (error) throw error;
+};
+
+export const resumeGenerationJob = async (jobId: string): Promise<void> => {
+    const { error } = await supabase
+        .from('generation_jobs')
+        .update({
+            status: 'queued',
+            error_message: null,
+            finished_at: null,
+            updated_at: new Date().toISOString(),
+        })
+        .eq('id', jobId);
+    if (error) throw error;
+    await kickGenerationJob(jobId);
+};
+
+export const cancelGenerationJob = async (jobId: string): Promise<void> => {
+    const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+    if (sessionError || !session?.access_token) throw new Error('You must be signed in.');
+    const { error } = await supabase.functions.invoke('gemini-api', {
+        body: {
+            action: 'cancelGenerationJob',
+            payload: { jobId },
+            access_token: session.access_token,
+        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (error) throw error;
+};
+
+export const decideEvidenceRound = async (jobId: string, anotherRound: boolean): Promise<void> => {
+    const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+    if (sessionError || !session?.access_token) throw new Error('You must be signed in.');
+    const { error } = await supabase.functions.invoke('gemini-api', {
+        body: {
+            action: anotherRound ? 'requestAdditionalEvidenceRound' : 'continueAfterEvidence',
+            payload: { jobId },
+            access_token: session.access_token,
+        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (error) throw error;
 };
 
 export const saveTailoringPlaybook = async (userId: string, playbook: TailoringPlaybook): Promise<void> => {

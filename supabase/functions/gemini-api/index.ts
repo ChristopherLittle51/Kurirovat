@@ -1,1514 +1,1137 @@
 // @ts-nocheck
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { GoogleGenAI, Type } from "npm:@google/genai";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "npm:@supabase/supabase-js@2.90.1";
+import { zodTextFormat } from "npm:openai@7.0.0/helpers/zod";
+import {
+  createModelClient,
+  MODEL_CONFIG,
+  runStructured,
+  safetyIdentifier,
+} from "./model.ts";
+import {
+  contentStrategyPrompt,
+  draftPrompt,
+  evidenceMatchingPrompt,
+  jobAnalysisPrompt,
+  normalizeEvidenceAnswerPrompt,
+  PROMPT_VERSION,
+  qualityReviewPrompt,
+  repairPrompt,
+  SCHEMA_VERSION,
+} from "./prompts.ts";
+import {
+  CandidateEvidenceSchema,
+  CondensedResumeSchema,
+  CondensedTextSchema,
+  ContentStrategySchema,
+  DraftSchema,
+  EvidenceResolutionSchema,
+  IdealJobSchema,
+  ImportedSourceSchema,
+  JobAnalysisSchema,
+  ParsedResumeSchema,
+  QualityReportSchema,
+  RenderReviewSchema,
+} from "./schemas.ts";
+import { validateDraft } from "./validators.ts";
 
 const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface Experience {
-    id: string;
-    company: string;
-    role: string;
-    startDate: string;
-    endDate: string;
-    description: string[];
-}
+const jsonResponse = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 
-interface Education {
-    id: string;
-    institution: string;
-    degree: string;
-    year: string;
-}
+const now = () => new Date().toISOString();
+const evidenceQuestionKey = (question: any) =>
+  `${[...(question.requirementIds || [])].sort().join("|")}:${[...(question.missingFields || [])].sort().join("|")}`;
 
-interface SocialLink {
-    platform: string;
-    url: string;
-}
-
-interface GithubProject {
-    id: number;
-    name: string;
-    description: string | null;
-    html_url: string;
-    language: string | null;
-    stargazers_count: number;
-    pushed_at?: string;
-    topics?: string[];
-}
-
-interface AchievementBankEntry {
-    id: string;
-    title: string;
-    situation: string;
-    action: string;
-    result: string;
-    metric: string;
-    scope: string;
-    tools: string[];
-    teamSize: string;
-    domain: string;
-    tags: string[];
-    sourceType: string;
-    confidence: string;
-    roleIds: string[];
-    mustInclude: boolean;
-    niceToUse: boolean;
-    neverUse: boolean;
-    roleFamilyConstraints: string[];
-}
-
-interface ImportedProfileSource {
-    id: string;
-    label: string;
-    url: string;
-    sourceType: string;
-    summary?: string;
-    importedAt?: string;
-}
-
-interface TailoringWeights {
-    leadership: number;
-    technicalDepth: number;
-    measurableImpact: number;
-    recency: number;
-    domainMatch: number;
-}
-
-interface TailoringPlaybook {
-    id: string;
-    name: string;
-    strategyPreset: string;
-    tone: string;
-    conciseness: string;
-    focusSkill: string;
-    critiqueMode: string;
-    preferredRoleFamilies: string[];
-    antiClaims: string[];
-    weights: TailoringWeights;
-    promptOverride?: string;
-}
-
-interface UserProfile {
-    fullName: string;
-    email: string;
-    phone: string;
-    location: string;
-    summary: string;
-    skills: string[];
-    experience: Experience[];
-    education: Education[];
-    links: SocialLink[];
-    githubUsername?: string;
-    otherExperience?: Experience[];
-    githubProjects?: GithubProject[];
-    achievementBank?: AchievementBankEntry[];
-    tailoringPlaybooks?: TailoringPlaybook[];
-    importedProfileSources?: ImportedProfileSource[];
-    targetRoles?: string[];
-    preferredIndustries?: string[];
-    antiClaims?: string[];
-}
-
-interface JobDescription {
-    companyName: string;
-    roleTitle: string;
-    rawText: string;
-}
-
-interface TailoringOptions {
-    tone?: string;
-    conciseness?: string;
-    focusSkill?: string;
-    strategyPreset?: string;
-    careerMode?: string;
-    critiqueMode?: string;
-    weights?: TailoringWeights;
-    preferredRoleFamilies?: string[];
-    antiClaims?: string[];
-    promptOverride?: string;
-    regenerationInstructions?: string;
-    selectedPlaybookId?: string;
-    jobAnalysisOverride?: Record<string, any>;
-}
-
-const defaultWeights: TailoringWeights = {
-    leadership: 0.5,
-    technicalDepth: 0.5,
-    measurableImpact: 0.7,
-    recency: 0.7,
-    domainMatch: 0.6,
+const recordUsage = (records: any[] = []) => {
+  const costRates: Record<string, { input: number; output: number }> = {
+    [MODEL_CONFIG.extraction.model]: {
+      input: Number(Deno.env.get("OPENAI_TERRA_INPUT_COST_PER_MILLION") || 0),
+      output: Number(Deno.env.get("OPENAI_TERRA_OUTPUT_COST_PER_MILLION") || 0),
+    },
+    [MODEL_CONFIG.judgment.model]: {
+      input: Number(Deno.env.get("OPENAI_SOL_INPUT_COST_PER_MILLION") || 0),
+      output: Number(Deno.env.get("OPENAI_SOL_OUTPUT_COST_PER_MILLION") || 0),
+    },
+  };
+  const calls = records.map((record) => {
+    const rates = costRates[record.model] || { input: 0, output: 0 };
+    return {
+      ...record,
+      estimatedCostUsd: ((record.inputTokens || 0) * rates.input + (record.outputTokens || 0) * rates.output) / 1_000_000,
+    };
+  });
+  const totals = calls.reduce(
+    (totals, record) => ({
+      inputTokens: totals.inputTokens + (record.inputTokens || 0),
+      outputTokens: totals.outputTokens + (record.outputTokens || 0),
+      reasoningTokens: totals.reasoningTokens + (record.reasoningTokens || 0),
+      totalTokens: totals.totalTokens + (record.totalTokens || 0),
+      latencyMs: totals.latencyMs + (record.latencyMs || 0),
+      estimatedCostUsd: totals.estimatedCostUsd + (record.estimatedCostUsd || 0),
+    }),
+    { inputTokens: 0, outputTokens: 0, reasoningTokens: 0, totalTokens: 0, latencyMs: 0, estimatedCostUsd: 0 },
+  );
+  return {
+    calls,
+    totals,
+    costEstimateConfigured: Object.values(costRates).some((rate) => rate.input > 0 || rate.output > 0),
+  };
 };
 
-const roleFamilyPacks: Record<string, string> = {
-    engineering: 'Prioritize technical depth, systems impact, delivery quality, and collaboration with product/design.',
-    product: 'Prioritize problem framing, cross-functional leadership, roadmap influence, customer insight, and measurable business outcomes.',
-    design: 'Prioritize craft, systems thinking, user research, iteration, collaboration, and measurable experience improvements.',
-    marketing: 'Prioritize audience insight, channel execution, conversion outcomes, growth experiments, and brand/story clarity.',
-    operations: 'Prioritize reliability, process design, stakeholder coordination, throughput, cost savings, and execution discipline.',
-    sales: 'Prioritize pipeline growth, relationship management, quota attainment, deal strategy, and customer outcomes.',
-    general: 'Balance delivery, collaboration, business impact, and role-specific language without overstating direct fit.',
-};
-
-serve(async (req) => {
-    if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders });
-    }
-
-    try {
-        const { action, payload, access_token } = await req.json();
-
-        let authHeader = req.headers.get('Authorization');
-        let token = '';
-
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            token = authHeader.replace('Bearer ', '');
-        } else if (access_token) {
-            token = access_token;
-        }
-
-        if (!token) {
-            return new Response(JSON.stringify({ error: 'Missing Authorization header or token' }), {
-                status: 401,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-        }
-
-        const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-        const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-        const isServiceRole = Boolean(serviceRoleKey && token === serviceRoleKey);
-        const supabaseClient = createClient(
-            supabaseUrl,
-            isServiceRole ? serviceRoleKey : anonKey,
-            {
-                global: {
-                    headers: { Authorization: `Bearer ${token}` },
-                },
-            },
-        );
-
-        let user = null;
-        if (!isServiceRole) {
-            const { data: { user: authedUser }, error: authError } = await supabaseClient.auth.getUser(token);
-            if (authError || !authedUser) {
-                return new Response(JSON.stringify({ error: 'Unauthorized: Invalid session' }), {
-                    status: 401,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                });
-            }
-            user = authedUser;
-        }
-
-        const apiKey = Deno.env.get('GOOGLE_GENAI_API_KEY');
-        if (!apiKey) {
-            throw new Error('Google GenAI API Key is missing. Check Edge Function secrets.');
-        }
-
-        const ai = new GoogleGenAI({ apiKey });
-
-        switch (action) {
-            case 'parseResume':
-                return await handleParseResume(ai, payload);
-            case 'tailorResume':
-                return await handleTailorResume(ai, payload);
-            case 'processGenerationJob':
-                return await handleProcessGenerationJob(ai, supabaseClient, payload, user?.id, isServiceRole);
-            case 'analyzeJobDescription':
-                return await handleAnalyzeJobDescription(ai, payload);
-            case 'generateIdealJobDescription':
-                return await handleGenerateIdealJobDescription(ai, payload);
-            case 'importProfileSource':
-                return await handleImportProfileSource(ai, payload);
-            case 'condenseResume':
-                return await handleCondenseResume(ai, payload);
-            case 'condenseCoverLetter':
-                return await handleCondenseCoverLetter(ai, payload);
-            default:
-                throw new Error(`Unknown action: ${action}`);
-        }
-    } catch (error: any) {
-        console.error('Edge Function Error:', error);
-        return new Response(JSON.stringify({ error: error.message }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-        });
-    }
+const normalizeProfileForPrompt = (profile: any) => ({
+  fullName: profile?.fullName,
+  summary: profile?.summary,
+  skills: profile?.skills || [],
+  experience: profile?.experience || [],
+  education: profile?.education || [],
+  antiClaims: profile?.antiClaims || [],
+  githubProjects: profile?.githubProjects || [],
 });
 
-async function generateJson(ai: GoogleGenAI, args: {
-    model?: string;
-    prompt: string;
-    schema: any;
-    tools?: any[];
-}) {
-    const response = await ai.models.generateContent({
-        model: args.model || 'gemini-3-flash-preview',
-        contents: [{ text: args.prompt }],
-        config: {
-            thinkingConfig: { thinkingBudget: 32768 },
-            responseMimeType: 'application/json',
-            responseSchema: args.schema,
-            tools: args.tools,
-        }
-    });
+const evidenceRowToModel = (row: any) => ({
+  id: row.id,
+  legacyId: row.legacy_id,
+  title: row.title || "",
+  situation: row.situation || "",
+  action: row.action || "",
+  result: row.result || "",
+  metric: row.metric || "",
+  scope: row.scope || "",
+  tools: row.tools || [],
+  teamSize: row.team_size || "",
+  domain: row.domain || "",
+  tags: row.tags || [],
+  sourceType: row.source_type || "manual",
+  sourceLabel: row.source_label || "",
+  sourceExcerpt: row.source_excerpt || "",
+  confidence: row.confidence || "medium",
+  roleIds: row.role_ids || [],
+  mustInclude: Boolean(row.must_include),
+  niceToUse: Boolean(row.nice_to_use),
+  unavailable: Boolean(row.unavailable),
+  disabled: Boolean(row.disabled),
+  roleFamilyConstraints: row.role_family_constraints || [],
+  dedupeKey: row.dedupe_key || "",
+  lastUsedAt: row.last_used_at,
+});
 
-    return {
-        data: JSON.parse(response.text || '{}'),
-        response,
-    };
+const normalizedEvidenceKey = (entry: any) =>
+  [entry.title, entry.action, entry.result, entry.metric]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .slice(0, 240);
+
+const achievementToEvidence = (entry: any) => ({
+  id: entry.id,
+  title: entry.title || "",
+  situation: entry.situation || "",
+  action: entry.action || "",
+  result: entry.result || "",
+  metric: entry.metric || "",
+  scope: entry.scope || "",
+  tools: entry.tools || [],
+  teamSize: entry.teamSize || "",
+  domain: entry.domain || "",
+  tags: entry.tags || [],
+  sourceType: entry.sourceType || "manual",
+  sourceLabel: "",
+  sourceExcerpt: "",
+  confidence: entry.confidence || "medium",
+  roleIds: entry.roleIds || [],
+  mustInclude: Boolean(entry.mustInclude),
+  niceToUse: entry.niceToUse !== false,
+  unavailable: Boolean(entry.neverUse),
+  disabled: Boolean(entry.neverUse),
+  roleFamilyConstraints: entry.roleFamilyConstraints || [],
+});
+
+async function loadEvidence(supabaseClient: any, userId: string, profile?: any) {
+  const { data, error } = await supabaseClient
+    .from("candidate_evidence")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("disabled", false)
+    .order("updated_at", { ascending: false });
+  if (!error) return (data || []).map(evidenceRowToModel);
+  console.warn("candidate_evidence unavailable; using profile achievement bank:", error.message);
+  return (profile?.achievementBank || []).map(achievementToEvidence);
 }
 
-function stableId(prefix: string) {
-    return `${prefix}-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+async function analyzeJob(client: any, safetyId: string, job: any) {
+  return runStructured({
+    client,
+    prompt: jobAnalysisPrompt(job),
+    schema: JobAnalysisSchema,
+    schemaName: "job_analysis_v2",
+    tier: "extraction",
+    safetyId,
+  });
 }
 
-function clampWeight(value: number | undefined, fallback: number) {
-    if (typeof value !== 'number' || Number.isNaN(value)) return fallback;
-    return Math.max(0, Math.min(1, value));
-}
-
-function normalizeWeights(weights?: Partial<TailoringWeights>): TailoringWeights {
-    return {
-        leadership: clampWeight(weights?.leadership, defaultWeights.leadership),
-        technicalDepth: clampWeight(weights?.technicalDepth, defaultWeights.technicalDepth),
-        measurableImpact: clampWeight(weights?.measurableImpact, defaultWeights.measurableImpact),
-        recency: clampWeight(weights?.recency, defaultWeights.recency),
-        domainMatch: clampWeight(weights?.domainMatch, defaultWeights.domainMatch),
-    };
-}
-
-function scoreGithubProject(project: GithubProject, keywords: string[], focusSkill?: string) {
-    const haystack = [
-        project.name,
-        project.description || '',
-        project.language || '',
-        ...(project.topics || []),
-    ].join(' ').toLowerCase();
-
-    let score = project.stargazers_count * 0.05;
-    for (const keyword of keywords) {
-        if (keyword && haystack.includes(keyword.toLowerCase())) {
-            score += 2;
-        }
-    }
-
-    if (focusSkill && haystack.includes(focusSkill.toLowerCase())) {
-        score += 3;
-    }
-
-    if (project.pushed_at) {
-        const ageInDays = Math.max(
-            0,
-            (Date.now() - new Date(project.pushed_at).getTime()) / (1000 * 60 * 60 * 24)
-        );
-        score += Math.max(0, 4 - ageInDays / 90);
-    }
-
-    return score;
-}
-
-function selectRelevantProjects(projects: GithubProject[], keywords: string[], focusSkill?: string) {
-    return [...projects]
-        .sort((a, b) => scoreGithubProject(b, keywords, focusSkill) - scoreGithubProject(a, keywords, focusSkill))
-        .slice(0, 3);
-}
-
-function resolvePlaybook(profile: UserProfile, options?: TailoringOptions) {
-    const playbooks = profile.tailoringPlaybooks || [];
-    const selected = playbooks.find((playbook) => playbook.id === options?.selectedPlaybookId);
-    if (!selected) {
-        return null;
-    }
-
-    return selected;
-}
-
-function mergeTailoringOptions(profile: UserProfile, options?: TailoringOptions) {
-    const selectedPlaybook = resolvePlaybook(profile, options);
-    const merged = {
-        tone: options?.tone || selectedPlaybook?.tone || 'professional',
-        conciseness: options?.conciseness || selectedPlaybook?.conciseness || 'standard',
-        focusSkill: options?.focusSkill || selectedPlaybook?.focusSkill || '',
-        strategyPreset: options?.strategyPreset || selectedPlaybook?.strategyPreset || 'Balanced',
-        careerMode: options?.careerMode || 'Standard',
-        critiqueMode: options?.critiqueMode || selectedPlaybook?.critiqueMode || 'Blunt',
-        preferredRoleFamilies: options?.preferredRoleFamilies?.length
-            ? options.preferredRoleFamilies
-            : (selectedPlaybook?.preferredRoleFamilies || []),
-        antiClaims: [
-            ...(profile.antiClaims || []),
-            ...(selectedPlaybook?.antiClaims || []),
-            ...(options?.antiClaims || []),
-        ],
-        promptOverride: options?.promptOverride || selectedPlaybook?.promptOverride || (selectedPlaybook as any)?.promptOverrides || '',
-        regenerationInstructions: options?.regenerationInstructions || '',
-        selectedPlaybookId: options?.selectedPlaybookId,
-        weights: normalizeWeights({
-            ...selectedPlaybook?.weights,
-            ...options?.weights,
-        }),
-    };
-
-    return merged;
-}
-
-function buildPromptPreview(context: {
-    options: ReturnType<typeof mergeTailoringOptions>;
-    jobAnalysis: any;
-    evidence: any;
-    companyResearch: string;
-    roleFamilyInstruction: string;
-}) {
-    const basePrompt = `
-Strategy preset: ${context.options.strategyPreset}
-Tone: ${context.options.tone}
-Conciseness: ${context.options.conciseness}
-Career mode: ${context.options.careerMode}
-Critique mode: ${context.options.critiqueMode}
-Focus skill: ${context.options.focusSkill || 'None'}
-Weights: ${JSON.stringify(context.options.weights)}
-Role family pack: ${context.roleFamilyInstruction}
-Job analysis: ${JSON.stringify(context.jobAnalysis)}
-Company research summary: ${context.companyResearch}
-Evidence resolution: ${JSON.stringify(context.evidence)}
-Anti-claims: ${JSON.stringify(context.options.antiClaims)}
-Regeneration instructions: ${context.options.regenerationInstructions || 'None'}
-
-Rules:
-- Never invent metrics, team size, scope, ownership, leadership, or tools.
-- Use missing-evidence handling instead of fabrication.
-- Prefer concrete, recruiter-readable language over fluff.
-- Avoid keyword stuffing and repeated action verbs.
-`.trim();
-
-    return context.options.promptOverride
-        ? `${basePrompt}\n\nUser prompt adjustments:\n${context.options.promptOverride}`
-        : basePrompt;
-}
-
-async function handleParseResume(ai: GoogleGenAI, payload: { base64Pdf: string }) {
-    const prompt = `
-Analyze the attached resume PDF and extract structured data.
-
-Rules:
-- Only use facts present in the document.
-- Do not infer metrics that are not written.
-- Split experience into bullet arrays.
-- Return empty strings or arrays when missing.
-`;
-
-    const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: [
-            {
-                parts: [
-                    { text: prompt },
-                    {
-                        inlineData: {
-                            mimeType: 'application/pdf',
-                            data: payload.base64Pdf,
-                        }
-                    }
-                ]
-            }
-        ],
-        config: {
-            thinkingConfig: { thinkingBudget: 32768 },
-            responseMimeType: 'application/json',
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    fullName: { type: Type.STRING },
-                    email: { type: Type.STRING },
-                    phone: { type: Type.STRING },
-                    location: { type: Type.STRING },
-                    summary: { type: Type.STRING },
-                    skills: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    experience: {
-                        type: Type.ARRAY,
-                        items: {
-                            type: Type.OBJECT,
-                            properties: {
-                                company: { type: Type.STRING },
-                                role: { type: Type.STRING },
-                                startDate: { type: Type.STRING },
-                                endDate: { type: Type.STRING },
-                                description: { type: Type.ARRAY, items: { type: Type.STRING } },
-                            }
-                        }
-                    },
-                    education: {
-                        type: Type.ARRAY,
-                        items: {
-                            type: Type.OBJECT,
-                            properties: {
-                                institution: { type: Type.STRING },
-                                degree: { type: Type.STRING },
-                                year: { type: Type.STRING },
-                            }
-                        }
-                    },
-                    links: {
-                        type: Type.ARRAY,
-                        items: {
-                            type: Type.OBJECT,
-                            properties: {
-                                platform: { type: Type.STRING },
-                                url: { type: Type.STRING },
-                            }
-                        }
-                    }
-                },
-                required: ['fullName', 'email', 'experience', 'skills']
-            }
-        }
-    });
-
-    const parsedData = JSON.parse(response.text || '{}');
-    const finalizedData = {
-        ...parsedData,
-        experience: (parsedData.experience || []).map((exp: any) => ({ ...exp, id: stableId('exp') })),
-        education: (parsedData.education || []).map((edu: any) => ({ ...edu, id: stableId('edu') })),
-        links: parsedData.links || [],
-        skills: parsedData.skills || [],
-        summary: parsedData.summary || '',
-        fullName: parsedData.fullName || '',
-        email: parsedData.email || '',
-        phone: parsedData.phone || '',
-        location: parsedData.location || '',
-        achievementBank: [],
-        tailoringPlaybooks: [],
-        importedProfileSources: [],
-        targetRoles: [],
-        preferredIndustries: [],
-        targetRegions: [],
-        antiClaims: [],
-        learnedPreferenceSuggestions: [],
-    };
-
-    return new Response(JSON.stringify(finalizedData), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-}
-
-async function handleAnalyzeJobDescription(ai: GoogleGenAI, payload: { jd: JobDescription }) {
-    const analysis = await analyzeJobDescription(ai, payload.jd);
-    return new Response(JSON.stringify(analysis), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-}
-
-async function handleGenerateIdealJobDescription(ai: GoogleGenAI, payload: {
-    profile: UserProfile;
-    instructions?: string;
-}) {
-    if (!payload.profile) {
-        throw new Error('Profile is required to generate an ideal job description.');
-    }
-
-    const usableAchievements = (payload.profile.achievementBank || [])
-        .filter((entry) => !entry.neverUse);
-
-    const prompt = `
-Create a theoretical job posting that is a 100% evidence-backed match for this candidate.
-
-Candidate evidence:
-${JSON.stringify({
-        summary: payload.profile.summary,
-        skills: payload.profile.skills,
-        experience: payload.profile.experience,
-        otherExperience: payload.profile.otherExperience || [],
-        education: payload.profile.education,
-        achievements: usableAchievements,
-        githubProjects: payload.profile.githubProjects || [],
-        importedProfileSources: payload.profile.importedProfileSources || [],
-        targetRoles: payload.profile.targetRoles || [],
-        preferredIndustries: payload.profile.preferredIndustries || [],
-        antiClaims: payload.profile.antiClaims || [],
-    })}
-
-Optional user direction:
-${payload.instructions || 'None'}
-
-Task:
-- Return one concise, market-recognizable role title.
-- Write a realistic, company-neutral job description between 350 and 600 words.
-- Include clear sections for role overview, responsibilities, required qualifications, and preferred qualifications.
-- Make every responsibility and qualification directly supportable by the candidate evidence above.
-- Treat target roles, preferred industries, and user direction as preferences, not proof of experience.
-- Prefer the candidate's strongest and most recent demonstrated capabilities.
-- Translate candidate evidence into employer language without copying resume bullets verbatim.
-
-Strict grounding rules:
-- Do not invent years of experience, metrics, tools, certifications, degrees, industries, management scope, or responsibilities.
-- Do not include any requirement the candidate cannot already satisfy from the supplied evidence.
-- Do not include the candidate's name, contact details, current employer, or other identifying information.
-- Do not invent a company, compensation range, location, benefits, or hiring process.
-- Do not describe the result as a real open position or promise that such a position exists.
-- Respect all anti-claims and evidence entries marked never-use.
-`;
-
-    const { data } = await generateJson(ai, {
-        prompt,
-        schema: {
-            type: Type.OBJECT,
-            properties: {
-                roleTitle: { type: Type.STRING },
-                jobDescription: { type: Type.STRING },
-            },
-            required: ['roleTitle', 'jobDescription'],
-        }
-    });
-
-    if (!data.roleTitle || !data.jobDescription) {
-        throw new Error('Gemini returned an incomplete ideal job description.');
-    }
-
-    return new Response(JSON.stringify({
-        roleTitle: data.roleTitle,
-        jobDescription: data.jobDescription,
-    }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-}
-
-async function handleImportProfileSource(ai: GoogleGenAI, payload: { url: string; label?: string; sourceType?: string; rawText?: string; }) {
-    const prompt = `
-Summarize this imported candidate profile source into grounded facts.
-
-URL: ${payload.url}
-Label: ${payload.label || ''}
-Provided text:
-${payload.rawText || 'No page text provided. Summarize only what can be inferred from the URL metadata.'}
-
-Return:
-- summary: concise factual summary
-- skills: extracted skill phrases
-- achievements: extracted evidence statements
-- warnings: missing or low-confidence areas
-`;
-
-    const { data } = await generateJson(ai, {
-        prompt,
-        schema: {
-            type: Type.OBJECT,
-            properties: {
-                summary: { type: Type.STRING },
-                skills: { type: Type.ARRAY, items: { type: Type.STRING } },
-                achievements: { type: Type.ARRAY, items: { type: Type.STRING } },
-                warnings: { type: Type.ARRAY, items: { type: Type.STRING } },
-            }
-        }
-    });
-
-    return new Response(JSON.stringify({
-        id: stableId('source'),
-        label: payload.label || payload.url,
-        url: payload.url,
-        sourceType: payload.sourceType || 'other',
-        summary: data.summary || '',
-        skills: data.skills || [],
-        achievements: data.achievements || [],
-        warnings: data.warnings || [],
-        importedAt: new Date().toISOString(),
-    }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-}
-
-async function researchCompany(ai: GoogleGenAI, companyName: string): Promise<{ summary: string; sources: any[] }> {
-    const prompt = `
-Research the company "${companyName}".
-Return a concise paragraph covering:
-- mission or product direction
-- relevant business challenges
-- current momentum or strategic themes
-- cultural cues useful for candidate positioning
-
-Do not over-index on branded slogans.
-`;
-
-    try {
-        const { data, response } = await generateJson(ai, {
-            prompt,
-            schema: {
-                type: Type.OBJECT,
-                properties: {
-                    summary: { type: Type.STRING },
-                }
-            },
-            tools: [{ googleSearch: {} }],
-        });
-
-        const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-        const sources = groundingChunks
-            .map((chunk: any) => chunk.web)
-            .filter((web: any) => web)
-            .map((web: any) => ({ title: web.title, uri: web.uri }));
-
-        return {
-            summary: data.summary || 'Could not retrieve company details.',
-            sources,
-        };
-    } catch (error) {
-        console.warn('Company research failed:', error);
-        return { summary: 'Could not retrieve company details.', sources: [] };
-    }
-}
-
-async function analyzeJobDescription(ai: GoogleGenAI, jd: JobDescription) {
-    const prompt = `
-You are analyzing a job description for structured resume tailoring.
-
-Company: ${jd.companyName}
-Role: ${jd.roleTitle}
-Job Description:
-${jd.rawText}
-
-Extract structured fields for tailoring. Be precise and avoid fluff.
-`;
-
-    const { data } = await generateJson(ai, {
-        prompt,
-        schema: {
-            type: Type.OBJECT,
-            properties: {
-                keywords: { type: Type.ARRAY, items: { type: Type.STRING } },
-                requirements: { type: Type.ARRAY, items: { type: Type.STRING } },
-                responsibilities: { type: Type.ARRAY, items: { type: Type.STRING } },
-                seniority: { type: Type.STRING },
-                domain: { type: Type.STRING },
-                painPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
-                signalsToAvoid: { type: Type.ARRAY, items: { type: Type.STRING } },
-                mustHaveTerms: { type: Type.ARRAY, items: { type: Type.STRING } },
-                niceToHaveTerms: { type: Type.ARRAY, items: { type: Type.STRING } },
-                roleFamily: { type: Type.STRING },
-            },
-            required: ['keywords', 'requirements', 'responsibilities', 'seniority', 'domain', 'painPoints', 'signalsToAvoid', 'mustHaveTerms', 'niceToHaveTerms', 'roleFamily'],
-        }
-    });
-
-    return {
-        keywords: data.keywords || [],
-        requirements: data.requirements || [],
-        responsibilities: data.responsibilities || [],
-        seniority: data.seniority || '',
-        domain: data.domain || '',
-        painPoints: data.painPoints || [],
-        signalsToAvoid: data.signalsToAvoid || [],
-        mustHaveTerms: data.mustHaveTerms || [],
-        niceToHaveTerms: data.niceToHaveTerms || [],
-        roleFamily: (data.roleFamily || 'general').toLowerCase(),
-    };
-}
-
-async function resolveEvidence(ai: GoogleGenAI, args: {
-    profile: UserProfile;
-    jobAnalysis: any;
-    selectedProjects: GithubProject[];
-    companyResearch: string;
-    options: ReturnType<typeof mergeTailoringOptions>;
-}) {
-    const prompt = `
-Resolve candidate evidence for a grounded tailoring pass.
-
-Job analysis:
-${JSON.stringify(args.jobAnalysis)}
-
-Candidate profile:
-${JSON.stringify({
-        summary: args.profile.summary,
-        skills: args.profile.skills,
-        experience: args.profile.experience,
-        education: args.profile.education,
-        achievementBank: args.profile.achievementBank || [],
-        importedProfileSources: args.profile.importedProfileSources || [],
-    })}
-
-Selected GitHub projects:
-${JSON.stringify(args.selectedProjects)}
-
-Options:
-${JSON.stringify(args.options)}
-
-Company research summary:
-${args.companyResearch}
-
-Rules:
-- Only create supported claims if grounded in the profile, projects, or imported evidence.
-- If a JD requirement lacks evidence, put it under missingEvidence or blockedClaims.
-- Unsupported leadership claims, metrics, or tool experience must be blocked.
-`;
-
-    const { data } = await generateJson(ai, {
-        prompt,
-        schema: {
-            type: Type.OBJECT,
-            properties: {
-                sourceFacts: { type: Type.ARRAY, items: { type: Type.STRING } },
-                supportedClaims: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            claim: { type: Type.STRING },
-                            evidence: {
-                                type: Type.ARRAY,
-                                items: {
-                                    type: Type.OBJECT,
-                                    properties: {
-                                        sourceType: { type: Type.STRING },
-                                        sourceLabel: { type: Type.STRING },
-                                        section: { type: Type.STRING },
-                                        sourceId: { type: Type.STRING },
-                                        excerpt: { type: Type.STRING },
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                missingEvidence: { type: Type.ARRAY, items: { type: Type.STRING } },
-                blockedClaims: { type: Type.ARRAY, items: { type: Type.STRING } },
-            },
-            required: ['sourceFacts', 'supportedClaims', 'missingEvidence', 'blockedClaims'],
-        }
-    });
-
-    return {
-        sourceFacts: data.sourceFacts || [],
-        supportedClaims: data.supportedClaims || [],
-        missingEvidence: data.missingEvidence || [],
-        blockedClaims: data.blockedClaims || [],
-    };
-}
-
-async function generateSummary(ai: GoogleGenAI, args: {
-    profile: UserProfile;
-    jobAnalysis: any;
-    evidence: any;
-    options: ReturnType<typeof mergeTailoringOptions>;
-    companyResearch: string;
-    roleFamilyInstruction: string;
-}) {
-    const prompt = `
-Write a grounded resume summary for a mid-career candidate.
-
-${buildPromptPreview(args)}
-
-Task:
-- Write 2-3 sentences.
-- Use exact JD terminology only when it is supported.
-- Avoid generic opener phrases and hollow adjectives.
-- Do not invent metrics. If there is no metric, write strong but honest specificity.
-- For career changers in Transferable Skills mode, emphasize adjacency and proof of learning without implying direct prior ownership.
-`;
-
-    const { data } = await generateJson(ai, {
-        prompt,
-        schema: {
-            type: Type.OBJECT,
-            properties: {
-                tailoredSummary: { type: Type.STRING },
-                alternateSummary: { type: Type.STRING },
-                why: { type: Type.STRING },
-                evidence: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            sourceType: { type: Type.STRING },
-                            sourceLabel: { type: Type.STRING },
-                            section: { type: Type.STRING },
-                            sourceId: { type: Type.STRING },
-                            excerpt: { type: Type.STRING },
-                        }
-                    }
-                }
-            },
-            required: ['tailoredSummary', 'alternateSummary', 'why', 'evidence'],
-        }
-    });
-
-    return data;
-}
-
-async function generateSkills(ai: GoogleGenAI, args: {
-    profile: UserProfile;
-    jobAnalysis: any;
-    evidence: any;
-    options: ReturnType<typeof mergeTailoringOptions>;
-    roleFamilyInstruction: string;
-}) {
-    const prompt = `
-Select the best grounded skills for a tailored resume.
-
-${buildPromptPreview({ ...args, companyResearch: '', })}
-
-Task:
-- Select 6-10 skills.
-- Use JD terms when supported.
-- Prefer recent and evidence-backed skills.
-- Avoid filler skills and near-duplicates.
-`;
-
-    const { data } = await generateJson(ai, {
-        prompt,
-        schema: {
-            type: Type.OBJECT,
-            properties: {
-                tailoredSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
-                rationale: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            skill: { type: Type.STRING },
-                            why: { type: Type.STRING },
-                        }
-                    }
-                }
-            },
-            required: ['tailoredSkills', 'rationale'],
-        }
-    });
-
-    return data;
-}
-
-async function generateExperience(ai: GoogleGenAI, args: {
-    profile: UserProfile;
-    jobAnalysis: any;
-    evidence: any;
-    options: ReturnType<typeof mergeTailoringOptions>;
-    roleFamilyInstruction: string;
-}) {
-    const maxBulletsPerRole = args.options.strategyPreset === 'ATS' ? 4 : 3;
-
-    const prompt = `
-Rewrite resume bullets with strict grounding.
-
-${buildPromptPreview({ ...args, companyResearch: '' })}
-
-Task:
-- Keep all experience roles.
-- Maintain reverse chronological order.
-- For each role, rewrite up to ${maxBulletsPerRole} bullets.
-- Do not invent metrics or responsibilities.
-- If a bullet lacks quantification, improve specificity using scope, tools, process, stakeholders, or outcomes that are actually supported.
-- Avoid repeated verbs across bullets.
-- Return both a primary rewrite and alternate rewrite for each returned bullet.
-`;
-
-    const { data } = await generateJson(ai, {
-        prompt,
-        schema: {
-            type: Type.OBJECT,
-            properties: {
-                tailoredExperience: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            id: { type: Type.STRING },
-                            description: { type: Type.ARRAY, items: { type: Type.STRING } },
-                            alternates: { type: Type.ARRAY, items: { type: Type.STRING } },
-                            reasons: { type: Type.ARRAY, items: { type: Type.STRING } },
-                            evidence: {
-                                type: Type.ARRAY,
-                                items: {
-                                    type: Type.ARRAY,
-                                    items: {
-                                        type: Type.OBJECT,
-                                        properties: {
-                                            sourceType: { type: Type.STRING },
-                                            sourceLabel: { type: Type.STRING },
-                                            section: { type: Type.STRING },
-                                            sourceId: { type: Type.STRING },
-                                            excerpt: { type: Type.STRING },
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        required: ['id', 'description', 'alternates', 'reasons', 'evidence']
-                    }
-                }
-            },
-            required: ['tailoredExperience'],
-        }
-    });
-
-    return data;
-}
-
-async function generateCoverLetter(ai: GoogleGenAI, args: {
-    profile: UserProfile;
-    jobAnalysis: any;
-    evidence: any;
-    options: ReturnType<typeof mergeTailoringOptions>;
-    companyResearch: string;
-    roleFamilyInstruction: string;
-}) {
-    const prompt = `
-Write a grounded cover letter body using the same evidence model as the tailored resume.
-
-${buildPromptPreview(args)}
-
-Task:
-- 3 paragraphs.
-- No greeting or sign-off.
-- Keep it under 320 words.
-- Sound tailored and concrete, not inflated.
-- Mention adjacent strengths honestly for career changers.
-- Do not claim direct experience where the evidence model marked gaps.
-`;
-
-    const { data } = await generateJson(ai, {
-        prompt,
-        schema: {
-            type: Type.OBJECT,
-            properties: {
-                coverLetter: { type: Type.STRING },
-            },
-            required: ['coverLetter'],
-        }
-    });
-
-    return data.coverLetter || '';
-}
-
-async function generateDiagnostics(ai: GoogleGenAI, args: {
-    profile: UserProfile;
-    jobAnalysis: any;
-    evidence: any;
-    summary: any;
-    skills: any;
-    experience: any;
-    options: ReturnType<typeof mergeTailoringOptions>;
-}) {
-    const prompt = `
-Produce blunt post-generation diagnostics for this tailored application.
-
-Job analysis:
-${JSON.stringify(args.jobAnalysis)}
-
-Evidence:
-${JSON.stringify(args.evidence)}
-
-Generated summary:
-${JSON.stringify(args.summary)}
-
-Generated skills:
-${JSON.stringify(args.skills)}
-
-Generated experience:
-${JSON.stringify(args.experience)}
-
-Rules:
-- Be blunt by default.
-- Focus on missing evidence, recruiter concerns, and overused phrasing.
-- Call out unsupported claims that were intentionally avoided.
-- Suggest manual improvements a user can make.
-`;
-
-    const { data } = await generateJson(ai, {
-        prompt,
-        schema: {
-            type: Type.OBJECT,
-            properties: {
-                matchedKeywords: { type: Type.ARRAY, items: { type: Type.STRING } },
-                missingKeywords: { type: Type.ARRAY, items: { type: Type.STRING } },
-                unsupportedClaimsAvoided: { type: Type.ARRAY, items: { type: Type.STRING } },
-                recruiterConcerns: { type: Type.ARRAY, items: { type: Type.STRING } },
-                overusedPhrasing: { type: Type.ARRAY, items: { type: Type.STRING } },
-                manualActionItems: { type: Type.ARRAY, items: { type: Type.STRING } },
-                editSuggestions: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            label: { type: Type.STRING },
-                            rationale: { type: Type.STRING },
-                            instruction: { type: Type.STRING },
-                        }
-                    }
-                },
-                keyKeywords: { type: Type.ARRAY, items: { type: Type.STRING } },
-                matchScore: { type: Type.NUMBER },
-            },
-            required: ['matchedKeywords', 'missingKeywords', 'unsupportedClaimsAvoided', 'recruiterConcerns', 'overusedPhrasing', 'manualActionItems', 'editSuggestions', 'keyKeywords', 'matchScore'],
-        }
-    });
-
-    return data;
-}
-
-async function runTailorResume(ai: GoogleGenAI, payload: {
-    baseProfile: UserProfile;
-    jd: JobDescription;
-    githubProjects: GithubProject[];
-    includeScore: boolean;
-    targetPageCount?: number;
-    options?: TailoringOptions;
-}, onProgress?: (stage: string, progress: number) => Promise<void>) {
-    const baseProfile = payload.baseProfile;
-    const options = mergeTailoringOptions(baseProfile, payload.options);
-    await onProgress?.('Analyzing job', 10);
-    const analyzedJob = await analyzeJobDescription(ai, payload.jd);
-    const jobAnalysis = {
-        ...analyzedJob,
-        ...(payload.options?.jobAnalysisOverride || {}),
-        keywords: payload.options?.jobAnalysisOverride?.keywords || analyzedJob.keywords,
-        requirements: payload.options?.jobAnalysisOverride?.requirements || analyzedJob.requirements,
-        responsibilities: payload.options?.jobAnalysisOverride?.responsibilities || analyzedJob.responsibilities,
-        painPoints: payload.options?.jobAnalysisOverride?.painPoints || analyzedJob.painPoints,
-        signalsToAvoid: payload.options?.jobAnalysisOverride?.signalsToAvoid || analyzedJob.signalsToAvoid,
-        mustHaveTerms: payload.options?.jobAnalysisOverride?.mustHaveTerms || analyzedJob.mustHaveTerms,
-        niceToHaveTerms: payload.options?.jobAnalysisOverride?.niceToHaveTerms || analyzedJob.niceToHaveTerms,
-    };
-    await onProgress?.('Researching company', 25);
-    const companyResearch = await researchCompany(ai, payload.jd.companyName);
-    const relevantProjects = selectRelevantProjects(
-        payload.githubProjects?.length ? payload.githubProjects : (baseProfile.githubProjects || []),
-        jobAnalysis.keywords,
-        options.focusSkill,
-    );
-    await onProgress?.('Resolving evidence', 35);
-    const evidenceResolution = await resolveEvidence(ai, {
-        profile: baseProfile,
-        jobAnalysis,
-        selectedProjects: relevantProjects,
-        companyResearch: companyResearch.summary,
-        options,
-    });
-    const roleFamilyInstruction = roleFamilyPacks[jobAnalysis.roleFamily] || roleFamilyPacks.general;
-
-    await onProgress?.('Writing resume and cover letter', 55);
-    const [summaryResult, skillsResult, experienceResult, coverLetter] = await Promise.all([
-        generateSummary(ai, {
-            profile: baseProfile,
-            jobAnalysis,
-            evidence: evidenceResolution,
-            options,
-            companyResearch: companyResearch.summary,
-            roleFamilyInstruction,
-        }),
-        generateSkills(ai, {
-            profile: baseProfile,
-            jobAnalysis,
-            evidence: evidenceResolution,
-            options,
-            roleFamilyInstruction,
-        }),
-        generateExperience(ai, {
-            profile: baseProfile,
-            jobAnalysis,
-            evidence: evidenceResolution,
-            options,
-            roleFamilyInstruction,
-        }),
-        generateCoverLetter(ai, {
-            profile: baseProfile,
-            jobAnalysis,
-            evidence: evidenceResolution,
-            options,
-            companyResearch: companyResearch.summary,
-            roleFamilyInstruction,
-        }),
-    ]);
-    await onProgress?.('Running diagnostics', 80);
-    const diagnosticsResult = await generateDiagnostics(ai, {
-        profile: baseProfile,
-        jobAnalysis,
-        evidence: evidenceResolution,
-        summary: summaryResult,
-        skills: skillsResult,
-        experience: experienceResult,
-        options,
-    });
-
-    const tailoredExperience = (experienceResult.tailoredExperience || []).map((tailoredExp: any) => {
-        const original = baseProfile.experience.find((exp) => exp.id === tailoredExp.id);
-        if (!original) return null;
-        return {
-            ...original,
-            description: tailoredExp.description?.length ? tailoredExp.description : original.description,
-        };
-    }).filter(Boolean);
-
-    const rewriteInsights = {
-        summary: {
-            original: baseProfile.summary || '',
-            tailored: summaryResult.tailoredSummary || baseProfile.summary,
-            alternate: summaryResult.alternateSummary || summaryResult.tailoredSummary || baseProfile.summary,
-            why: summaryResult.why || '',
-            evidence: summaryResult.evidence || [],
-        },
-        skills: (skillsResult.rationale || []).map((entry: any) => ({
-            skill: entry.skill,
-            why: entry.why,
-        })),
-        bullets: (experienceResult.tailoredExperience || []).map((item: any) => {
-            const original = baseProfile.experience.find((exp) => exp.id === item.id);
-            const rewrites = (item.description || []).map((bullet: string, index: number) => ({
-                original: original?.description?.[index] || '',
-                tailored: bullet,
-                alternate: item.alternates?.[index] || bullet,
-                why: item.reasons?.[index] || '',
-                evidence: item.evidence?.[index] || [],
-            }));
-            return {
-                experienceId: item.id,
-                rewrites,
-            };
-        }),
-    };
-
-    const tailoredProfile = {
-        ...baseProfile,
-        summary: summaryResult.tailoredSummary || baseProfile.summary,
-        skills: Array.isArray(skillsResult.tailoredSkills) && skillsResult.tailoredSkills.length
-            ? skillsResult.tailoredSkills
-            : baseProfile.skills,
-        experience: tailoredExperience.length ? tailoredExperience : baseProfile.experience,
-        githubProjects: relevantProjects,
-    };
-
-    const assembledPromptPreview = buildPromptPreview({
-        options,
-        jobAnalysis,
-        evidence: evidenceResolution,
-        companyResearch: companyResearch.summary,
-        roleFamilyInstruction,
-    });
-
-    const finalResult = {
-        application: {
-            resume: tailoredProfile,
-            coverLetter,
-            matchScore: payload.includeScore ? (diagnosticsResult.matchScore || 0) : 0,
-            keyKeywords: diagnosticsResult.keyKeywords || [],
-            searchSources: companyResearch.sources,
-            githubProjects: relevantProjects,
-            showMatchScore: payload.includeScore,
-            jobAnalysis,
-            evidenceResolution,
-            diagnostics: {
-                matchedKeywords: diagnosticsResult.matchedKeywords || [],
-                missingKeywords: diagnosticsResult.missingKeywords || [],
-                unsupportedClaimsAvoided: diagnosticsResult.unsupportedClaimsAvoided || [],
-                recruiterConcerns: diagnosticsResult.recruiterConcerns || [],
-                overusedPhrasing: diagnosticsResult.overusedPhrasing || [],
-                manualActionItems: diagnosticsResult.manualActionItems || [],
-            },
-            rewriteInsights,
-            assembledPromptPreview,
-            promptOverride: options.promptOverride || '',
-            selectedPlaybookId: options.selectedPlaybookId,
-            generationOptions: options,
-            editSuggestions: (diagnosticsResult.editSuggestions || []).map((suggestion: any) => ({
-                id: stableId('suggestion'),
-                label: suggestion.label,
-                rationale: suggestion.rationale,
-                instruction: suggestion.instruction,
-                accepted: false,
-            })),
-            regenerationHistory: options.regenerationInstructions
-                ? [{ timestamp: new Date().toISOString(), instructions: options.regenerationInstructions }]
-                : [],
-        },
-        rawResponse: JSON.stringify({
-            summary: summaryResult,
-            skills: skillsResult,
-            experience: experienceResult,
-            diagnostics: diagnosticsResult,
-        }),
-    };
-
-    return finalResult;
-}
-
-async function handleTailorResume(ai: GoogleGenAI, payload: {
-    baseProfile: UserProfile;
-    jd: JobDescription;
-    githubProjects: GithubProject[];
-    includeScore: boolean;
-    targetPageCount?: number;
-    options?: TailoringOptions;
-}) {
-    const finalResult = await runTailorResume(ai, payload);
-
-    return new Response(JSON.stringify(finalResult), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-}
-
-async function handleProcessGenerationJob(
-    ai: GoogleGenAI,
-    supabaseClient: any,
-    payload: { jobId: string; userId?: string },
-    authedUserId?: string,
-    isServiceRole?: boolean,
+async function matchEvidence(
+  client: any,
+  safetyId: string,
+  jobAnalysis: any,
+  profile: any,
+  evidence: any[],
 ) {
-    if (!payload?.jobId) {
-        throw new Error('Missing generation job id.');
+  return runStructured({
+    client,
+    prompt: evidenceMatchingPrompt({
+      jobAnalysis,
+      profile: normalizeProfileForPrompt(profile),
+      evidence,
+    }),
+    schema: EvidenceResolutionSchema,
+    schemaName: "evidence_resolution_v2",
+    tier: "judgment",
+    safetyId,
+  });
+}
+
+const sortExperiences = (experiences: any[]) => {
+  const dateValue = (value = "") => {
+    if (/present|current/i.test(value)) return Number.POSITIVE_INFINITY;
+    const parsed = Date.parse(value);
+    if (!Number.isNaN(parsed)) return parsed;
+    const year = value.match(/\b(19|20)\d{2}\b/)?.[0];
+    return year ? Date.parse(`${year}-01-01`) : Number.NEGATIVE_INFINITY;
+  };
+  return [...experiences].sort(
+    (a, b) => dateValue(b.endDate || b.startDate) - dateValue(a.endDate || a.startDate),
+  );
+};
+
+const mergeDraft = (baseProfile: any, draft: any, strategy: any) => {
+  const byId = new Map((draft.experiences || []).map((entry: any) => [entry.id, entry]));
+  const selected = new Set(strategy.selectedExperienceIds || []);
+  const baseExperiences = selected.size
+    ? (baseProfile.experience || []).filter((entry: any) => selected.has(entry.id))
+    : (baseProfile.experience || []);
+
+  const experience = sortExperiences(baseExperiences).map((entry: any) => {
+    const replacement: any = byId.get(entry.id);
+    return {
+      ...entry,
+      description: replacement?.bullets?.length
+        ? replacement.bullets.map((bullet: any) => bullet.text)
+        : entry.description,
+    };
+  });
+
+  return {
+    ...baseProfile,
+    summary: draft.summary || baseProfile.summary,
+    skills: draft.skills?.length ? draft.skills : baseProfile.skills,
+    experience,
+  };
+};
+
+const rewriteInsightsFromDraft = (baseProfile: any, draft: any) => ({
+  summary: {
+    original: baseProfile.summary || "",
+    tailored: draft.summary || baseProfile.summary || "",
+    alternate: draft.summary || baseProfile.summary || "",
+    why: "Positioned from the approved evidence strategy.",
+    evidence: [],
+  },
+  skills: (draft.skills || []).map((skill: string) => ({
+    skill,
+    why: "Selected for job relevance and evidence support.",
+  })),
+  bullets: (draft.experiences || []).map((item: any) => {
+    const original = (baseProfile.experience || []).find((entry: any) => entry.id === item.id);
+    return {
+      experienceId: item.id,
+      rewrites: (item.bullets || []).map((bullet: any, index: number) => ({
+        original: original?.description?.[index] || "",
+        tailored: bullet.text,
+        alternate: bullet.text,
+        why: bullet.why,
+        evidence: [],
+        evidenceIds: bullet.evidenceIds || [],
+        requirementIds: bullet.requirementIds || [],
+      })),
+    };
+  }),
+});
+
+async function createStrategyAndDraft(args: {
+  client: any;
+  safetyId: string;
+  job: any;
+  profile: any;
+  evidence: any[];
+  jobAnalysis: any;
+  evidenceResolution: any;
+  options: any;
+  existing?: Record<string, any>;
+  checkpoint?: (stage: string, values: Record<string, any>) => Promise<void>;
+}) {
+  const usages: any[] = [];
+  let strategy = args.existing?.contentStrategy;
+  if (!strategy) {
+    const strategyResult = await runStructured({
+      client: args.client,
+      prompt: contentStrategyPrompt({
+        jobAnalysis: args.jobAnalysis,
+        profile: normalizeProfileForPrompt(args.profile),
+        evidence: args.evidence,
+        matches: args.evidenceResolution.matches,
+        options: { ...args.options, targetPageCount: 2 },
+      }),
+      schema: ContentStrategySchema,
+      schemaName: "content_strategy_v2",
+      tier: "judgment",
+      safetyId: args.safetyId,
+    });
+    strategy = strategyResult.data;
+    usages.push(strategyResult.usage);
+    await args.checkpoint?.("drafting", { contentStrategy: strategy });
+  }
+
+  let draft = args.existing?.draft;
+  if (!draft) {
+    const draftResult = await runStructured({
+      client: args.client,
+      prompt: draftPrompt({
+        job: args.job,
+        jobAnalysis: args.jobAnalysis,
+        profile: normalizeProfileForPrompt(args.profile),
+        evidence: args.evidence,
+        strategy,
+        options: args.options,
+      }),
+      schema: DraftSchema,
+      schemaName: "application_draft_v2",
+      tier: "judgment",
+      safetyId: args.safetyId,
+    });
+    draft = draftResult.data;
+    usages.push(draftResult.usage);
+    await args.checkpoint?.("review", { contentStrategy: strategy, draft });
+  }
+
+  let profile = mergeDraft(args.profile, draft, strategy);
+  let deterministicIssues = validateDraft(profile, args.evidence, draft);
+  let reviewResult: any;
+  if (args.existing?.initialReview) {
+    reviewResult = { data: args.existing.initialReview };
+  } else {
+    reviewResult = await runStructured({
+      client: args.client,
+      prompt: qualityReviewPrompt({
+        job: args.job,
+        jobAnalysis: args.jobAnalysis,
+        evidence: args.evidence,
+        draft: { resume: profile, coverLetter: draft.coverLetter },
+        deterministicIssues,
+      }),
+      schema: QualityReportSchema,
+      schemaName: "recruiter_quality_report_v2",
+      tier: "judgment",
+      safetyId: args.safetyId,
+    });
+    usages.push(reviewResult.usage);
+    await args.checkpoint?.("review", {
+      contentStrategy: strategy,
+      draft,
+      initialReview: reviewResult.data,
+    });
+  }
+
+  const initialReview = reviewResult.data;
+  let repaired = Boolean(args.existing?.repairCompleted);
+  const needsRepair = !repaired && (
+    deterministicIssues.some((item: any) => item.severity === "error")
+    || !reviewResult.data.passed
+  );
+  if (needsRepair) {
+    const repairResult = await runStructured({
+      client: args.client,
+      prompt: repairPrompt({
+        job: args.job,
+        profile: normalizeProfileForPrompt(args.profile),
+        evidence: args.evidence,
+        strategy,
+        draft,
+        qualityReport: {
+          ...reviewResult.data,
+          issues: [...deterministicIssues, ...reviewResult.data.issues],
+        },
+      }),
+      schema: DraftSchema,
+      schemaName: "application_repair_v2",
+      tier: "judgment",
+      safetyId: args.safetyId,
+    });
+    usages.push(repairResult.usage);
+    draft = repairResult.data;
+    await args.checkpoint?.("review", {
+      contentStrategy: strategy,
+      draft,
+      initialReview: reviewResult.data,
+      repairCompleted: true,
+    });
+    profile = mergeDraft(args.profile, draft, strategy);
+    deterministicIssues = validateDraft(profile, args.evidence, draft);
+    repaired = true;
+  }
+
+  if (repaired) {
+    if (args.existing?.finalReview) {
+      reviewResult = { data: args.existing.finalReview };
+    } else {
+      reviewResult = await runStructured({
+      client: args.client,
+      prompt: qualityReviewPrompt({
+        job: args.job,
+        jobAnalysis: args.jobAnalysis,
+        evidence: args.evidence,
+        draft: { resume: profile, coverLetter: draft.coverLetter },
+        deterministicIssues,
+      }),
+      schema: QualityReportSchema,
+      schemaName: "recruiter_quality_report_repaired_v2",
+      tier: "judgment",
+      safetyId: args.safetyId,
+      });
+      usages.push(reviewResult.usage);
+      await args.checkpoint?.("review", {
+        contentStrategy: strategy,
+        draft,
+        initialReview,
+        repairCompleted: true,
+        finalReview: reviewResult.data,
+      });
+    }
+  }
+
+  const qualityReport = {
+    ...reviewResult.data,
+    passed: reviewResult.data.passed
+      && !deterministicIssues.some((item: any) => item.severity === "error"),
+    repaired,
+    issues: [...deterministicIssues, ...reviewResult.data.issues],
+    reviewedAt: now(),
+    model: MODEL_CONFIG.judgment.model,
+    promptVersion: PROMPT_VERSION,
+  };
+
+  const scores = Object.values(qualityReport.scores || {}) as number[];
+  const matchScore = scores.length
+    ? Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length)
+    : 0;
+
+  return {
+    application: {
+      resume: profile,
+      coverLetter: draft.coverLetter,
+      matchScore,
+      keyKeywords: args.jobAnalysis.keywords || [],
+      searchSources: [],
+      githubProjects: args.profile.githubProjects || [],
+      showMatchScore: true,
+      jobAnalysis: args.jobAnalysis,
+      evidenceResolution: args.evidenceResolution,
+      diagnostics: {
+        matchedKeywords: args.jobAnalysis.keywords || [],
+        missingKeywords: args.evidenceResolution.missingEvidence || [],
+        unsupportedClaimsAvoided: args.evidenceResolution.blockedClaims || [],
+        recruiterConcerns: qualityReport.issues.map((item: any) => item.message),
+        overusedPhrasing: qualityReport.issues
+          .filter((item: any) => item.code === "repeated_opener")
+          .map((item: any) => item.message),
+        manualActionItems: qualityReport.issues
+          .filter((item: any) => item.severity !== "info")
+          .map((item: any) => item.repairInstruction || item.message),
+      },
+      rewriteInsights: rewriteInsightsFromDraft(args.profile, draft),
+      assembledPromptPreview: `Prompt ${PROMPT_VERSION}\nModels: ${MODEL_CONFIG.extraction.model}, ${MODEL_CONFIG.judgment.model}\nTwo-page evidence-first strategy.`,
+      promptOverride: args.options?.promptOverride || "",
+      selectedPlaybookId: args.options?.selectedPlaybookId,
+      generationOptions: { ...args.options, targetPageCount: 2 },
+      editSuggestions: qualityReport.issues.map((item: any) => ({
+        id: item.id,
+        label: item.code,
+        rationale: item.message,
+        instruction: item.repairInstruction || item.message,
+        accepted: false,
+      })),
+      regenerationHistory: args.options?.regenerationInstructions
+        ? [{ timestamp: now(), instructions: args.options.regenerationInstructions }]
+        : [],
+      contentStrategy: strategy,
+      qualityReport,
+    },
+    draft,
+    usages,
+    repairCount: repaired ? 1 : 0,
+  };
+}
+
+async function handleGenerationJob(args: {
+  client: any;
+  safetyId: string;
+  supabaseClient: any;
+  payload: any;
+  authedUserId?: string;
+  isServiceRole: boolean;
+}) {
+  const { data: job, error: jobError } = await args.supabaseClient
+    .from("generation_jobs")
+    .select("*")
+    .eq("id", args.payload.jobId)
+    .single();
+  if (jobError || !job) throw new Error(jobError?.message || "Generation job not found.");
+  if (!args.isServiceRole && job.user_id !== args.authedUserId) {
+    return jsonResponse({ error: "Unauthorized generation job access." }, 403);
+  }
+  if (["succeeded", "cancelled"].includes(job.status)) return jsonResponse({ job });
+  if (job.status === "needs_input") return jsonResponse({ job }, 202);
+
+  const updatedAt = job.updated_at ? new Date(job.updated_at).getTime() : 0;
+  if (job.status === "running" && Date.now() - updatedAt < 8 * 60 * 1000) {
+    return jsonResponse({ job, skipped: "already running" }, 202);
+  }
+
+  const updateJob = async (updates: Record<string, any>) => {
+    const { error } = await args.supabaseClient
+      .from("generation_jobs")
+      .update({ ...updates, updated_at: now() })
+      .eq("id", job.id);
+    if (error) throw error;
+  };
+
+  const request = job.request_payload || {};
+  const state = job.working_state || {};
+  const usages = [...(job.usage_metrics?.calls || [])];
+
+  try {
+    await updateJob({
+      status: "running",
+      stage: "job_analysis",
+      progress: 8,
+      error_message: null,
+      attempt_count: (job.attempt_count || 0) + 1,
+      started_at: job.started_at || now(),
+      prompt_version: PROMPT_VERSION,
+      schema_version: SCHEMA_VERSION,
+      model_config: MODEL_CONFIG,
+    });
+
+    const evidence = await loadEvidence(args.supabaseClient, job.user_id, request.baseProfile);
+    let jobAnalysis = state.jobAnalysis;
+    if (!jobAnalysis) {
+      const analysis = await analyzeJob(args.client, args.safetyId, request.jd);
+      jobAnalysis = {
+        ...analysis.data,
+        ...(request.options?.jobAnalysisOverride || {}),
+      };
+      usages.push(analysis.usage);
+      await updateJob({
+        stage: "evidence_matching",
+        progress: 25,
+        working_state: { ...state, jobAnalysis },
+        usage_metrics: recordUsage(usages),
+      });
     }
 
-    const { data: job, error: jobError } = await supabaseClient
-        .from('generation_jobs')
-        .select('*')
-        .eq('id', payload.jobId)
-        .single();
-
-    if (jobError || !job) {
-        throw new Error(jobError?.message || 'Generation job not found.');
-    }
-
-    if (!isServiceRole && job.user_id !== authedUserId) {
-        return new Response(JSON.stringify({ error: 'Unauthorized generation job access.' }), {
-            status: 403,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-    }
-
-    if (isServiceRole && payload.userId && job.user_id !== payload.userId) {
-        return new Response(JSON.stringify({ error: 'Generation job owner mismatch.' }), {
-            status: 403,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-    }
-
-    if (job.status === 'succeeded') {
-        return new Response(JSON.stringify({ job }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-    }
-
-    const updatedAt = job.updated_at ? new Date(job.updated_at).getTime() : 0;
-    const runningRecently = job.status === 'running' && Date.now() - updatedAt < 8 * 60 * 1000;
-    if (runningRecently) {
-        return new Response(JSON.stringify({ job, skipped: 'already running' }), {
-            status: 202,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-    }
-
-    const attemptCount = (job.attempt_count || 0) + 1;
-
-    const updateJob = async (updates: Record<string, any>) => {
-        const { error } = await supabaseClient
-            .from('generation_jobs')
-            .update({
-                ...updates,
-                updated_at: new Date().toISOString(),
-            })
-            .eq('id', job.id);
-
-        if (error) throw error;
+    const resolutionResult = await matchEvidence(
+      args.client,
+      args.safetyId,
+      jobAnalysis,
+      request.baseProfile,
+      evidence,
+    );
+    usages.push(resolutionResult.usage);
+    const questionHistory = state.questionHistory || [];
+    const priorQuestionKeys = new Set(questionHistory.map(evidenceQuestionKey));
+    const evidenceResolution = {
+      ...resolutionResult.data,
+      questions: (resolutionResult.data.questions || []).filter(
+        (question: any) => !priorQuestionKeys.has(evidenceQuestionKey(question)),
+      ),
     };
 
-    try {
-        await updateJob({
-            status: 'running',
-            stage: 'Starting generation',
-            progress: 5,
-            error_message: null,
-            attempt_count: attemptCount,
-            started_at: job.started_at || new Date().toISOString(),
-            finished_at: null,
-        });
-
-        const requestPayload = job.request_payload || {};
-        const result = await runTailorResume(ai, {
-            baseProfile: requestPayload.baseProfile,
-            jd: requestPayload.jd,
-            githubProjects: requestPayload.githubProjects || [],
-            includeScore: requestPayload.includeScore ?? true,
-            targetPageCount: requestPayload.targetPageCount || 1,
-            options: requestPayload.options,
-        }, async (stage, progress) => {
-            await updateJob({ stage, progress });
-        });
-
-        await updateJob({ stage: 'Saving application', progress: 92 });
-
-        const application = result.application || {};
-        const leadContext = requestPayload.leadContext;
-        const searchSources = leadContext
-            ? [
-                ...(application.searchSources || []),
-                {
-                    title: leadContext.leadSourceLabel || 'Lead source',
-                    uri: leadContext.leadUrl,
-                },
-            ]
-            : (application.searchSources || []);
-
-        const { data: savedApplication, error: saveError } = await supabaseClient
-            .from('applications')
-            .insert({
-                user_id: job.user_id,
-                company_name: requestPayload.jd.companyName,
-                role_title: requestPayload.jd.roleTitle,
-                raw_job_description: requestPayload.jd.rawText,
-                resume_data: application.resume,
-                cover_letter: application.coverLetter || '',
-                match_score: application.matchScore || 0,
-                key_keywords: application.keyKeywords || [],
-                search_sources: searchSources,
-                status: 'Pending',
-                github_projects: application.githubProjects,
-                show_match_score: application.showMatchScore,
-                profile_photo_url: application.resume?.profilePhotoUrl || requestPayload.baseProfile?.profilePhotoUrl,
-                template: requestPayload.baseProfile?.portfolioTemplate,
-                portfolio_theme: requestPayload.baseProfile?.portfolioTheme || requestPayload.baseProfile?.portfolioTemplate,
-                job_analysis: application.jobAnalysis,
-                evidence_resolution: application.evidenceResolution,
-                diagnostics: application.diagnostics,
-                rewrite_insights: application.rewriteInsights,
-                prompt_preview: application.assembledPromptPreview,
-                selected_playbook_id: application.selectedPlaybookId,
-                generation_options: {
-                    ...(application.generationOptions || {}),
-                    promptOverride: application.promptOverride ?? application.generationOptions?.promptOverride,
-                },
-                edit_suggestions: application.editSuggestions,
-                regeneration_history: application.regenerationHistory,
-            })
-            .select('id')
-            .single();
-
-        if (saveError) throw saveError;
-
-        await updateJob({
-            status: 'succeeded',
-            stage: 'Complete',
-            progress: 100,
-            result_application_id: savedApplication.id,
-            finished_at: new Date().toISOString(),
-        });
-
-        return new Response(JSON.stringify({ jobId: job.id, applicationId: savedApplication.id }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-    } catch (error: any) {
-        console.error('Generation job failed:', error);
-        await updateJob({
-            status: 'failed',
-            stage: 'Failed',
-            progress: 100,
-            error_message: error.message || 'Generation failed.',
-            finished_at: new Date().toISOString(),
-        }).catch((updateError) => console.error('Failed to mark generation job failed:', updateError));
-
-        return new Response(JSON.stringify({ error: error.message || 'Generation failed.' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+    if (!state.interviewComplete && evidenceResolution.questions?.length) {
+      await updateJob({
+        status: "needs_input",
+        stage: "needs_input",
+        progress: 35,
+        pending_questions: evidenceResolution.questions.slice(0, 5),
+        working_state: { ...state, jobAnalysis, evidenceResolution },
+        usage_metrics: recordUsage(usages),
+      });
+      return jsonResponse({
+        jobId: job.id,
+        status: "needs_input",
+        questions: evidenceResolution.questions.slice(0, 5),
+      }, 202);
     }
-}
 
-async function handleCondenseResume(ai: GoogleGenAI, payload: { profile: UserProfile }) {
-    const prompt = `
-You are condensing a resume while keeping grounded content intact.
-
-Profile:
-${JSON.stringify({
-        summary: payload.profile.summary,
-        skills: payload.profile.skills,
-        experience: payload.profile.experience,
-    })}
-
-Task:
-- Condense summary to 2 sentences maximum.
-- Keep 6-8 strongest skills.
-- Limit each role to up to 3 bullets without inventing details.
-`;
-
-    const { data } = await generateJson(ai, {
-        prompt,
-        schema: {
-            type: Type.OBJECT,
-            properties: {
-                condensedSummary: { type: Type.STRING },
-                selectedSkillIndices: { type: Type.ARRAY, items: { type: Type.NUMBER } },
-                condensedExperience: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            id: { type: Type.STRING },
-                            bulletIndices: { type: Type.ARRAY, items: { type: Type.NUMBER } },
-                        }
-                    }
-                }
-            }
-        }
+    await updateJob({
+      stage: "content_strategy",
+      progress: 48,
+      working_state: { ...state, jobAnalysis, evidenceResolution, interviewComplete: true },
+      pending_questions: [],
+      usage_metrics: recordUsage(usages),
     });
 
-    const condensedSkills = (data.selectedSkillIndices || [])
-        .filter((index: number) => index >= 0 && index < payload.profile.skills.length)
-        .map((index: number) => payload.profile.skills[index]);
+    let pipelineState = {
+      ...state,
+      jobAnalysis,
+      evidenceResolution,
+      interviewComplete: true,
+    };
+    const generated = await createStrategyAndDraft({
+      client: args.client,
+      safetyId: args.safetyId,
+      job: request.jd,
+      profile: request.baseProfile,
+      evidence,
+      jobAnalysis,
+      evidenceResolution,
+      options: request.options || {},
+      existing: pipelineState,
+      checkpoint: async (stage, values) => {
+        pipelineState = { ...pipelineState, ...values };
+        await updateJob({
+          stage,
+          progress: stage === "drafting" ? 60 : 76,
+          working_state: pipelineState,
+          usage_metrics: recordUsage(usages),
+        });
+      },
+    });
+    usages.push(...generated.usages);
 
-    const condensedExperience = (data.condensedExperience || []).map((item: any) => {
-        const original = payload.profile.experience.find((exp) => exp.id === item.id);
-        if (!original) return null;
-        return {
-            ...original,
-            description: (item.bulletIndices || [])
-                .filter((index: number) => index >= 0 && index < original.description.length)
-                .map((index: number) => original.description[index]),
-        };
-    }).filter(Boolean);
+    await updateJob({
+      stage: "review",
+      progress: 88,
+      quality_report: generated.application.qualityReport,
+      repair_count: generated.repairCount,
+      usage_metrics: recordUsage(usages),
+    });
 
-    return new Response(JSON.stringify({
-        profile: {
-            ...payload.profile,
-            summary: data.condensedSummary || payload.profile.summary,
-            skills: condensedSkills.length ? condensedSkills : payload.profile.skills.slice(0, 8),
-            experience: condensedExperience.length ? condensedExperience : payload.profile.experience,
+    const leadContext = request.leadContext;
+    const searchSources = leadContext
+      ? [{
+        title: leadContext.leadSourceLabel || "Lead source",
+        uri: leadContext.leadUrl,
+      }]
+      : [];
+    const application = generated.application;
+    let { data: saved, error: saveError } = await args.supabaseClient
+      .from("applications")
+      .insert({
+        user_id: job.user_id,
+        company_name: request.jd.companyName,
+        role_title: request.jd.roleTitle,
+        raw_job_description: request.jd.rawText,
+        resume_data: application.resume,
+        cover_letter: application.coverLetter,
+        match_score: application.matchScore,
+        key_keywords: application.keyKeywords,
+        search_sources: searchSources,
+        status: "Pending",
+        github_projects: application.githubProjects,
+        show_match_score: request.includeScore ?? true,
+        profile_photo_url: application.resume?.profilePhotoUrl,
+        template: request.baseProfile?.portfolioTemplate,
+        portfolio_theme: request.baseProfile?.portfolioTheme || request.baseProfile?.portfolioTemplate,
+        tailoring_run_id: job.id,
+      })
+      .select("id")
+      .single();
+    if (saveError?.code === "23505") {
+      const existingApplication = await args.supabaseClient
+        .from("applications")
+        .select("id")
+        .eq("tailoring_run_id", job.id)
+        .single();
+      if (existingApplication.error) throw existingApplication.error;
+      saved = existingApplication.data;
+      saveError = null;
+    }
+    if (saveError || !saved) throw saveError || new Error("Application could not be persisted.");
+
+    const { error: privateError } = await args.supabaseClient
+      .from("application_private_artifacts")
+      .upsert({
+        application_id: saved.id,
+        user_id: job.user_id,
+        job_analysis: application.jobAnalysis,
+        evidence_resolution: application.evidenceResolution,
+        content_strategy: application.contentStrategy,
+        quality_report: application.qualityReport,
+        diagnostics: application.diagnostics,
+        rewrite_insights: application.rewriteInsights,
+        prompt_preview: application.assembledPromptPreview,
+        selected_playbook_id: application.selectedPlaybookId,
+        generation_options: application.generationOptions,
+        edit_suggestions: application.editSuggestions,
+        regeneration_history: application.regenerationHistory,
+        model_config: MODEL_CONFIG,
+        usage_metrics: recordUsage(usages),
+        updated_at: now(),
+      });
+    if (privateError) throw privateError;
+
+    const { error: eventError } = await args.supabaseClient.from("application_events").insert({
+      application_id: saved.id,
+      user_id: job.user_id,
+      event_type: "created",
+      occurred_at: now(),
+      notes: "Application generated by Tailoring v2.",
+      metadata: { tailoringRunId: job.id },
+    });
+    if (eventError && eventError.code !== "23505") throw eventError;
+
+    const usedEvidenceIds = Array.from(new Set([
+      ...(application.contentStrategy?.summaryEvidenceIds || []),
+      ...(application.contentStrategy?.skillEvidenceIds || []),
+      ...(application.contentStrategy?.coverLetterEvidenceIds || []),
+      ...(application.contentStrategy?.bulletPlans || []).flatMap((plan: any) => plan.evidenceIds || []),
+    ]));
+    if (usedEvidenceIds.length) {
+      await args.supabaseClient
+        .from("candidate_evidence")
+        .update({ last_used_at: now(), updated_at: now() })
+        .in("id", usedEvidenceIds)
+        .eq("user_id", job.user_id);
+      const locationByEvidence = new Map<string, Set<string>>();
+      for (const evidenceId of application.contentStrategy?.summaryEvidenceIds || []) {
+        locationByEvidence.set(evidenceId, new Set([...(locationByEvidence.get(evidenceId) || []), "summary"]));
+      }
+      for (const evidenceId of application.contentStrategy?.skillEvidenceIds || []) {
+        locationByEvidence.set(evidenceId, new Set([...(locationByEvidence.get(evidenceId) || []), "skills"]));
+      }
+      for (const evidenceId of application.contentStrategy?.coverLetterEvidenceIds || []) {
+        locationByEvidence.set(evidenceId, new Set([...(locationByEvidence.get(evidenceId) || []), "cover_letter"]));
+      }
+      for (const plan of application.contentStrategy?.bulletPlans || []) {
+        for (const evidenceId of plan.evidenceIds || []) {
+          locationByEvidence.set(evidenceId, new Set([
+            ...(locationByEvidence.get(evidenceId) || []),
+            `experience:${plan.experienceId}`,
+          ]));
+        }
+      }
+      const { error: usageError } = await args.supabaseClient
+        .from("candidate_evidence_usage")
+        .upsert(usedEvidenceIds.map((evidenceId) => ({
+          evidence_id: evidenceId,
+          application_id: saved.id,
+          generation_job_id: job.id,
+          user_id: job.user_id,
+          locations: Array.from(locationByEvidence.get(evidenceId) || []),
+        })), { onConflict: "evidence_id,generation_job_id" });
+      if (usageError) throw usageError;
+    }
+
+    await updateJob({
+      status: "succeeded",
+      stage: "completed",
+      progress: 100,
+      result_application_id: saved.id,
+      accepted_evidence_ids: usedEvidenceIds,
+      finished_at: now(),
+      usage_metrics: recordUsage(usages),
+    });
+    return jsonResponse({ jobId: job.id, applicationId: saved.id });
+  } catch (error: any) {
+    console.error("Tailoring v2 generation failed:", error);
+    await updateJob({
+      status: "failed",
+      stage: "failed",
+      progress: 100,
+      error_message: error.message || "Generation failed.",
+      finished_at: now(),
+      usage_metrics: recordUsage(usages),
+    }).catch((updateError: any) => console.error("Failed to persist job failure:", updateError));
+    return jsonResponse({ error: error.message || "Generation failed." }, 400);
+  }
+}
+
+async function answerEvidenceQuestion(args: {
+  client: any;
+  safetyId: string;
+  supabaseClient: any;
+  userId: string;
+  payload: any;
+}) {
+  const { data: job, error } = await args.supabaseClient
+    .from("generation_jobs")
+    .select("*")
+    .eq("id", args.payload.jobId)
+    .eq("user_id", args.userId)
+    .single();
+  if (error || !job) throw new Error(error?.message || "Generation job not found.");
+  const questions = job.pending_questions || [];
+  const question = questions.find((item: any) => item.id === args.payload.questionId);
+  if (!question) throw new Error("Evidence question not found.");
+
+  let evidenceId: string | undefined;
+  if (args.payload.disposition === "answered") {
+    if (!args.payload.answer?.trim()) throw new Error("An evidence answer is required.");
+    const normalized = await runStructured({
+      client: args.client,
+      prompt: normalizeEvidenceAnswerPrompt({
+        question,
+        answer: args.payload.answer.trim(),
+        profile: job.request_payload?.baseProfile,
+      }),
+      schema: CandidateEvidenceSchema,
+      schemaName: "candidate_evidence_answer_v2",
+      tier: "extraction",
+      safetyId: args.safetyId,
+    });
+    const dedupeKey = normalizedEvidenceKey(normalized.data);
+    const { data: duplicate } = await args.supabaseClient
+      .from("candidate_evidence")
+      .select("id")
+      .eq("user_id", args.userId)
+      .eq("dedupe_key", dedupeKey)
+      .maybeSingle();
+    if (duplicate?.id) {
+      evidenceId = duplicate.id;
+    } else {
+      const { data: inserted, error: insertError } = await args.supabaseClient
+        .from("candidate_evidence")
+        .insert({
+          user_id: args.userId,
+          title: normalized.data.title,
+          situation: normalized.data.situation,
+          action: normalized.data.action,
+          result: normalized.data.result,
+          metric: normalized.data.metric,
+          scope: normalized.data.scope,
+          tools: normalized.data.tools,
+          team_size: normalized.data.teamSize,
+          domain: normalized.data.domain,
+          tags: normalized.data.tags,
+          source_type: normalized.data.sourceType,
+          source_label: normalized.data.sourceLabel,
+          source_excerpt: normalized.data.sourceExcerpt,
+          confidence: normalized.data.confidence,
+          role_ids: normalized.data.roleIds,
+          must_include: false,
+          nice_to_use: true,
+          unavailable: false,
+          disabled: false,
+          role_family_constraints: [],
+          dedupe_key: dedupeKey,
+        })
+        .select("id")
+        .single();
+      if (insertError) throw insertError;
+      evidenceId = inserted.id;
+    }
+  }
+
+  const updatedQuestions = questions.map((item: any) =>
+    item.id === question.id
+      ? {
+        ...item,
+        status: args.payload.disposition,
+        answer: args.payload.disposition === "answered" ? args.payload.answer.trim() : "",
+        evidenceId,
+      }
+      : item
+  );
+  const remaining = updatedQuestions.filter((item: any) => item.status === "pending");
+  const accepted = evidenceId
+    ? Array.from(new Set([...(job.accepted_evidence_ids || []), evidenceId]))
+    : (job.accepted_evidence_ids || []);
+
+  const priorHistory = job.working_state?.questionHistory || [];
+  const resolvedQuestion = updatedQuestions.find((item: any) => item.id === question.id);
+  const questionHistory = [
+    ...priorHistory.filter((item: any) => evidenceQuestionKey(item) !== evidenceQuestionKey(resolvedQuestion)),
+    resolvedQuestion,
+  ];
+  const materialGapsRemain = Boolean(job.working_state?.evidenceResolution?.missingEvidence?.length);
+  const roundDecisionRequired = remaining.length === 0
+    && materialGapsRemain
+    && (job.working_state?.evidenceRound || 1) < 3;
+
+  const { error: updateError } = await args.supabaseClient
+    .from("generation_jobs")
+    .update({
+      pending_questions: updatedQuestions,
+      accepted_evidence_ids: accepted,
+      status: remaining.length || roundDecisionRequired ? "needs_input" : "queued",
+      stage: remaining.length || roundDecisionRequired ? "needs_input" : "evidence_matching",
+      working_state: {
+        ...(job.working_state || {}),
+        interviewComplete: remaining.length === 0 && !roundDecisionRequired,
+        roundDecisionRequired,
+        evidenceRound: job.working_state?.evidenceRound || 1,
+        questionHistory,
+      },
+      updated_at: now(),
+    })
+    .eq("id", job.id);
+  if (updateError) throw updateError;
+  return jsonResponse({
+    jobId: job.id,
+    questions: updatedQuestions,
+    remaining: remaining.length,
+    roundDecisionRequired,
+  });
+}
+
+async function setEvidenceRoundDecision(args: {
+  supabaseClient: any;
+  userId: string;
+  payload: any;
+  anotherRound: boolean;
+}) {
+  const { data: job, error } = await args.supabaseClient
+    .from("generation_jobs")
+    .select("working_state")
+    .eq("id", args.payload.jobId)
+    .eq("user_id", args.userId)
+    .single();
+  if (error || !job) throw new Error(error?.message || "Generation job not found.");
+  const state = job.working_state || {};
+  const { error: updateError } = await args.supabaseClient
+    .from("generation_jobs")
+    .update({
+      status: "queued",
+      stage: "evidence_matching",
+      pending_questions: [],
+      working_state: {
+        ...state,
+        interviewComplete: !args.anotherRound,
+        roundDecisionRequired: false,
+        evidenceRound: args.anotherRound ? (state.evidenceRound || 1) + 1 : (state.evidenceRound || 1),
+      },
+      updated_at: now(),
+    })
+    .eq("id", args.payload.jobId)
+    .eq("user_id", args.userId);
+  if (updateError) throw updateError;
+  return jsonResponse({ ok: true });
+}
+
+async function parseResume(client: any, safetyId: string, payload: any) {
+  const result = await runStructured({
+    client,
+    prompt: "Extract the supplied resume PDF. Use only facts present in the file. Preserve employer, title, date, and bullet text faithfully.",
+    schema: ParsedResumeSchema,
+    schemaName: "parsed_resume_v2",
+    tier: "extraction",
+    safetyId,
+    input: [{
+      role: "user",
+      content: [
+        { type: "input_text", text: "Extract this resume into the required structure without inference." },
+        {
+          type: "input_file",
+          filename: "resume.pdf",
+          file_data: `data:application/pdf;base64,${payload.base64Pdf}`,
         },
-        rawResponse: JSON.stringify(data),
-    }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+      ],
+    }],
+  });
+  return jsonResponse(result.data);
 }
 
-async function handleCondenseCoverLetter(ai: GoogleGenAI, payload: { content: string; candidateName: string; companyName: string }) {
-    const prompt = `
-Condense this cover letter to a grounded, high-signal single-page version.
-
-Candidate: ${payload.candidateName}
-Company: ${payload.companyName}
-Content:
-${payload.content}
-
-Rules:
-- Keep it specific.
-- Remove filler and repetition.
-- Preserve only grounded claims already present.
-`;
-
-    const { data } = await generateJson(ai, {
-        prompt,
-        schema: {
-            type: Type.OBJECT,
-            properties: {
-                content: { type: Type.STRING },
-            },
-            required: ['content'],
-        }
-    });
-
-    return new Response(JSON.stringify({
-        content: data.content || payload.content,
-        rawResponse: JSON.stringify(data),
-    }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+async function generateIdealJob(client: any, safetyId: string, payload: any) {
+  const result = await runStructured({
+    client,
+    prompt: `Create a realistic ideal job-description benchmark from this profile. Do not invent candidate experience.\nProfile:\n${JSON.stringify(normalizeProfileForPrompt(payload.profile))}\nDirection:\n${payload.instructions || "None"}`,
+    schema: IdealJobSchema,
+    schemaName: "ideal_job_v2",
+    tier: "extraction",
+    safetyId,
+  });
+  return jsonResponse(result.data);
 }
+
+async function importProfileSource(client: any, safetyId: string, payload: any) {
+  const result = await runStructured({
+    client,
+    prompt: `Extract only career facts from this supplied profile source.\nURL: ${payload.url || ""}\nLabel: ${payload.label || ""}\nText: ${payload.rawText || ""}`,
+    schema: ImportedSourceSchema,
+    schemaName: "imported_profile_source_v2",
+    tier: "extraction",
+    safetyId,
+    tools: payload.rawText ? undefined : [{ type: "web_search" }],
+  });
+  return jsonResponse({
+    id: crypto.randomUUID(),
+    label: result.data.label || payload.label || payload.url,
+    url: payload.url,
+    sourceType: payload.sourceType || "other",
+    summary: result.data.summary,
+    skills: result.data.skills,
+    achievements: result.data.achievements,
+    importedAt: now(),
+  });
+}
+
+async function condenseResume(client: any, safetyId: string, payload: any) {
+  const result = await runStructured({
+    client,
+    prompt: `Select and condense this resume without adding facts. Keep at most two pages worth of content.\n${JSON.stringify(normalizeProfileForPrompt(payload.profile))}`,
+    schema: CondensedResumeSchema,
+    schemaName: "condensed_resume_v2",
+    tier: "extraction",
+    safetyId,
+  });
+  const skills = (result.data.selectedSkillIndices || [])
+    .filter((index: number) => index >= 0 && index < payload.profile.skills.length)
+    .map((index: number) => payload.profile.skills[index]);
+  const experience = (result.data.condensedExperience || []).map((item: any) => {
+    const original = payload.profile.experience.find((entry: any) => entry.id === item.id);
+    if (!original) return null;
+    return {
+      ...original,
+      description: item.bulletIndices
+        .filter((index: number) => index >= 0 && index < original.description.length)
+        .map((index: number) => original.description[index]),
+    };
+  }).filter(Boolean);
+  return jsonResponse({
+    profile: {
+      ...payload.profile,
+      summary: result.data.condensedSummary || payload.profile.summary,
+      skills: skills.length ? skills : payload.profile.skills.slice(0, 8),
+      experience: experience.length ? experience : payload.profile.experience,
+    },
+    rawResponse: JSON.stringify(result.data),
+  });
+}
+
+async function condenseCoverLetter(client: any, safetyId: string, payload: any) {
+  const result = await runStructured({
+    client,
+    prompt: `Condense this cover letter to 220-320 grounded words. Preserve all facts and do not add claims.\n${payload.content}`,
+    schema: CondensedTextSchema,
+    schemaName: "condensed_cover_letter_v2",
+    tier: "extraction",
+    safetyId,
+  });
+  return jsonResponse({ content: result.data.content, rawResponse: JSON.stringify(result.data) });
+}
+
+async function reviewRenderedResume(client: any, safetyId: string, payload: any) {
+  const response = await client.responses.parse({
+    model: MODEL_CONFIG.judgment.model,
+    reasoning: { effort: MODEL_CONFIG.judgment.effort },
+    store: false,
+    safety_identifier: safetyId,
+    input: [{
+      role: "user",
+      content: [
+        {
+          type: "input_text",
+          text: "Review the rendered resume PDF. Report page count, clipping, orphan pages, unreadable hierarchy, excessive density, malformed text, or suspicious text. Warnings are advisory.",
+        },
+        {
+          type: "input_file",
+          filename: "tailored-resume.pdf",
+          file_data: `data:application/pdf;base64,${payload.base64Pdf}`,
+        },
+      ],
+    }],
+    text: { format: zodTextFormat(RenderReviewSchema, "render_review_v2") },
+  });
+  if (!response.output_parsed) throw new Error("Rendered PDF review returned no structured result.");
+  return jsonResponse(response.output_parsed);
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  try {
+    const { action, payload, access_token } = await req.json();
+    const authHeader = req.headers.get("Authorization");
+    const token = authHeader?.startsWith("Bearer ")
+      ? authHeader.replace("Bearer ", "")
+      : access_token;
+    if (!token) return jsonResponse({ error: "Missing authorization token." }, 401);
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const isServiceRole = Boolean(serviceRoleKey && token === serviceRoleKey);
+    const supabaseClient = createClient(
+      supabaseUrl,
+      isServiceRole ? serviceRoleKey : anonKey,
+      { global: { headers: { Authorization: `Bearer ${token}` } } },
+    );
+
+    let userId = payload?.userId;
+    if (!isServiceRole) {
+      const { data: { user }, error } = await supabaseClient.auth.getUser(token);
+      if (error || !user) return jsonResponse({ error: "Unauthorized." }, 401);
+      userId = user.id;
+    }
+    if (!userId) return jsonResponse({ error: "Unable to resolve request owner." }, 401);
+
+    const client = createModelClient();
+    const safetyId = await safetyIdentifier(userId);
+
+    switch (action) {
+      case "parseResume":
+        return parseResume(client, safetyId, payload);
+      case "analyzeJobDescription": {
+        const result = await analyzeJob(client, safetyId, payload.jd);
+        return jsonResponse(result.data);
+      }
+      case "processGenerationJob":
+        return handleGenerationJob({
+          client,
+          safetyId,
+          supabaseClient,
+          payload,
+          authedUserId: userId,
+          isServiceRole,
+        });
+      case "answerEvidenceQuestion":
+        return answerEvidenceQuestion({ client, safetyId, supabaseClient, userId, payload });
+      case "continueAfterEvidence":
+        return setEvidenceRoundDecision({ supabaseClient, userId, payload, anotherRound: false });
+      case "requestAdditionalEvidenceRound":
+        return setEvidenceRoundDecision({ supabaseClient, userId, payload, anotherRound: true });
+      case "cancelGenerationJob": {
+        const { error } = await supabaseClient
+          .from("generation_jobs")
+          .update({ status: "cancelled", stage: "cancelled", finished_at: now(), updated_at: now() })
+          .eq("id", payload.jobId)
+          .eq("user_id", userId);
+        if (error) throw error;
+        return jsonResponse({ ok: true });
+      }
+      case "generateIdealJobDescription":
+        return generateIdealJob(client, safetyId, payload);
+      case "importProfileSource":
+        return importProfileSource(client, safetyId, payload);
+      case "condenseResume":
+        return condenseResume(client, safetyId, payload);
+      case "condenseCoverLetter":
+        return condenseCoverLetter(client, safetyId, payload);
+      case "reviewRenderedResume":
+        return reviewRenderedResume(client, safetyId, payload);
+      default:
+        return jsonResponse({ error: `Unknown action: ${action}` }, 400);
+    }
+  } catch (error: any) {
+    console.error("Tailoring v2 Edge Function error:", error);
+    return jsonResponse({ error: error.message || "Unexpected generation error." }, 400);
+  }
+});

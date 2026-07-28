@@ -2,17 +2,15 @@ import { supabase } from './supabaseClient';
 import {
   UserProfile,
   JobDescription,
-  TailoredApplication,
-  TailoringOptions,
   JobAnalysis,
   IdealJobDescription,
 } from '../types';
 
-const callGeminiFunction = async (action: string, payload: any) => {
+const callOpenAIFunction = async (action: string, payload: any) => {
   const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
 
   if (sessionError) {
-    console.warn('[GeminiService] Failed to refresh session:', sessionError);
+    console.warn('[OpenAIService] Failed to refresh session:', sessionError);
   }
 
   const headers = session?.access_token
@@ -41,18 +39,18 @@ const callGeminiFunction = async (action: string, payload: any) => {
 
 export const parseResumeFromPdf = async (base64Pdf: string): Promise<UserProfile> => {
   try {
-    return await callGeminiFunction('parseResume', { base64Pdf });
+    return await callOpenAIFunction('parseResume', { base64Pdf });
   } catch (error: any) {
-    console.error('Gemini PDF Parse Error:', error);
+    console.error('OpenAI PDF Parse Error:', error);
     throw new Error(error.message || 'Failed to parse PDF. Ensure the file is a readable PDF.');
   }
 };
 
 export const analyzeJobDescription = async (jd: JobDescription): Promise<JobAnalysis> => {
   try {
-    return await callGeminiFunction('analyzeJobDescription', { jd });
+    return await callOpenAIFunction('analyzeJobDescription', { jd });
   } catch (error: any) {
-    console.error('Gemini JD Analysis Error:', error);
+    console.error('OpenAI JD Analysis Error:', error);
     throw new Error(error.message || 'Failed to analyze job description.');
   }
 };
@@ -62,12 +60,12 @@ export const generateIdealJobDescription = async (
   instructions?: string
 ): Promise<IdealJobDescription> => {
   try {
-    return await callGeminiFunction('generateIdealJobDescription', {
+    return await callOpenAIFunction('generateIdealJobDescription', {
       profile,
       instructions: instructions?.trim() || '',
     });
   } catch (error: any) {
-    console.error('Gemini Ideal Job Description Error:', error);
+    console.error('OpenAI Ideal Job Description Error:', error);
     throw new Error(error.message || 'Failed to generate an ideal job description.');
   }
 };
@@ -79,39 +77,16 @@ export const importProfileSource = async (payload: {
   rawText?: string;
 }) => {
   try {
-    return await callGeminiFunction('importProfileSource', payload);
+    return await callOpenAIFunction('importProfileSource', payload);
   } catch (error: any) {
-    console.error('Gemini Profile Import Error:', error);
+    console.error('OpenAI Profile Import Error:', error);
     throw new Error(error.message || 'Failed to import profile source.');
-  }
-};
-
-export const tailorResume = async (
-  baseProfile: UserProfile,
-  jd: JobDescription,
-  githubProjects: any[] = [],
-  includeScore: boolean = true,
-  pageCount: number = 1,
-  options?: TailoringOptions
-): Promise<{ application: Partial<TailoredApplication>; rawResponse: string }> => {
-  try {
-    return await callGeminiFunction('tailorResume', {
-      baseProfile,
-      jd,
-      githubProjects,
-      includeScore,
-      targetPageCount: pageCount,
-      options,
-    });
-  } catch (error: any) {
-    console.error('Gemini API Error:', error);
-    throw new Error(error.message || 'Failed to generate tailored resume. Please check your connection.');
   }
 };
 
 export const condenseResume = async (profile: UserProfile): Promise<{ profile: UserProfile; rawResponse: string }> => {
   try {
-    return await callGeminiFunction('condenseResume', { profile });
+    return await callOpenAIFunction('condenseResume', { profile });
   } catch (error: any) {
     console.error('Condense Resume Error:', error);
     throw new Error(error.message || 'Failed to condense resume. Please try again.');
@@ -124,7 +99,7 @@ export const condenseCoverLetter = async (
   companyName: string
 ): Promise<{ content: string; rawResponse: string }> => {
   try {
-    return await callGeminiFunction('condenseCoverLetter', {
+    return await callOpenAIFunction('condenseCoverLetter', {
       content,
       candidateName,
       companyName,
@@ -134,3 +109,7 @@ export const condenseCoverLetter = async (
     throw new Error(error.message || 'Failed to condense cover letter. Please try again.');
   }
 };
+
+export const reviewRenderedResume = async (base64Pdf: string) => (
+  callOpenAIFunction('reviewRenderedResume', { base64Pdf })
+);

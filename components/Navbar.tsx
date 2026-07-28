@@ -13,7 +13,8 @@ import {
     ExternalLink,
     Radar,
     BriefcaseBusiness,
-    Sparkles
+    Sparkles,
+    Library
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
@@ -77,6 +78,7 @@ const Navbar: React.FC<NavbarProps> = ({ variant = 'admin' }) => {
         { path: '/admin', icon: Home, label: 'Home' },
         { path: '/admin/dashboard', icon: LayoutDashboard, label: 'Applications' },
         { path: '/admin/new', icon: Plus, label: 'New' },
+        { path: '/admin/evidence', icon: Library, label: 'Evidence' },
         { path: '/admin/ideal-role', icon: Sparkles, label: 'Ideal Role' },
         { path: '/admin/lead-sources', icon: Radar, label: 'Lead Sources' },
         { path: '/admin/job-leads', icon: BriefcaseBusiness, label: 'Job Leads' },

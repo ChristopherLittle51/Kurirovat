@@ -1,0 +1,25 @@
+{
+  "version": "tailoring-v2.0.0",
+  "scale": { "min": 1, "max": 5 },
+  "dimensions": [
+    "requirementCoverage",
+    "impact",
+    "specificity",
+    "truthfulness",
+    "chronology",
+    "scanQuality",
+    "coverLetterUsefulness"
+  ],
+  "hardGates": {
+    "unsupportedNumericClaims": 0,
+    "maximumPages": 2,
+    "structuredOutputValid": true,
+    "evidenceReferencesValid": true,
+    "pauseResumeValid": true,
+    "answeredQuestionRepeated": false
+  },
+  "launchGate": {
+    "minimumPairedHumanWinRate": 0.8,
+    "interviewPositiveRegressionsAllowed": 0
+  }
+}

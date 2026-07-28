@@ -3,7 +3,7 @@ import { ArrowRight, Check, Copy, Loader2, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { IdealJobDescription, UserProfile } from '../types';
-import * as GeminiService from '../services/geminiService';
+import * as OpenAIService from '../services/openaiService';
 import * as SupabaseService from '../services/supabaseService';
 
 const IdealRolePage: React.FC = () => {
@@ -36,7 +36,7 @@ const IdealRolePage: React.FC = () => {
         setIsGenerating(true);
 
         try {
-            const result = await GeminiService.generateIdealJobDescription(profile, instructions);
+            const result = await OpenAIService.generateIdealJobDescription(profile, instructions);
             setIdealJob(result);
         } catch (error: any) {
             console.error(error);

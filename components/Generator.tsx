@@ -8,7 +8,7 @@ import {
   TailoringOptions,
   TailoringPlaybook,
 } from '../types';
-import { analyzeJobDescription } from '../services/geminiService';
+import { analyzeJobDescription } from '../services/openaiService';
 
 interface Props {
   onGenerate: (jd: JobDescription, projects: GithubProject[], showScore: boolean, options?: TailoringOptions) => void;
@@ -79,7 +79,7 @@ const Generator: React.FC<Props> = ({
   const [description, setDescription] = useState(initialJobDescription?.rawText || '');
   const [selectedProjects, setSelectedProjects] = useState<number[]>([]);
   const [showMatchScore, setShowMatchScore] = useState(true);
-  const [showAdvanced, setShowAdvanced] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [isAnalyzingJD, setIsAnalyzingJD] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -270,9 +270,17 @@ const Generator: React.FC<Props> = ({
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Create New Application</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Tailor a grounded resume and cover letter with editable strategy, JD analysis, and critique.
+          Start with the job. The workspace will map requirements to saved evidence before it writes anything.
         </p>
       </div>
+
+      <ol className="mb-6 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        {['Job analysis', 'Coverage', 'Evidence interview', 'Content plan', 'Generation', 'Review'].map((stage, index) => (
+          <li key={stage} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+            <span className="mr-1 text-blue-600 dark:text-blue-400">{index + 1}.</span>{stage}
+          </li>
+        ))}
+      </ol>
 
       {initialLeadContext && (
         <div className="max-w-4xl mx-auto mb-6 rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-950/20 p-4">
@@ -377,7 +385,10 @@ const Generator: React.FC<Props> = ({
 
         <div className="border-t border-gray-100 dark:border-gray-700 pt-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Tailoring Controls</h3>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Optional writing preferences</h3>
+              <p className="mt-1 text-sm text-gray-500">Evidence integrity, chronology, recruiter review, and the two-page limit are always enforced.</p>
+            </div>
             <button
               type="button"
               onClick={() => setShowAdvanced(!showAdvanced)}

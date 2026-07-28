@@ -34,6 +34,9 @@ export type StrategyPreset = 'ATS' | 'Balanced' | 'Recruiter';
 export type CareerMode = 'Standard' | 'Transferable Skills';
 export type CritiqueMode = 'Blunt' | 'Supportive';
 export type ConfidenceLevel = 'high' | 'medium' | 'low';
+export type RequirementPriority = 'must_have' | 'important' | 'nice_to_have';
+export type EvidenceCoverage = 'strong' | 'partial' | 'gap' | 'blocked';
+export type QualitySeverity = 'error' | 'warning' | 'info';
 export type EvidenceSourceType =
   | 'resume'
   | 'manual'
@@ -62,6 +65,41 @@ export interface AchievementBankEntry {
   niceToUse: boolean;
   neverUse: boolean;
   roleFamilyConstraints: string[];
+}
+
+export interface CandidateEvidence {
+  id: string;
+  legacyId?: string;
+  title: string;
+  situation: string;
+  action: string;
+  result: string;
+  metric: string;
+  scope: string;
+  tools: string[];
+  teamSize: string;
+  domain: string;
+  tags: string[];
+  sourceType: EvidenceSourceType;
+  sourceLabel?: string;
+  sourceExcerpt?: string;
+  confidence: ConfidenceLevel;
+  roleIds: string[];
+  mustInclude: boolean;
+  niceToUse: boolean;
+  unavailable: boolean;
+  disabled: boolean;
+  roleFamilyConstraints: string[];
+  dedupeKey?: string;
+  lastUsedAt?: string | null;
+  usageHistory?: Array<{
+    applicationId?: string | null;
+    generationJobId?: string | null;
+    usedAt: string;
+    locations: string[];
+  }>;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ImportedProfileSource {
@@ -162,6 +200,21 @@ export interface JobAnalysis {
   mustHaveTerms: string[];
   niceToHaveTerms: string[];
   roleFamily: string;
+  hiringOutcomes?: string[];
+  recruiterRisks?: string[];
+  requirementsV2?: JobRequirement[];
+}
+
+export interface JobRequirement {
+  id: string;
+  text: string;
+  priority: RequirementPriority;
+  category: string;
+  importance: number;
+  expectedProof: string;
+  keywords: string[];
+  senioritySignal?: string;
+  rationale: string;
 }
 
 export interface EvidenceReference {
@@ -174,7 +227,8 @@ export interface EvidenceReference {
 
 export interface SupportedClaim {
   claim: string;
-  evidence: EvidenceReference[];
+  evidence?: EvidenceReference[];
+  evidenceIds?: string[];
 }
 
 export interface EvidenceResolution {
@@ -182,6 +236,48 @@ export interface EvidenceResolution {
   supportedClaims: SupportedClaim[];
   missingEvidence: string[];
   blockedClaims: string[];
+  matches?: EvidenceMatch[];
+  questions?: EvidenceQuestion[];
+}
+
+export interface EvidenceMatch {
+  requirementId: string;
+  coverage: EvidenceCoverage;
+  evidenceIds: string[];
+  rationale: string;
+  missingDetail?: string;
+}
+
+export interface EvidenceQuestion {
+  id: string;
+  requirementIds: string[];
+  prompt: string;
+  reason: string;
+  missingFields: Array<'situation' | 'action' | 'result' | 'metric' | 'scope' | 'tools' | 'teamSize'>;
+  priority: number;
+  status: 'pending' | 'answered' | 'skipped' | 'unavailable';
+  answer?: string;
+  evidenceId?: string;
+}
+
+export interface BulletPlan {
+  experienceId: string;
+  requirementIds: string[];
+  evidenceIds: string[];
+  angle: string;
+  targetLength: 'short' | 'standard';
+}
+
+export interface ContentStrategy {
+  targetPageCount: number;
+  positioning: string;
+  selectedExperienceIds: string[];
+  omittedExperienceIds: string[];
+  bulletPlans: BulletPlan[];
+  summaryEvidenceIds: string[];
+  skillEvidenceIds: string[];
+  coverLetterEvidenceIds: string[];
+  warnings: string[];
 }
 
 export interface RewriteCandidate {
@@ -190,6 +286,8 @@ export interface RewriteCandidate {
   alternate: string;
   why: string;
   evidence: EvidenceReference[];
+  evidenceIds?: string[];
+  requirementIds?: string[];
 }
 
 export interface ResumeRewriteInsights {
@@ -213,6 +311,49 @@ export interface TailoringDiagnostics {
   manualActionItems: string[];
 }
 
+export interface QualityIssue {
+  id: string;
+  code: string;
+  severity: QualitySeverity;
+  section: string;
+  message: string;
+  repairInstruction?: string;
+  experienceId?: string;
+  bulletIndex?: number;
+}
+
+export interface QualityScores {
+  truthfulness: number;
+  requirementCoverage: number;
+  specificity: number;
+  measurableImpact: number;
+  recruiterScan: number;
+  atsClarity: number;
+  coverLetterValue: number;
+}
+
+export interface QualityReport {
+  passed: boolean;
+  repaired: boolean;
+  scores: QualityScores;
+  issues: QualityIssue[];
+  pageCount?: number;
+  reviewedAt?: string;
+  model?: string;
+  promptVersion?: string;
+}
+
+export interface RenderReview {
+  pageCount: number;
+  extractedText?: string;
+  warnings: Array<{
+    code: string;
+    severity: QualitySeverity;
+    message: string;
+  }>;
+  reviewedAt?: string;
+}
+
 export interface TailoringOptions {
   tone?: string;
   conciseness?: string;
@@ -227,6 +368,7 @@ export interface TailoringOptions {
   regenerationInstructions?: string;
   selectedPlaybookId?: string;
   jobAnalysisOverride?: Partial<JobAnalysis>;
+  targetPageCount?: number;
 }
 
 export interface SearchSource {
@@ -235,6 +377,29 @@ export interface SearchSource {
 }
 
 export type ApplicationStatus = 'Pending' | 'Sent' | 'Replied' | 'Interview Scheduled' | 'Rejected';
+export type ApplicationEventType =
+  | 'created'
+  | 'applied'
+  | 'reply_received'
+  | 'screening'
+  | 'interview_scheduled'
+  | 'interview_completed'
+  | 'rejected'
+  | 'offer'
+  | 'withdrawn'
+  | 'no_response'
+  | 'legacy_status_imported';
+
+export interface ApplicationEvent {
+  id: string;
+  applicationId: string;
+  eventType: ApplicationEventType;
+  occurredAt?: string | null;
+  recordedAt: string;
+  notes: string;
+  interviewRound?: number | null;
+  metadata: Record<string, unknown>;
+}
 
 export interface TailoredApplication {
   id: string;
@@ -266,9 +431,24 @@ export interface TailoredApplication {
     timestamp: string;
     instructions: string;
   }>;
+  contentStrategy?: ContentStrategy;
+  qualityReport?: QualityReport;
+  tailoringRunId?: string | null;
+  applicationEvents?: ApplicationEvent[];
+  renderReview?: RenderReview;
 }
 
-export type GenerationJobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
+export type GenerationJobStatus = 'queued' | 'running' | 'needs_input' | 'succeeded' | 'failed' | 'cancelled';
+export type TailoringStage =
+  | 'queued'
+  | 'job_analysis'
+  | 'evidence_matching'
+  | 'needs_input'
+  | 'content_strategy'
+  | 'drafting'
+  | 'review'
+  | 'render_review'
+  | 'completed';
 
 export interface GenerationJob {
   id: string;
@@ -284,6 +464,15 @@ export interface GenerationJob {
   updatedAt: string;
   startedAt?: string | null;
   finishedAt?: string | null;
+  workingState: Record<string, any>;
+  pendingQuestions: EvidenceQuestion[];
+  acceptedEvidenceIds: string[];
+  promptVersion?: string | null;
+  schemaVersion?: string | null;
+  modelConfig: Record<string, any>;
+  usageMetrics: Record<string, any>;
+  qualityReport?: QualityReport | null;
+  repairCount: number;
 }
 
 export interface TargetRegion {

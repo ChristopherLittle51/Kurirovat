@@ -4,6 +4,7 @@ import * as SupabaseService from '../services/supabaseService';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, Trash, Loader2, ChevronDown, Globe } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { calculateOutcomeTimeline } from '../lib/tailoringV2';
 
 const STATUS_COLORS: Record<ApplicationStatus, string> = {
     'Pending': 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200',
@@ -63,6 +64,18 @@ const Dashboard: React.FC = () => {
         return <div className="flex h-full items-center justify-center"><Loader2 className="animate-spin" /></div>
     }
 
+    const knownApplied = applications.filter((app) => (app.applicationEvents || []).some((event) => event.eventType === 'applied' && event.occurredAt));
+    const knownReplies = knownApplied.filter((app) => calculateOutcomeTimeline(app).replyAt);
+    const knownInterviews = knownReplies.filter((app) => calculateOutcomeTimeline(app).interviewAt);
+    const rejectedCount = applications.filter((app) => (app.applicationEvents || []).some((event) => event.eventType === 'rejected')).length;
+    const noResponseCount = applications.filter((app) => (app.applicationEvents || []).some((event) => event.eventType === 'no_response')).length;
+    const replyRate = knownApplied.length
+        ? Math.round((knownReplies.length / knownApplied.length) * 100)
+        : 0;
+    const interviewConversion = knownReplies.length
+        ? Math.round((knownInterviews.length / knownReplies.length) * 100)
+        : 0;
+
     return (
         <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
             <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-4 mb-6 min-w-0">
@@ -72,26 +85,31 @@ const Dashboard: React.FC = () => {
                 </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
                 <div className="min-w-0 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
                     <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">Total Applications</div>
                     <div className="text-4xl font-bold text-gray-900 dark:text-white mt-2">{applications.length}</div>
                 </div>
                 <div className="min-w-0 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
-                    <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">Avg Match Score</div>
+                    <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">Application → Reply</div>
                     <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mt-2">
-                        {applications.length > 0
-                            ? Math.round(applications.reduce((acc, curr) => acc + curr.matchScore, 0) / applications.length)
-                            : 0}%
+                        {replyRate}%
                     </div>
+                    <div className="mt-2 text-xs text-gray-500">Known event dates only</div>
                 </div>
                 <div className="min-w-0 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
-                    <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">Interview Rate</div>
+                    <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">Reply → Interview</div>
                     <div className="text-4xl font-bold text-purple-600 dark:text-purple-400 mt-2">
-                        {applications.length > 0
-                            ? Math.round((applications.filter(a => a.status === 'Interview Scheduled').length / applications.length) * 100)
-                            : 0}%
+                        {interviewConversion}%
                     </div>
+                    <div className="mt-2 text-xs text-gray-500">Known event dates only</div>
+                </div>
+                <div className="min-w-0 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
+                    <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">Rejected / No response</div>
+                    <div className="text-4xl font-bold text-red-600 dark:text-red-400 mt-2">
+                        {rejectedCount} / {noResponseCount}
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500">Tracked separately</div>
                 </div>
             </div>
 

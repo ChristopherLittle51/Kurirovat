@@ -13,17 +13,18 @@
 
 ---
 
-**Kurirovat** is an intelligent, open-source application designed to help job seekers tailor their resumes and cover letters to specific job descriptions using the power of Google's Gemini AI. 
+**Kurirovat** is an evidence-first resume and application coach. It analyzes hiring requirements, reuses verified STAR evidence, asks only for material missing proof, and produces a resume and cover letter from one shared content strategy.
 
 Stop sending generic applications. Kurirovat analyzes your profile against job requirements to highlight your most relevant skills and experiences, increasing your chances of landing an interview.
 
 ## 🚀 Features
 
--   **🤖 AI-Powered Tailoring**: Automatically adapts your resume summary, skills, and experience bullets to match a specific job description.
--   **📄 PDF Generation**: Export professional, ATS-friendly PDFs of your tailored resumes.
+-   **🤖 Evidence-first tailoring**: Maps prioritized job requirements to owner-only candidate evidence before drafting.
+-   **💬 Resumable STAR interview**: Pauses for one high-value question at a time and permanently saves useful answers.
+-   **📄 Reviewed PDF generation**: Validates the actual PDF text and page count, warns on layout problems, and enforces a two-page planning target.
 -   **✍️ Cover Letter Generator**: Create personalized cover letters in seconds.
 -   **🎨 Multiple Themes**: Choose from various professional resume templates (Modern, Classic, Tech-focused).
--   **📊 Application Tracking**: Keep track of all your job applications in one dashboard.
+-   **📊 Outcome timelines**: Tracks replies, screening, interviews, rejection, offers, withdrawal, and no response without inventing historical dates.
 -   **🎯 Ideal Role Benchmark**: Generate a theoretical, evidence-backed job title and description that fully matches your saved profile.
 -   **🔒 Secure & Private**: Your data is stored securely using Supabase.
 
@@ -31,8 +32,9 @@ Stop sending generic applications. Kurirovat analyzes your profile against job r
 
 -   **Frontend**: React 19, Vite, TailwindCSS v4, React Router v7
 -   **Backend / DB**: Supabase (PostgreSQL, Auth, Edge Functions)
--   **AI**: Google Gemini Pro (via `gemini-3-flash` and `gemini-3-pro`)
--   **PDF Rendering**: `@react-pdf/renderer`
+-   **AI**: OpenAI Responses API with strict Structured Outputs
+-   **Model routing**: `gpt-5.6-terra` for extraction/normalization; `gpt-5.6-sol` for strategy, drafting, repair, and review
+-   **PDF Rendering / Inspection**: `@react-pdf/renderer` and PDF.js
 
 ## 🏁 Getting Started
 
@@ -43,7 +45,7 @@ Follow these steps to set up the project locally.
 -   Node.js (v18 or higher)
 -   pnpm (recommended) or npm
 -   A [Supabase](https://supabase.com) project
--   A [Google AI Studio](https://aistudio.google.com/) API Key
+-   An OpenAI API key
 
 ### Installation
 
@@ -64,14 +66,43 @@ Follow these steps to set up the project locally.
     Create a `.env` file in the root directory (copy from `.env.example` if available) and add your credentials:
     ```env
     VITE_SUPABASE_URL=your_supabase_url
-    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+    VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
     ```
-    *Note: The Gemini API Key should be configured securely via Supabase Edge Functions or environment variables as per the latest security practices.*
 
-4.  **Run Locally**
+    Configure the model credential only as an Edge Function secret:
+
+    ```bash
+    supabase secrets set OPENAI_API_KEY=your_openai_api_key
+    ```
+
+    Do not expose `OPENAI_API_KEY` through Vite or browser environment variables.
+    Optional `OPENAI_TERRA_INPUT_COST_PER_MILLION`, `OPENAI_TERRA_OUTPUT_COST_PER_MILLION`,
+    `OPENAI_SOL_INPUT_COST_PER_MILLION`, and `OPENAI_SOL_OUTPUT_COST_PER_MILLION`
+    secrets enable per-run cost estimates without hard-coding prices.
+
+4.  **Apply the database migration and deploy the Edge Function**
+
+    ```bash
+    supabase db push
+    supabase functions deploy gemini-api
+    ```
+
+    The deployed function name remains `gemini-api` temporarily for endpoint compatibility; its runtime is OpenAI-only. Confirm `OPENAI_API_KEY` exists, exercise parsing, generation, imports, condensing, and PDF review, and then remove the old `GOOGLE_GENAI_API_KEY` deployment secret.
+
+5.  **Run Locally**
     ```bash
     pnpm dev
     ```
+
+### Verification
+
+```bash
+pnpm test
+pnpm build
+pnpm eval:tailoring-v2
+```
+
+See [Tailoring v2 architecture](docs/tailoring-v2-architecture.md), [evaluation and launch gates](docs/tailoring-v2-evaluation.md), and [application outcome timelines](docs/application-outcome-timeline.md).
 
 ## 🤝 Contributing
 
