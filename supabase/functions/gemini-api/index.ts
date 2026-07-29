@@ -116,6 +116,25 @@ const mapEvidenceReferences = (value: any, mapping: Map<string, string>, label: 
   }));
 };
 
+// Older generation jobs checkpointed the opaque E# aliases directly. New
+// stages persist database UUIDs, but a queued/resumed job can still contain
+// those aliases in working_state. Normalize only known aliases and preserve
+// unknown values so assertKnownEvidenceIds continues to reject real errors.
+const normalizePersistedEvidenceReferences = (value: any, evidence: any[]): any => {
+  if (Array.isArray(value)) return value.map((item) => normalizePersistedEvidenceReferences(item, evidence));
+  if (!value || typeof value !== "object") return value;
+  const refToId = evidenceReferenceSet(evidence).refToId;
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => {
+    if (key.endsWith("EvidenceIds") && Array.isArray(item)) {
+      return [key, item.map((reference) => {
+        const id = String(reference);
+        return refToId.get(id) || id;
+      })];
+    }
+    return [key, normalizePersistedEvidenceReferences(item, evidence)];
+  }));
+};
+
 const evidenceForModel = (value: any, evidence: any[], label: string) =>
   mapEvidenceReferences(value, evidenceReferenceSet(evidence).idToRef, label);
 
@@ -632,6 +651,9 @@ async function handleGenerationJob(args: {
     });
 
     const evidence = await loadEvidence(args.supabaseClient, job.user_id, request.baseProfile);
+    // Migrate checkpoints written before opaque references were translated
+    // back to database IDs at each model-stage boundary.
+    Object.assign(state, normalizePersistedEvidenceReferences(state, evidence));
     if (state.contentStrategy) {
       try {
         assertKnownEvidenceIds([state.contentStrategy], evidence, "content_strategy");

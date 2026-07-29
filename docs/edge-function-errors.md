@@ -58,6 +58,17 @@ canonical evidence IDs after the response. This prevents the model from
 turning a real evidence UUID into a near-match or inventing a UUID that
 Postgres cannot accept.
 
+### Stale `E#` evidence references
+
+`Model returned evidence IDs not present in the evidence library: E13, ...`
+usually indicates a job checkpoint created during the reference-format
+rollout. Older checkpoints could persist the prompt aliases (`E1`, `E2`, ...)
+in `working_state`, while current checkpoints persist the canonical evidence
+UUIDs. The worker now normalizes known legacy aliases against the current
+evidence ordering before validation and still rejects unknown aliases. Retry
+the queued job once after deploying the updated function; do not delete the
+candidate evidence rows or replace the validator with an unbounded fallback.
+
 Job IDs are validated as UUIDs before any Postgres query. A value must follow
 the `8-4-4-4-12` format; for example, an extra character in the final segment
 is invalid and should be corrected at the caller. To trace provenance, compare
