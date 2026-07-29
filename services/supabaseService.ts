@@ -15,6 +15,11 @@ import {
     ApplicationEventType,
 } from '../types';
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const assertValidUuid = (value: string, label = 'ID') => {
+    if (!UUID_PATTERN.test(value)) throw new Error(`${label} is not a valid UUID.`);
+};
+
 const defaultRegion = (region?: Partial<TargetRegion>): TargetRegion => ({
     id: region?.id || crypto.randomUUID(),
     label: region?.label || '',
@@ -232,6 +237,7 @@ export const startGenerationJob = async (payload: {
 };
 
 export const kickGenerationJob = async (jobId: string): Promise<void> => {
+    assertValidUuid(jobId, 'Generation job ID');
     const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
     if (sessionError || !session?.access_token) {
         throw new Error('You must be signed in to start the generation worker.');
@@ -269,6 +275,7 @@ export const kickGenerationJob = async (jobId: string): Promise<void> => {
 };
 
 export const getGenerationJob = async (jobId: string): Promise<GenerationJob | null> => {
+    assertValidUuid(jobId, 'Generation job ID');
     const { data, error } = await supabase
         .from('generation_jobs')
         .select('*')
@@ -723,6 +730,7 @@ export const answerEvidenceQuestion = async (
     disposition: 'answered' | 'skipped' | 'unavailable',
     answer = '',
 ): Promise<void> => {
+    assertValidUuid(jobId, 'Generation job ID');
     const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
     if (sessionError || !session?.access_token) throw new Error('You must be signed in.');
     const { error } = await supabase.functions.invoke('gemini-api', {
@@ -737,6 +745,7 @@ export const answerEvidenceQuestion = async (
 };
 
 export const resumeGenerationJob = async (jobId: string): Promise<void> => {
+    assertValidUuid(jobId, 'Generation job ID');
     const { error } = await supabase
         .from('generation_jobs')
         .update({
@@ -751,6 +760,7 @@ export const resumeGenerationJob = async (jobId: string): Promise<void> => {
 };
 
 export const cancelGenerationJob = async (jobId: string): Promise<void> => {
+    assertValidUuid(jobId, 'Generation job ID');
     const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
     if (sessionError || !session?.access_token) throw new Error('You must be signed in.');
     const { error } = await supabase.functions.invoke('gemini-api', {
@@ -765,6 +775,7 @@ export const cancelGenerationJob = async (jobId: string): Promise<void> => {
 };
 
 export const removeGenerationJob = async (jobId: string): Promise<void> => {
+    assertValidUuid(jobId, 'Generation job ID');
     const { error } = await supabase
         .from('generation_jobs')
         .delete()
@@ -773,6 +784,7 @@ export const removeGenerationJob = async (jobId: string): Promise<void> => {
 };
 
 export const decideEvidenceRound = async (jobId: string, anotherRound: boolean): Promise<void> => {
+    assertValidUuid(jobId, 'Generation job ID');
     const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
     if (sessionError || !session?.access_token) throw new Error('You must be signed in.');
     const { error } = await supabase.functions.invoke('gemini-api', {

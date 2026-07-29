@@ -47,6 +47,13 @@ const jsonResponse = (body: unknown, status = 200) =>
   });
 
 const now = () => new Date().toISOString();
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const requireJobId = (payload: any) => {
+  if (typeof payload?.jobId !== "string" || !UUID_PATTERN.test(payload.jobId)) {
+    throw new Error("Generation job ID must be a valid UUID.");
+  }
+  return payload.jobId;
+};
 // Every invocation advances at most one model stage. The caller owns
 // scheduling and invokes this function again after the durable checkpoint.
 class WorkerYieldError extends Error {}
@@ -492,10 +499,11 @@ async function handleGenerationJob(args: {
   authedUserId?: string;
   isServiceRole: boolean;
 }) {
+  const jobId = requireJobId(args.payload);
   const { data: job, error: jobError } = await args.supabaseClient
     .from("generation_jobs")
     .select("*")
-    .eq("id", args.payload.jobId)
+    .eq("id", jobId)
     .single();
   if (jobError || !job) throw new Error(jobError?.message || "Generation job not found.");
   if (!args.isServiceRole && job.user_id !== args.authedUserId) {
@@ -808,10 +816,11 @@ async function answerEvidenceQuestion(args: {
   userId: string;
   payload: any;
 }) {
+  const jobId = requireJobId(args.payload);
   const { data: job, error } = await args.supabaseClient
     .from("generation_jobs")
     .select("*")
-    .eq("id", args.payload.jobId)
+    .eq("id", jobId)
     .eq("user_id", args.userId)
     .single();
   if (error || !job) throw new Error(error?.message || "Generation job not found.");
@@ -935,10 +944,11 @@ async function setEvidenceRoundDecision(args: {
   payload: any;
   anotherRound: boolean;
 }) {
+  const jobId = requireJobId(args.payload);
   const { data: job, error } = await args.supabaseClient
     .from("generation_jobs")
     .select("working_state")
-    .eq("id", args.payload.jobId)
+    .eq("id", jobId)
     .eq("user_id", args.userId)
     .single();
   if (error || !job) throw new Error(error?.message || "Generation job not found.");
@@ -957,7 +967,7 @@ async function setEvidenceRoundDecision(args: {
       },
       updated_at: now(),
     })
-    .eq("id", args.payload.jobId)
+    .eq("id", jobId)
     .eq("user_id", args.userId);
   if (updateError) throw updateError;
   return jsonResponse({ ok: true });
@@ -1145,10 +1155,11 @@ serve(async (req) => {
       case "requestAdditionalEvidenceRound":
         return setEvidenceRoundDecision({ supabaseClient, userId, payload, anotherRound: true });
       case "cancelGenerationJob": {
+        const jobId = requireJobId(payload);
         const { error } = await supabaseClient
           .from("generation_jobs")
           .update({ status: "cancelled", stage: "cancelled", finished_at: now(), updated_at: now() })
-          .eq("id", payload.jobId)
+          .eq("id", jobId)
           .eq("user_id", userId);
         if (error) throw error;
         return jsonResponse({ ok: true });

@@ -45,4 +45,8 @@ stage; repeated `job_analysis` entries with the same empty state indicate a
 failed checkpoint write, while a changing state-key set indicates normal
 resumption.
 
+Job IDs are validated as UUIDs before any Postgres query. A value must follow
+the `8-4-4-4-12` format; for example, an extra character in the final segment
+is invalid and should be corrected at the caller.
+
 Do not put `OPENAI_API_KEY` in Vite or browser environment variables.
