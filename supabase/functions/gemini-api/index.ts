@@ -520,12 +520,31 @@ async function handleGenerationJob(args: {
   const request = job.request_payload || {};
   const state = job.working_state || {};
   const usages = [...(job.usage_metrics?.calls || [])];
+  const entryPoint = !state.jobAnalysis
+    ? { stage: "job_analysis", progress: 8 }
+    : (!state.evidenceResolution || !state.interviewComplete)
+      ? { stage: "evidence_matching", progress: 25 }
+      : !state.contentStrategy
+        ? { stage: "content_strategy", progress: 48 }
+        : !state.draft
+          ? { stage: "drafting", progress: 60 }
+          : !state.initialReview
+            ? { stage: "review", progress: 76 }
+            : state.repairCompleted && !state.finalReview
+              ? { stage: "review", progress: 88 }
+              : { stage: "persisting", progress: 92 };
+  console.info("generation_stage_entered", {
+    jobId: job.id,
+    stage: entryPoint.stage,
+    stateKeys: Object.keys(state),
+    status: job.status,
+  });
 
   try {
     await updateJob({
       status: "running",
-      stage: "job_analysis",
-      progress: 8,
+      stage: entryPoint.stage,
+      progress: entryPoint.progress,
       error_message: null,
       attempt_count: (job.attempt_count || 0) + 1,
       started_at: job.started_at || now(),

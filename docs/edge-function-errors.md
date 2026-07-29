@@ -40,5 +40,9 @@ to put it back in the resumable queue.
 Each model stage now emits `model_call_started`, `model_call_completed`, or
 `model_call_failed` with its schema name and duration. Use those entries to
 separate slow OpenAI responses from database or Edge runtime overhead.
+`generation_stage_entered` records the checkpoint keys used to select the next
+stage; repeated `job_analysis` entries with the same empty state indicate a
+failed checkpoint write, while a changing state-key set indicates normal
+resumption.
 
 Do not put `OPENAI_API_KEY` in Vite or browser environment variables.
