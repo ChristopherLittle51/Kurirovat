@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient';
+import { getEdgeFunctionErrorMessage, supabase } from './supabaseClient';
 import {
     UserProfile,
     TailoredApplication,
@@ -249,7 +249,7 @@ export const kickGenerationJob = async (jobId: string): Promise<void> => {
     });
 
     if (error) {
-        const message = error.message || 'Failed to start generation worker.';
+        const message = await getEdgeFunctionErrorMessage(error, 'Failed to start generation worker.');
         await supabase
             .from('generation_jobs')
             .update({
@@ -730,7 +730,7 @@ export const answerEvidenceQuestion = async (
         },
         headers: { Authorization: `Bearer ${session.access_token}` },
     });
-    if (error) throw error;
+    if (error) throw new Error(await getEdgeFunctionErrorMessage(error, 'Failed to answer evidence question.'));
 };
 
 export const resumeGenerationJob = async (jobId: string): Promise<void> => {
@@ -758,7 +758,7 @@ export const cancelGenerationJob = async (jobId: string): Promise<void> => {
         },
         headers: { Authorization: `Bearer ${session.access_token}` },
     });
-    if (error) throw error;
+    if (error) throw new Error(await getEdgeFunctionErrorMessage(error, 'Failed to cancel generation job.'));
 };
 
 export const removeGenerationJob = async (jobId: string): Promise<void> => {
@@ -780,7 +780,7 @@ export const decideEvidenceRound = async (jobId: string, anotherRound: boolean):
         },
         headers: { Authorization: `Bearer ${session.access_token}` },
     });
-    if (error) throw error;
+    if (error) throw new Error(await getEdgeFunctionErrorMessage(error, 'Failed to update the evidence decision.'));
 };
 
 export const saveTailoringPlaybook = async (userId: string, playbook: TailoringPlaybook): Promise<void> => {

@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient';
+import { getEdgeFunctionErrorMessage, supabase } from './supabaseClient';
 import {
   UserProfile,
   JobDescription,
@@ -28,10 +28,13 @@ const callOpenAIFunction = async (action: string, payload: any) => {
 
   if (error) {
     console.error(`Edge Function Error (${action}):`, error);
-    if (typeof error === 'object' && error !== null && 'status' in error && (error as any).status === 401) {
+    const status = typeof error === 'object' && error !== null && 'status' in error
+      ? (error as any).status
+      : undefined;
+    if (status === 401) {
       throw new Error('Authentication failed (401). Please try logging out and back in.');
     }
-    throw new Error(`Failed to execute ${action} via backend: ${error.message || 'Unknown error'}`);
+    throw new Error(`Failed to execute ${action} via backend: ${await getEdgeFunctionErrorMessage(error, 'Unknown error')}`);
   }
 
   return data;
