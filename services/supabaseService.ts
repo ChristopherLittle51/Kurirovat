@@ -783,11 +783,18 @@ export const cancelGenerationJob = async (jobId: string): Promise<void> => {
 
 export const removeGenerationJob = async (jobId: string): Promise<void> => {
     assertValidUuid(jobId, 'Generation job ID');
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from('generation_jobs')
         .delete()
-        .eq('id', jobId);
+        .eq('id', jobId)
+        .select('id');
     if (error) throw error;
+    // RLS can turn a non-authorized or non-terminal delete into a successful
+    // request that affects zero rows. Treat that as a real failure so the
+    // queue page does not silently refresh with the job still present.
+    if (!data?.length) {
+        throw new Error('Generation job was not removed. The job may no longer be terminal, or queue removal is not enabled for this project.');
+    }
 };
 
 export const decideEvidenceRound = async (jobId: string, anotherRound: boolean): Promise<void> => {
