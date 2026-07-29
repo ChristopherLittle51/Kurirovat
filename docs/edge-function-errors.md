@@ -32,9 +32,13 @@ or a database/RLS error remain visible to the operator.
 Supabase terminates an Edge Function invocation when it exhausts its worker
 resource budget. A generation request that performs analysis, evidence
 matching, drafting, repair, and review in one request can reach that limit.
-The generation worker now checkpoints `working_state`, returns the job to
-`queued` before the limit, and lets the browser continue it in a fresh
-invocation. A pre-fix 546 can leave a job as `running`; use Retry once to put
-it back in the resumable queue.
+The generation worker now performs one model stage per invocation, checkpoints
+`working_state`, returns the job to `queued`, and lets the application schedule
+the next invocation. A pre-fix 546 can leave a job as `running`; use Retry once
+to put it back in the resumable queue.
+
+Each model stage now emits `model_call_started`, `model_call_completed`, or
+`model_call_failed` with its schema name and duration. Use those entries to
+separate slow OpenAI responses from database or Edge runtime overhead.
 
 Do not put `OPENAI_API_KEY` in Vite or browser environment variables.

@@ -47,10 +47,8 @@ const jsonResponse = (body: unknown, status = 200) =>
   });
 
 const now = () => new Date().toISOString();
-// Supabase terminates an invocation at roughly 150 seconds. Leave headroom
-// for the final checkpoint write and return a queued job so the browser can
-// safely continue from working_state in a fresh invocation.
-const WORKER_DEADLINE_MS = 105_000;
+// Every invocation advances at most one model stage. The caller owns
+// scheduling and invokes this function again after the durable checkpoint.
 class WorkerYieldError extends Error {}
 const evidenceQuestionKey = (question: any) =>
   `${[...(question.requirementIds || [])].sort().join("|")}:${[...(question.missingFields || [])].sort().join("|")}`;
@@ -494,8 +492,6 @@ async function handleGenerationJob(args: {
   authedUserId?: string;
   isServiceRole: boolean;
 }) {
-  const deadline = Date.now() + WORKER_DEADLINE_MS;
-  const shouldYield = () => Date.now() >= deadline;
   const { data: job, error: jobError } = await args.supabaseClient
     .from("generation_jobs")
     .select("*")
@@ -553,25 +549,34 @@ async function handleGenerationJob(args: {
       working_state: { ...state, jobAnalysis },
       usage_metrics: recordUsage(usages),
     });
-      if (shouldYield()) throw new WorkerYieldError();
+      throw new WorkerYieldError();
     }
 
-    const resolutionResult = await matchEvidence(
-      args.client,
-      args.safetyId,
-      jobAnalysis,
-      request.baseProfile,
-      evidence,
-    );
-    usages.push(resolutionResult.usage);
     const questionHistory = state.questionHistory || [];
     const priorQuestionKeys = new Set(questionHistory.map(evidenceQuestionKey));
-    const evidenceResolution = {
-      ...resolutionResult.data,
-      questions: (resolutionResult.data.questions || []).filter(
-        (question: any) => !priorQuestionKeys.has(evidenceQuestionKey(question)),
-      ),
-    };
+    let evidenceResolution = state.evidenceResolution;
+    let matchedEvidence = false;
+    // Once the interview is complete, evidence matching is authoritative in
+    // the checkpoint. Do not spend another model call on every continuation.
+    // When an answer or round decision changes the evidence state,
+    // interviewComplete is false and matching must run again.
+    if (!evidenceResolution || !state.interviewComplete) {
+      matchedEvidence = true;
+      const resolutionResult = await matchEvidence(
+        args.client,
+        args.safetyId,
+        jobAnalysis,
+        request.baseProfile,
+        evidence,
+      );
+      usages.push(resolutionResult.usage);
+      evidenceResolution = {
+        ...resolutionResult.data,
+        questions: (resolutionResult.data.questions || []).filter(
+          (question: any) => !priorQuestionKeys.has(evidenceQuestionKey(question)),
+        ),
+      };
+    }
 
     if (!state.interviewComplete && evidenceResolution.questions?.length) {
       await updateJob({
@@ -589,14 +594,16 @@ async function handleGenerationJob(args: {
       }, 202);
     }
 
-    await updateJob({
-      stage: "content_strategy",
-      progress: 48,
-      working_state: { ...state, jobAnalysis, evidenceResolution, interviewComplete: true },
-      pending_questions: [],
-      usage_metrics: recordUsage(usages),
-    });
-    if (shouldYield()) throw new WorkerYieldError();
+    if (matchedEvidence) {
+      await updateJob({
+        stage: "content_strategy",
+        progress: 48,
+        working_state: { ...state, jobAnalysis, evidenceResolution, interviewComplete: true },
+        pending_questions: [],
+        usage_metrics: recordUsage(usages),
+      });
+      throw new WorkerYieldError();
+    }
 
     let pipelineState = {
       ...state,
@@ -622,7 +629,7 @@ async function handleGenerationJob(args: {
           working_state: pipelineState,
           usage_metrics: recordUsage(usages),
         });
-        if (shouldYield()) throw new WorkerYieldError();
+        throw new WorkerYieldError();
       },
     });
     usages.push(...generated.usages);
