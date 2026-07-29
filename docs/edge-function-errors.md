@@ -52,22 +52,29 @@ state. Judgment stages use medium reasoning to leave margin below the 150
 second platform idle limit. The original error remains in `error_message` for
 operator diagnosis.
 
-The model no longer sees database UUIDs. It receives deterministic opaque
-references such as `E1` and `E2`; the function maps those references back to
-canonical evidence IDs after the response. This prevents the model from
-turning a real evidence UUID into a near-match or inventing a UUID that
-Postgres cannot accept.
+The model does not see database UUIDs. It receives deterministic opaque
+references such as `E1` and `E2`, assigned by canonical evidence UUID order.
+The function maps every evidence-reference field—including the plain
+`evidenceIds` arrays on plans and bullets—back to canonical IDs immediately
+after the response. The reverse mapping is applied when a canonical strategy
+or draft is sent to a later model stage.
+
+An unknown alias is a deterministic contract failure. The worker records it
+and stops; it does not spend money retrying the same prompt. Retry only after
+correcting or deploying the reference mapper.
 
 ### Stale `E#` evidence references
 
 `Model returned evidence IDs not present in the evidence library: E13, ...`
-usually indicates a job checkpoint created during the reference-format
-rollout. Older checkpoints could persist the prompt aliases (`E1`, `E2`, ...)
-in `working_state`, while current checkpoints persist the canonical evidence
-UUIDs. The worker now normalizes known legacy aliases against the current
-evidence ordering before validation and still rejects unknown aliases. Retry
-the queued job once after deploying the updated function; do not delete the
-candidate evidence rows or replace the validator with an unbounded fallback.
+was caused by a case-sensitive mapper that handled aggregate fields such as
+`summaryEvidenceIds` but skipped the plain `evidenceIds` fields on plans and
+bullets. Those aliases were checkpointed and then compared with UUIDs. The
+mapper now uses one shared field predicate for both shapes. Older checkpoints
+are normalized once using their legacy query order; new checkpoints contain
+only canonical evidence UUIDs.
+
+After deploying this fix, retry the failed job once. Do not delete candidate
+evidence rows or weaken the validator.
 
 Job IDs are validated as UUIDs before any Postgres query. A value must follow
 the `8-4-4-4-12` format; for example, an extra character in the final segment
