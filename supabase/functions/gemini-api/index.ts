@@ -57,6 +57,14 @@ const requireJobId = (payload: any) => {
 // Every invocation advances at most one model stage. The caller owns
 // scheduling and invokes this function again after the durable checkpoint.
 class WorkerYieldError extends Error {}
+class InvalidEvidenceReferenceError extends Error {
+  stage?: string;
+  constructor(message: string, stage?: string) {
+    super(message);
+    this.name = "InvalidEvidenceReferenceError";
+    this.stage = stage;
+  }
+}
 const evidenceQuestionKey = (question: any) =>
   `${[...(question.requirementIds || [])].sort().join("|")}:${[...(question.missingFields || [])].sort().join("|")}`;
 
@@ -69,14 +77,50 @@ const evidenceIdsIn = (value: any): string[] => [
     (experience.bullets || []).flatMap((bullet: any) => bullet.evidenceIds || [])),
 ];
 
-const assertKnownEvidenceIds = (values: any[], evidence: any[]) => {
+const assertKnownEvidenceIds = (values: any[], evidence: any[], stage?: string) => {
   const known = new Set(evidence.map((item) => item.id));
   const invalid = Array.from(new Set(values.flatMap(evidenceIdsIn)))
     .filter((id) => typeof id !== "string" || !known.has(id));
   if (invalid.length) {
-    throw new Error(`Model returned evidence IDs not present in the evidence library: ${invalid.join(", ")}`);
+    throw new InvalidEvidenceReferenceError(
+      `Model returned evidence IDs not present in the evidence library: ${invalid.join(", ")}`,
+      stage,
+    );
   }
 };
+
+const evidenceReferenceSet = (evidence: any[]) => {
+  const refToId = new Map<string, string>();
+  const idToRef = new Map<string, string>();
+  const promptEvidence = evidence.map((item, index) => {
+    const reference = `E${index + 1}`;
+    refToId.set(reference, item.id);
+    idToRef.set(item.id, reference);
+    return { ...item, id: reference };
+  });
+  return { promptEvidence, refToId, idToRef };
+};
+
+const mapEvidenceReferences = (value: any, mapping: Map<string, string>, label: string): any => {
+  if (Array.isArray(value)) return value.map((item) => mapEvidenceReferences(item, mapping, label));
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => {
+    if (key.endsWith("EvidenceIds") && Array.isArray(item)) {
+      return [key, item.map((reference) => {
+        const mapped = mapping.get(String(reference));
+        if (!mapped) throw new InvalidEvidenceReferenceError(`${label} returned unknown evidence reference: ${reference}`);
+        return mapped;
+      })];
+    }
+    return [key, mapEvidenceReferences(item, mapping, label)];
+  }));
+};
+
+const evidenceForModel = (value: any, evidence: any[], label: string) =>
+  mapEvidenceReferences(value, evidenceReferenceSet(evidence).idToRef, label);
+
+const evidenceFromModel = (value: any, evidence: any[], label: string) =>
+  mapEvidenceReferences(value, evidenceReferenceSet(evidence).refToId, label);
 
 const recordUsage = (records: any[] = []) => {
   const costRates: Record<string, { input: number; output: number }> = {
@@ -214,18 +258,23 @@ async function matchEvidence(
   profile: any,
   evidence: any[],
 ) {
-  return runStructured({
+  const references = evidenceReferenceSet(evidence);
+  const result = await runStructured({
     client,
     prompt: evidenceMatchingPrompt({
       jobAnalysis,
       profile: normalizeProfileForPrompt(profile),
-      evidence,
+      evidence: references.promptEvidence,
     }),
     schema: EvidenceResolutionSchema,
     schemaName: "evidence_resolution_v2",
     tier: "judgment",
     safetyId,
   });
+  return {
+    ...result,
+    data: evidenceFromModel(result.data, evidence, "Evidence matching"),
+  };
 }
 
 const sortExperiences = (experiences: any[]) => {
@@ -308,6 +357,7 @@ async function createStrategyAndDraft(args: {
   checkpoint?: (stage: string, values: Record<string, any>) => Promise<void>;
 }) {
   const usages: any[] = [];
+  const references = evidenceReferenceSet(args.evidence);
   let strategy = args.existing?.contentStrategy;
   if (!strategy) {
     const strategyResult = await runStructured({
@@ -315,8 +365,8 @@ async function createStrategyAndDraft(args: {
       prompt: contentStrategyPrompt({
         jobAnalysis: args.jobAnalysis,
         profile: normalizeProfileForPrompt(args.profile),
-        evidence: args.evidence,
-        matches: args.evidenceResolution.matches,
+        evidence: references.promptEvidence,
+        matches: evidenceForModel(args.evidenceResolution.matches, args.evidence, "Content strategy"),
         options: { ...args.options, targetPageCount: 2 },
       }),
       schema: ContentStrategySchema,
@@ -324,8 +374,8 @@ async function createStrategyAndDraft(args: {
       tier: "judgment",
       safetyId: args.safetyId,
     });
-    strategy = strategyResult.data;
-    assertKnownEvidenceIds([strategy], args.evidence);
+    strategy = evidenceFromModel(strategyResult.data, args.evidence, "Content strategy");
+    assertKnownEvidenceIds([strategy], args.evidence, "content_strategy");
     usages.push(strategyResult.usage);
     await args.checkpoint?.("drafting", { contentStrategy: strategy });
   }
@@ -338,8 +388,8 @@ async function createStrategyAndDraft(args: {
         job: args.job,
         jobAnalysis: args.jobAnalysis,
         profile: normalizeProfileForPrompt(args.profile),
-        evidence: args.evidence,
-        strategy,
+        evidence: references.promptEvidence,
+        strategy: evidenceForModel(strategy, args.evidence, "Draft strategy"),
         options: args.options,
       }),
       schema: DraftSchema,
@@ -347,8 +397,8 @@ async function createStrategyAndDraft(args: {
       tier: "judgment",
       safetyId: args.safetyId,
     });
-    draft = draftResult.data;
-    assertKnownEvidenceIds([draft], args.evidence);
+    draft = evidenceFromModel(draftResult.data, args.evidence, "Draft");
+    assertKnownEvidenceIds([draft], args.evidence, "drafting");
     usages.push(draftResult.usage);
     await args.checkpoint?.("review", { contentStrategy: strategy, draft });
   }
@@ -393,9 +443,9 @@ async function createStrategyAndDraft(args: {
       prompt: repairPrompt({
         job: args.job,
         profile: normalizeProfileForPrompt(args.profile),
-        evidence: args.evidence,
-        strategy,
-        draft,
+        evidence: references.promptEvidence,
+        strategy: evidenceForModel(strategy, args.evidence, "Repair strategy"),
+        draft: evidenceForModel(draft, args.evidence, "Repair draft"),
         qualityReport: {
           ...reviewResult.data,
           issues: [...deterministicIssues, ...reviewResult.data.issues],
@@ -407,7 +457,7 @@ async function createStrategyAndDraft(args: {
       safetyId: args.safetyId,
     });
     usages.push(repairResult.usage);
-    draft = repairResult.data;
+    draft = evidenceFromModel(repairResult.data, args.evidence, "Repair");
     await args.checkpoint?.("review", {
       contentStrategy: strategy,
       draft,
@@ -582,6 +632,24 @@ async function handleGenerationJob(args: {
     });
 
     const evidence = await loadEvidence(args.supabaseClient, job.user_id, request.baseProfile);
+    if (state.contentStrategy) {
+      try {
+        assertKnownEvidenceIds([state.contentStrategy], evidence, "content_strategy");
+      } catch (error) {
+        throw error instanceof InvalidEvidenceReferenceError
+          ? error
+          : new InvalidEvidenceReferenceError(String(error), "content_strategy");
+      }
+    }
+    if (state.draft) {
+      try {
+        assertKnownEvidenceIds([state.draft], evidence, "drafting");
+      } catch (error) {
+        throw error instanceof InvalidEvidenceReferenceError
+          ? error
+          : new InvalidEvidenceReferenceError(String(error), "drafting");
+      }
+    }
     let jobAnalysis = state.jobAnalysis;
     if (!jobAnalysis) {
       const analysis = await analyzeJob(args.client, args.safetyId, request.jd);
@@ -593,7 +661,7 @@ async function handleGenerationJob(args: {
     await updateJob({
       stage: "evidence_matching",
       progress: 25,
-      working_state: { ...state, jobAnalysis },
+      working_state: { ...state, jobAnalysis, evidenceReferenceRetries: 0 },
       usage_metrics: recordUsage(usages),
     });
       throw new WorkerYieldError();
@@ -645,7 +713,7 @@ async function handleGenerationJob(args: {
       await updateJob({
         stage: "content_strategy",
         progress: 48,
-        working_state: { ...state, jobAnalysis, evidenceResolution, interviewComplete: true },
+        working_state: { ...state, jobAnalysis, evidenceResolution, interviewComplete: true, evidenceReferenceRetries: 0 },
         pending_questions: [],
         usage_metrics: recordUsage(usages),
       });
@@ -673,7 +741,7 @@ async function handleGenerationJob(args: {
       options: request.options || {},
       existing: pipelineState,
       checkpoint: async (stage, values) => {
-        pipelineState = { ...pipelineState, ...values };
+        pipelineState = { ...pipelineState, ...values, evidenceReferenceRetries: 0 };
         await updateJob({
           stage,
           progress: stage === "drafting" ? 60 : 76,
@@ -820,6 +888,39 @@ async function handleGenerationJob(args: {
         finished_at: null,
       });
       return jsonResponse({ jobId: job.id, status: "queued", continued: true }, 202);
+    }
+    if (error instanceof InvalidEvidenceReferenceError) {
+      const retryCount = Number(state.evidenceReferenceRetries || 0);
+      if (retryCount < 2) {
+        const retryStage = error.stage || entryPoint.stage;
+        const retryState = { ...state, evidenceReferenceRetries: retryCount + 1 };
+        if (retryStage === "content_strategy") {
+          retryState.contentStrategy = null;
+          retryState.draft = null;
+          retryState.initialReview = null;
+          retryState.repairCompleted = false;
+          retryState.finalReview = null;
+        } else if (retryStage === "drafting") {
+          retryState.draft = null;
+          retryState.initialReview = null;
+          retryState.repairCompleted = false;
+          retryState.finalReview = null;
+        }
+        console.warn("retrying_generation_stage_after_invalid_evidence_reference", {
+          jobId: job.id,
+          stage: retryStage,
+          retryCount: retryCount + 1,
+          error: error.message,
+        });
+        await updateJob({
+          status: "queued",
+          stage: retryStage,
+          error_message: null,
+          finished_at: null,
+          working_state: retryState,
+        });
+        return jsonResponse({ jobId: job.id, status: "queued", retrying: true }, 202);
+      }
     }
     console.error("Tailoring v2 generation failed:", error);
     await updateJob({

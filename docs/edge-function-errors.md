@@ -52,10 +52,11 @@ state. Judgment stages use medium reasoning to leave margin below the 150
 second platform idle limit. The original error remains in `error_message` for
 operator diagnosis.
 
-Evidence IDs are now checked against the loaded evidence library before they
-are used in `candidate_evidence_usage`. This prevents the model from turning a
-real evidence UUID into a near-match or inventing a UUID that Postgres cannot
-accept.
+The model no longer sees database UUIDs. It receives deterministic opaque
+references such as `E1` and `E2`; the function maps those references back to
+canonical evidence IDs after the response. This prevents the model from
+turning a real evidence UUID into a near-match or inventing a UUID that
+Postgres cannot accept.
 
 Job IDs are validated as UUIDs before any Postgres query. A value must follow
 the `8-4-4-4-12` format; for example, an extra character in the final segment

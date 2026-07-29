@@ -30,7 +30,7 @@ Map every prioritized job requirement to reusable candidate evidence and ask onl
 <candidate_evidence>${json(args.evidence)}</candidate_evidence>
 <constraints>
 - Never invent facts, metrics, scope, tools, titles, responsibilities, or leadership.
-- Use only evidence IDs that exist in candidate_evidence.
+- Use only the opaque evidence references (such as E1, E2) shown in candidate_evidence; never reproduce database UUIDs.
 - Mark weak adjacency as partial, not strong.
 - A blocked match means an anti-claim or explicit unavailable evidence prevents the claim.
 - Ask at most five questions. Each question must target missing STAR, metric, scope, tool, or stakeholder detail that could materially improve the application.
@@ -71,6 +71,7 @@ Design the evidence and content plan for a recruiter-readable resume of no more 
 <requirement_matches>${json(args.matches)}</requirement_matches>
 <options>${json(args.options)}</options>
 <success>
+- Return opaque evidence references exactly as shown in the evidence input (for example E1), never database UUIDs.
 - Keep professional experience in reverse chronological order.
 - Favor current and relevant proof without deleting honest career history solely because it is older.
 - Assign every planned bullet to real evidence IDs and requirement IDs.
@@ -98,6 +99,7 @@ Write the tailored resume content and cover letter from the approved evidence pl
 <content_strategy>${json(args.strategy)}</content_strategy>
 <options>${json(args.options)}</options>
 <success>
+- Return opaque evidence references exactly as shown in candidate_evidence, never database UUIDs.
 - Summary is 2-3 specific sentences and does not say "seeking".
 - Skills are grounded, non-duplicative, and relevant.
 - Experience roles stay in reverse chronological order.
@@ -153,4 +155,3 @@ export const repairPrompt = (args: {
 - Keep the resume within the content strategy and the cover letter between 220 and 320 words.
 </constraints>
 `;
-
