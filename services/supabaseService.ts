@@ -237,6 +237,7 @@ export const startGenerationJob = async (payload: {
 };
 
 export const kickGenerationJob = async (jobId: string): Promise<void> => {
+    console.info('[GenerationJob] kick payload', { jobId, length: jobId.length });
     assertValidUuid(jobId, 'Generation job ID');
     const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
     if (sessionError || !session?.access_token) {
@@ -259,16 +260,22 @@ export const kickGenerationJob = async (jobId: string): Promise<void> => {
         const status = typeof error === 'object' && error !== null && 'status' in error
             ? (error as any).status
             : undefined;
+        const retryableWorkerFailure = status === 546
+            || status === 408
+            || status === 504
+            || /idle timeout|resource limit|timed out|timeout/i.test(message);
+        const currentTimestamp = new Date().toISOString();
+        const jobFailureUpdate: Record<string, unknown> = {
+            status: retryableWorkerFailure ? 'queued' : 'failed',
+            stage: retryableWorkerFailure ? 'Queued for worker retry' : 'Failed to start worker',
+            error_message: message,
+            updated_at: currentTimestamp,
+            finished_at: retryableWorkerFailure ? null : currentTimestamp,
+        };
+        if (!retryableWorkerFailure) jobFailureUpdate.progress = 100;
         await supabase
             .from('generation_jobs')
-            .update({
-                status: status === 546 ? 'queued' : 'failed',
-                stage: status === 546 ? 'Queued for worker retry' : 'Failed to start worker',
-                progress: status === 546 ? 0 : 100,
-                error_message: message,
-                updated_at: new Date().toISOString(),
-                finished_at: status === 546 ? null : new Date().toISOString(),
-            })
+            .update(jobFailureUpdate)
             .eq('id', jobId);
         throw new Error(message);
     }

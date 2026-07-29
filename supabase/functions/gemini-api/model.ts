@@ -4,7 +4,10 @@ import type { ZodType } from "npm:zod@4.4.3";
 
 export const MODEL_CONFIG = {
   extraction: { model: "gpt-5.6-terra", effort: "medium" as const },
-  judgment: { model: "gpt-5.6-sol", effort: "high" as const },
+  // A generation job invokes one model stage per Edge Function request. Keep
+  // enough reasoning headroom for quality while leaving margin below the
+  // platform's 150-second idle limit for database checkpoints and persistence.
+  judgment: { model: "gpt-5.6-sol", effort: "medium" as const },
 } as const;
 
 export type UsageRecord = {

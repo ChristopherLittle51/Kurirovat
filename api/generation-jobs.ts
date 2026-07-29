@@ -105,7 +105,7 @@ export default async function handler(req: any, res: any) {
         schema_version: 'tailoring-v2.0.0',
         model_config: {
           extraction: { model: 'gpt-5.6-terra', reasoning: 'medium' },
-          judgment: { model: 'gpt-5.6-sol', reasoning: 'high' },
+          judgment: { model: 'gpt-5.6-sol', reasoning: 'medium' },
         },
         usage_metrics: {},
         repair_count: 0,
@@ -114,6 +114,11 @@ export default async function handler(req: any, res: any) {
       .single();
 
     if (insertError) throw insertError;
+
+    console.info('generation_job_created', {
+      jobId: job.id,
+      length: typeof job.id === 'string' ? job.id.length : null,
+    });
 
     return json(res, 202, { job });
   } catch (error: any) {

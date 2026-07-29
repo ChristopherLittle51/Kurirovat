@@ -60,6 +60,24 @@ class WorkerYieldError extends Error {}
 const evidenceQuestionKey = (question: any) =>
   `${[...(question.requirementIds || [])].sort().join("|")}:${[...(question.missingFields || [])].sort().join("|")}`;
 
+const evidenceIdsIn = (value: any): string[] => [
+  ...(value?.summaryEvidenceIds || []),
+  ...(value?.skillEvidenceIds || []),
+  ...(value?.coverLetterEvidenceIds || []),
+  ...(value?.bulletPlans || []).flatMap((plan: any) => plan.evidenceIds || []),
+  ...(value?.experiences || []).flatMap((experience: any) =>
+    (experience.bullets || []).flatMap((bullet: any) => bullet.evidenceIds || [])),
+];
+
+const assertKnownEvidenceIds = (values: any[], evidence: any[]) => {
+  const known = new Set(evidence.map((item) => item.id));
+  const invalid = Array.from(new Set(values.flatMap(evidenceIdsIn)))
+    .filter((id) => typeof id !== "string" || !known.has(id));
+  if (invalid.length) {
+    throw new Error(`Model returned evidence IDs not present in the evidence library: ${invalid.join(", ")}`);
+  }
+};
+
 const recordUsage = (records: any[] = []) => {
   const costRates: Record<string, { input: number; output: number }> = {
     [MODEL_CONFIG.extraction.model]: {
@@ -307,6 +325,7 @@ async function createStrategyAndDraft(args: {
       safetyId: args.safetyId,
     });
     strategy = strategyResult.data;
+    assertKnownEvidenceIds([strategy], args.evidence);
     usages.push(strategyResult.usage);
     await args.checkpoint?.("drafting", { contentStrategy: strategy });
   }
@@ -329,6 +348,7 @@ async function createStrategyAndDraft(args: {
       safetyId: args.safetyId,
     });
     draft = draftResult.data;
+    assertKnownEvidenceIds([draft], args.evidence);
     usages.push(draftResult.usage);
     await args.checkpoint?.("review", { contentStrategy: strategy, draft });
   }
@@ -638,6 +658,10 @@ async function handleGenerationJob(args: {
       evidenceResolution,
       interviewComplete: true,
     };
+    assertKnownEvidenceIds(
+      [pipelineState.contentStrategy, pipelineState.draft],
+      evidence,
+    );
     const generated = await createStrategyAndDraft({
       client: args.client,
       safetyId: args.safetyId,
@@ -741,6 +765,7 @@ async function handleGenerationJob(args: {
       ...(application.contentStrategy?.coverLetterEvidenceIds || []),
       ...(application.contentStrategy?.bulletPlans || []).flatMap((plan: any) => plan.evidenceIds || []),
     ]));
+    assertKnownEvidenceIds([application.contentStrategy], evidence);
     if (usedEvidenceIds.length) {
       await args.supabaseClient
         .from("candidate_evidence")
@@ -1105,6 +1130,13 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const { action, payload, access_token } = await req.json();
+    if (payload?.jobId) {
+      console.info("generation_job_id_received", {
+        action,
+        jobId: payload.jobId,
+        length: typeof payload.jobId === "string" ? payload.jobId.length : null,
+      });
+    }
     const authHeader = req.headers.get("Authorization");
     const token = authHeader?.startsWith("Bearer ")
       ? authHeader.replace("Bearer ", "")

@@ -24,7 +24,7 @@ Completed model stages live in `generation_jobs.working_state`. Refreshing or re
 One Edge Function client uses the OpenAI Responses API:
 
 - `gpt-5.6-terra`, medium reasoning: parsing, JD extraction, evidence normalization, imported-source normalization, ideal-role normalization, and condensing.
-- `gpt-5.6-sol`, high reasoning: evidence judgment, strategy, drafting, repair, recruiter review, and rendered-PDF review.
+- `gpt-5.6-sol`, medium reasoning: evidence judgment, strategy, drafting, repair, recruiter review, and rendered-PDF review. The worker uses medium reasoning so a single stage leaves margin for durable checkpoint writes below the Edge Function idle limit.
 
 Every structured call uses Zod-backed Structured Outputs, explicit reasoning effort, `store: false`, and a SHA-256-derived `safety_identifier`. Raw reasoning is never requested or saved. Candidate evidence and job checkpoints live in owner-scoped tables; application strategies, evidence mappings, prompt controls, model metadata, and quality reports live in `application_private_artifacts`. The migration copies legacy tailoring artifacts there and clears their values from application rows exposed by the historical public portfolio policy. The service-role token is accepted only for the background worker path and still requires an explicit user ID.
 

@@ -45,8 +45,22 @@ stage; repeated `job_analysis` entries with the same empty state indicate a
 failed checkpoint write, while a changing state-key set indicates normal
 resumption.
 
+Idle and worker-resource-limit responses are retryable. The client leaves the
+job in `queued` with `finished_at` unset so the queue page can invoke the next
+checkpoint; these responses must not be converted into a terminal `failed`
+state. Judgment stages use medium reasoning to leave margin below the 150
+second platform idle limit. The original error remains in `error_message` for
+operator diagnosis.
+
+Evidence IDs are now checked against the loaded evidence library before they
+are used in `candidate_evidence_usage`. This prevents the model from turning a
+real evidence UUID into a near-match or inventing a UUID that Postgres cannot
+accept.
+
 Job IDs are validated as UUIDs before any Postgres query. A value must follow
 the `8-4-4-4-12` format; for example, an extra character in the final segment
-is invalid and should be corrected at the caller.
+is invalid and should be corrected at the caller. To trace provenance, compare
+`generation_job_created`, `[GenerationJob] kick payload`, and
+`generation_job_id_received`; each includes the raw ID and character length.
 
 Do not put `OPENAI_API_KEY` in Vite or browser environment variables.
