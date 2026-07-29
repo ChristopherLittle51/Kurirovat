@@ -11,6 +11,7 @@ Canonical candidate-evidence IDs are database UUIDs. They are never sent to
 the model. Before a model call, `evidenceReferences.ts` sorts active evidence
 by canonical UUID and assigns `E1`, `E2`, and so on. This makes aliases stable
 for the same evidence library even if database result order changes.
+Canonical and legacy evidence IDs are removed from the model projection.
 
 All evidence-bearing structures use one of these field shapes:
 
@@ -24,6 +25,11 @@ opaque aliases; inbound aliases become canonical UUIDs before validation or a
 checkpoint write. A later stage receives aliases again, derived from its
 current canonical input. Durable state therefore stores UUIDs, not `E#`
 references.
+
+Evidence-bearing response schemas are built per call with an enum containing
+only that call's `E#` references. Structured Outputs therefore cannot emit a
+database UUID or an alias absent from the supplied evidence library. The
+mapper remains a defense-in-depth check at the persistence boundary.
 
 Unknown aliases fail closed. They are not silently dropped, guessed, or sent
 through an automatic model retry. This prevents a deterministic integration

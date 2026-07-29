@@ -59,6 +59,11 @@ The function maps every evidence-reference field—including the plain
 after the response. The reverse mapping is applied when a canonical strategy
 or draft is sent to a later model stage.
 
+The structured-output schema is generated with the exact allowed `E#` values
+for each call. Canonical evidence UUIDs and legacy evidence IDs are removed
+from the candidate-evidence prompt projection, and a UUID cannot satisfy an
+evidence-reference output field.
+
 An unknown alias is a deterministic contract failure. The worker records it
 and stops; it does not spend money retrying the same prompt. Retry only after
 correcting or deploying the reference mapper.

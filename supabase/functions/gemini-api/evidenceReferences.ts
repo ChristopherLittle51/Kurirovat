@@ -25,7 +25,13 @@ export const evidenceReferenceSet = (evidence: any[]) => {
     const reference = `E${index + 1}`;
     refToId.set(reference, item.id);
     idToRef.set(item.id, reference);
-    return { ...item, id: reference };
+    const {
+      id: _canonicalId,
+      legacyId: _legacyId,
+      legacy_id: _legacySnakeId,
+      ...modelSafeItem
+    } = item;
+    return { ...modelSafeItem, id: reference };
   });
   return { promptEvidence, refToId, idToRef };
 };

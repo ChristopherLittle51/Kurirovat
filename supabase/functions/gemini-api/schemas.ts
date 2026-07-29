@@ -1,5 +1,12 @@
 import { z } from "npm:zod@4.4.3";
 
+const evidenceReference = (references: string[]) => {
+  if (!references.length) {
+    throw new Error("At least one active evidence record is required for generation.");
+  }
+  return z.enum(references as [string, ...string[]]);
+};
+
 export const RequirementSchema = z.object({
   id: z.string(),
   text: z.string(),
@@ -56,6 +63,23 @@ export const EvidenceResolutionSchema = z.object({
   questions: z.array(EvidenceQuestionSchema).max(5),
 });
 
+export const createEvidenceResolutionSchema = (references: string[]) => {
+  const EvidenceReferenceSchema = evidenceReference(references);
+  return EvidenceResolutionSchema.extend({
+    supportedClaims: z.array(z.object({
+      claim: z.string(),
+      evidenceIds: z.array(EvidenceReferenceSchema),
+    })),
+    matches: z.array(z.object({
+      requirementId: z.string(),
+      coverage: z.enum(["strong", "partial", "gap", "blocked"]),
+      evidenceIds: z.array(EvidenceReferenceSchema),
+      rationale: z.string(),
+      missingDetail: z.string(),
+    })),
+  });
+};
+
 export const CandidateEvidenceSchema = z.object({
   title: z.string(),
   situation: z.string(),
@@ -92,6 +116,22 @@ export const ContentStrategySchema = z.object({
   warnings: z.array(z.string()),
 });
 
+export const createContentStrategySchema = (references: string[]) => {
+  const EvidenceReferenceSchema = evidenceReference(references);
+  return ContentStrategySchema.extend({
+    bulletPlans: z.array(z.object({
+      experienceId: z.string(),
+      requirementIds: z.array(z.string()),
+      evidenceIds: z.array(EvidenceReferenceSchema),
+      angle: z.string(),
+      targetLength: z.enum(["short", "standard"]),
+    })).min(1),
+    summaryEvidenceIds: z.array(EvidenceReferenceSchema).min(1),
+    skillEvidenceIds: z.array(EvidenceReferenceSchema),
+    coverLetterEvidenceIds: z.array(EvidenceReferenceSchema).min(1),
+  });
+};
+
 export const DraftSchema = z.object({
   summary: z.string(),
   skills: z.array(z.string()).min(5).max(12),
@@ -106,6 +146,21 @@ export const DraftSchema = z.object({
   })).min(1),
   coverLetter: z.string(),
 });
+
+export const createDraftSchema = (references: string[]) => {
+  const EvidenceReferenceSchema = evidenceReference(references);
+  return DraftSchema.extend({
+    experiences: z.array(z.object({
+      id: z.string(),
+      bullets: z.array(z.object({
+        text: z.string(),
+        evidenceIds: z.array(EvidenceReferenceSchema).min(1),
+        requirementIds: z.array(z.string()).min(1),
+        why: z.string(),
+      })).min(1),
+    })).min(1),
+  });
+};
 
 export const QualityIssueSchema = z.object({
   id: z.string(),

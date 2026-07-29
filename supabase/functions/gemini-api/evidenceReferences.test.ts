@@ -57,4 +57,16 @@ describe("evidence reference mapping", () => {
       "Content strategy",
     )).toThrow(InvalidEvidenceReferenceError);
   });
+
+  it("does not expose canonical or legacy evidence IDs in the prompt library", () => {
+    expect(evidenceReferenceSet([{
+      id: evidence[0].id,
+      legacyId: "legacy-database-id",
+      legacy_id: "legacy-snake-id",
+      title: "Safe",
+    }]).promptEvidence).toEqual([{
+      id: "E1",
+      title: "Safe",
+    }]);
+  });
 });
