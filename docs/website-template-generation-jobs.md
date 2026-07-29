@@ -15,7 +15,7 @@
 1. `GeneratorPage` calls `SupabaseService.startGenerationJob`.
 2. `POST /api/generation-jobs` validates the bearer token, loads the latest profile, and inserts `generation_jobs`.
 3. `GeneratorPage` calls `SupabaseService.kickGenerationJob` without awaiting it, so the UI stays responsive while the Edge Function runs.
-4. `supabase/functions/gemini-api` handles `processGenerationJob`, updates `stage` and `progress`, runs the independent writing calls in parallel, inserts the final `applications` row, and marks the job `succeeded`.
+4. `supabase/functions/gemini-api` handles `processGenerationJob`, updates `stage` and `progress`, checkpoints `working_state` before the Edge Function resource limit, and returns queued work for continuation in a fresh invocation. It inserts the final `applications` row and marks the job `succeeded` only after all stages finish.
 5. `GeneratorPage` polls `generation_jobs`, resumes queued jobs after refresh, and shows status, errors, progress, and an Open Application button when complete.
 
 This design intentionally avoids Vercel Cron so it works on the Hobby tier. If a fully server-owned retry loop becomes necessary later, prefer Supabase `pg_cron` or a queue worker over Vercel Cron.

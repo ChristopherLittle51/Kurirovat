@@ -47,6 +47,11 @@ const jsonResponse = (body: unknown, status = 200) =>
   });
 
 const now = () => new Date().toISOString();
+// Supabase terminates an invocation at roughly 150 seconds. Leave headroom
+// for the final checkpoint write and return a queued job so the browser can
+// safely continue from working_state in a fresh invocation.
+const WORKER_DEADLINE_MS = 105_000;
+class WorkerYieldError extends Error {}
 const evidenceQuestionKey = (question: any) =>
   `${[...(question.requirementIds || [])].sort().join("|")}:${[...(question.missingFields || [])].sort().join("|")}`;
 
@@ -489,6 +494,8 @@ async function handleGenerationJob(args: {
   authedUserId?: string;
   isServiceRole: boolean;
 }) {
+  const deadline = Date.now() + WORKER_DEADLINE_MS;
+  const shouldYield = () => Date.now() >= deadline;
   const { data: job, error: jobError } = await args.supabaseClient
     .from("generation_jobs")
     .select("*")
@@ -540,12 +547,13 @@ async function handleGenerationJob(args: {
         ...(request.options?.jobAnalysisOverride || {}),
       };
       usages.push(analysis.usage);
-      await updateJob({
-        stage: "evidence_matching",
-        progress: 25,
-        working_state: { ...state, jobAnalysis },
-        usage_metrics: recordUsage(usages),
-      });
+    await updateJob({
+      stage: "evidence_matching",
+      progress: 25,
+      working_state: { ...state, jobAnalysis },
+      usage_metrics: recordUsage(usages),
+    });
+      if (shouldYield()) throw new WorkerYieldError();
     }
 
     const resolutionResult = await matchEvidence(
@@ -588,6 +596,7 @@ async function handleGenerationJob(args: {
       pending_questions: [],
       usage_metrics: recordUsage(usages),
     });
+    if (shouldYield()) throw new WorkerYieldError();
 
     let pipelineState = {
       ...state,
@@ -613,6 +622,7 @@ async function handleGenerationJob(args: {
           working_state: pipelineState,
           usage_metrics: recordUsage(usages),
         });
+        if (shouldYield()) throw new WorkerYieldError();
       },
     });
     usages.push(...generated.usages);
@@ -744,6 +754,14 @@ async function handleGenerationJob(args: {
     });
     return jsonResponse({ jobId: job.id, applicationId: saved.id });
   } catch (error: any) {
+    if (error instanceof WorkerYieldError) {
+      await updateJob({
+        status: "queued",
+        error_message: null,
+        finished_at: null,
+      });
+      return jsonResponse({ jobId: job.id, status: "queued", continued: true }, 202);
+    }
     console.error("Tailoring v2 generation failed:", error);
     await updateJob({
       status: "failed",

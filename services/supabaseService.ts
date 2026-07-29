@@ -250,15 +250,18 @@ export const kickGenerationJob = async (jobId: string): Promise<void> => {
 
     if (error) {
         const message = await getEdgeFunctionErrorMessage(error, 'Failed to start generation worker.');
+        const status = typeof error === 'object' && error !== null && 'status' in error
+            ? (error as any).status
+            : undefined;
         await supabase
             .from('generation_jobs')
             .update({
-                status: 'failed',
-                stage: 'Failed to start worker',
-                progress: 100,
+                status: status === 546 ? 'queued' : 'failed',
+                stage: status === 546 ? 'Queued for worker retry' : 'Failed to start worker',
+                progress: status === 546 ? 0 : 100,
                 error_message: message,
                 updated_at: new Date().toISOString(),
-                finished_at: new Date().toISOString(),
+                finished_at: status === 546 ? null : new Date().toISOString(),
             })
             .eq('id', jobId);
         throw new Error(message);

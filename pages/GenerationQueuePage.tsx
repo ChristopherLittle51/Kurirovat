@@ -28,7 +28,13 @@ const GenerationQueuePage: React.FC = () => {
         if (kickedJobIdsRef.current.has(jobId)) return;
         kickedJobIdsRef.current.add(jobId);
         void SupabaseService.kickGenerationJob(jobId)
-            .then(() => void refreshJobs())
+            .then(() => {
+                // A bounded worker invocation may return 202 with the job
+                // queued for continuation. Allow the next refresh to kick
+                // the next checkpoint in a fresh invocation.
+                kickedJobIdsRef.current.delete(jobId);
+                return refreshJobs();
+            })
             .catch((error) => {
                 console.error(error);
                 kickedJobIdsRef.current.delete(jobId);

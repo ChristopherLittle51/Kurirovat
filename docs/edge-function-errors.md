@@ -27,4 +27,14 @@ or a database/RLS error remain visible to the operator.
 5. For a generation job, inspect the `generation_jobs.error_message` and
    `stage` fields. The worker persists failures before returning its 400.
 
+## `546 WORKER_RESOURCE_LIMIT`
+
+Supabase terminates an Edge Function invocation when it exhausts its worker
+resource budget. A generation request that performs analysis, evidence
+matching, drafting, repair, and review in one request can reach that limit.
+The generation worker now checkpoints `working_state`, returns the job to
+`queued` before the limit, and lets the browser continue it in a fresh
+invocation. A pre-fix 546 can leave a job as `running`; use Retry once to put
+it back in the resumable queue.
+
 Do not put `OPENAI_API_KEY` in Vite or browser environment variables.
